@@ -212,10 +212,15 @@ class PagedStorageDiffHelper {
                     continue;
                 }
 
-                int result = diffResult.convertOldPositionToNew(positionToTry);
-                if (result != -1) {
-                    // also need to transform from diffutil output indices to newList
-                    return result + newList.getLeadingNullCount();
+                try {
+                    int result = diffResult.convertOldPositionToNew(positionToTry);
+                    if (result != -1) {
+                        // also need to transform from diffutil output indices to newList
+                        return result + newList.getLeadingNullCount();
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    // Rare crash, just give up the search for the old item
+                    break;
                 }
             }
         }
