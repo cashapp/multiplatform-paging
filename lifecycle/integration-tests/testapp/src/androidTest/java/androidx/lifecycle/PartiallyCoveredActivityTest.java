@@ -39,15 +39,17 @@ import android.app.Instrumentation;
 import android.content.Intent;
 import android.os.Build;
 
-import androidx.core.util.Pair;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.testapp.CollectingLifecycleOwner;
 import androidx.lifecycle.testapp.CollectingSupportActivity;
 import androidx.lifecycle.testapp.CollectingSupportFragment;
 import androidx.lifecycle.testapp.NavigationDialogActivity;
 import androidx.lifecycle.testapp.TestEvent;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import org.junit.Rule;
@@ -58,12 +60,15 @@ import org.junit.runners.Parameterized;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import kotlin.Pair;
+
 /**
  * Runs tests about the state when an activity is partially covered by another activity. Pre
  * API 24, framework behavior changes so the test rely on whether state is saved or not and makes
  * assertions accordingly.
  */
 @SuppressWarnings("unchecked")
+@SdkSuppress(maxSdkVersion = 28) // framework issue for API 29: b/142125019
 @RunWith(Parameterized.class)
 @LargeTest
 public class PartiallyCoveredActivityTest {
@@ -97,7 +102,7 @@ public class PartiallyCoveredActivityTest {
                 @Override
                 protected Intent getActivityIntent() {
                     // helps with less flaky API 16 tests
-                    Intent intent = new Intent(InstrumentationRegistry.getTargetContext(),
+                    Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
                             CollectingSupportActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -117,12 +122,14 @@ public class PartiallyCoveredActivityTest {
     }
 
     @Test
+    @FlakyTest
     public void coveredWithDialog_activity() throws Throwable {
         final CollectingSupportActivity activity = activityRule.getActivity();
         runTest(activity);
     }
 
     @Test
+    @FlakyTest
     public void coveredWithDialog_fragment() throws Throwable {
         CollectingSupportFragment fragment = new CollectingSupportFragment();
         activityRule.runOnUiThread(() -> activityRule.getActivity().replaceFragment(fragment));
@@ -130,6 +137,7 @@ public class PartiallyCoveredActivityTest {
     }
 
     @Test
+    @FlakyTest
     public void coveredWithDialog_childFragment() throws Throwable {
         CollectingSupportFragment parentFragment = new CollectingSupportFragment();
         CollectingSupportFragment childFragment = new CollectingSupportFragment();

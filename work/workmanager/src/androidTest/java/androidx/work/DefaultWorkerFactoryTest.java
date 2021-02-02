@@ -18,13 +18,15 @@ package androidx.work;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import android.content.Context;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.work.impl.utils.SynchronousExecutor;
 import androidx.work.impl.utils.taskexecutor.WorkManagerTaskExecutor;
 import androidx.work.worker.TestWorker;
@@ -34,16 +36,22 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.Executor;
+
 @RunWith(AndroidJUnit4.class)
 public class DefaultWorkerFactoryTest extends DatabaseTest {
 
     private Context mContext;
     private WorkerFactory mDefaultWorkerFactory;
+    private ProgressUpdater mProgressUpdater;
+    private ForegroundUpdater mForegroundUpdater;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = ApplicationProvider.getApplicationContext();
         mDefaultWorkerFactory = WorkerFactory.getDefaultWorkerFactory();
+        mProgressUpdater = mock(ProgressUpdater.class);
+        mForegroundUpdater = mock(ForegroundUpdater.class);
     }
 
     @Test
@@ -52,6 +60,7 @@ public class DefaultWorkerFactoryTest extends DatabaseTest {
         OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(TestWorker.class).build();
         insertWork(work);
 
+        Executor executor = new SynchronousExecutor();
         ListenableWorker worker = mDefaultWorkerFactory.createWorkerWithDefaultFallback(
                 mContext.getApplicationContext(),
                 TestWorker.class.getName(),
@@ -61,12 +70,38 @@ public class DefaultWorkerFactoryTest extends DatabaseTest {
                         work.getTags(),
                         new WorkerParameters.RuntimeExtras(),
                         1,
-                        new SynchronousExecutor(),
-                        new WorkManagerTaskExecutor(),
-                        mDefaultWorkerFactory));
+                        executor,
+                        new WorkManagerTaskExecutor(executor),
+                        mDefaultWorkerFactory,
+                        mProgressUpdater,
+                        mForegroundUpdater));
         assertThat(worker, is(notNullValue()));
         assertThat(worker,
                 is(CoreMatchers.<ListenableWorker>instanceOf(TestWorker.class)));
         assertThat(worker.getId(), is(work.getId()));
+    }
+
+    @Test
+    @SmallTest
+    public void testCreateWorker_throwsException() {
+        OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(TestWorker.class).build();
+        insertWork(work);
+
+        Executor executor = new SynchronousExecutor();
+        ListenableWorker worker = mDefaultWorkerFactory.createWorkerWithDefaultFallback(
+                mContext.getApplicationContext(),
+                DefaultWorkerFactoryTest.class.getName(),
+                new WorkerParameters(
+                        work.getId(),
+                        Data.EMPTY,
+                        work.getTags(),
+                        new WorkerParameters.RuntimeExtras(),
+                        1,
+                        executor,
+                        new WorkManagerTaskExecutor(executor),
+                        mDefaultWorkerFactory,
+                        mProgressUpdater,
+                        mForegroundUpdater));
+        assertThat(worker, is(nullValue()));
     }
 }

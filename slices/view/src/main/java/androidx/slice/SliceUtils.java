@@ -86,7 +86,7 @@ public class SliceUtils {
      */
     @NonNull
     public static Slice stripSlice(@NonNull Slice s, @SliceMode int mode, boolean isScrollable) {
-        ListContent listContent = new ListContent(null, s);
+        ListContent listContent = new ListContent(s);
         if (listContent.isValid()) {
             Slice.Builder builder = copyMetadata(s);
             switch (mode) {
@@ -313,6 +313,14 @@ public class SliceUtils {
                 holder.mCallback = listener;
                 break;
         }
+    }
+
+    /**
+     * @hide
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static int parseImageMode(@NonNull SliceItem iconItem) {
+        return SliceActionImpl.parseImageMode(iconItem);
     }
 
     private static boolean doesStreamStartWith(String parcelName, BufferedInputStream inputStream) {

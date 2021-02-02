@@ -18,7 +18,6 @@ package androidx.room.solver.query.parameter
 
 import androidx.room.ext.L
 import androidx.room.ext.T
-import androidx.room.ext.typeName
 import androidx.room.solver.CodeGenScope
 import androidx.room.solver.types.StatementValueBinder
 import com.squareup.javapoet.TypeName
@@ -26,16 +25,22 @@ import com.squareup.javapoet.TypeName
 /**
  * Binds ARRAY(T) (e.g. int[]) into String[] args of a query.
  */
-class ArrayQueryParameterAdapter(val bindAdapter: StatementValueBinder)
-            : QueryParameterAdapter(true) {
-    override fun bindToStmt(inputVarName: String, stmtVarName: String, startIndexVarName: String,
-                            scope: CodeGenScope) {
+class ArrayQueryParameterAdapter(val bindAdapter: StatementValueBinder) :
+    QueryParameterAdapter(true) {
+    override fun bindToStmt(
+        inputVarName: String,
+        stmtVarName: String,
+        startIndexVarName: String,
+        scope: CodeGenScope
+    ) {
         scope.builder().apply {
             val itrVar = scope.getTmpVar("_item")
-            beginControlFlow("for ($T $L : $L)", bindAdapter.typeMirror().typeName(), itrVar,
-                    inputVarName).apply {
-                        bindAdapter.bindToStmt(stmtVarName, startIndexVarName, itrVar, scope)
-                        addStatement("$L ++", startIndexVarName)
+            beginControlFlow(
+                "for ($T $L : $L)", bindAdapter.typeMirror().typeName, itrVar,
+                inputVarName
+            ).apply {
+                bindAdapter.bindToStmt(stmtVarName, startIndexVarName, itrVar, scope)
+                addStatement("$L ++", startIndexVarName)
             }
             endControlFlow()
         }
@@ -43,6 +48,6 @@ class ArrayQueryParameterAdapter(val bindAdapter: StatementValueBinder)
 
     override fun getArgCount(inputVarName: String, outputVarName: String, scope: CodeGenScope) {
         scope.builder()
-                .addStatement("final $T $L = $L.length", TypeName.INT, outputVarName, inputVarName)
+            .addStatement("final $T $L = $L.length", TypeName.INT, outputVarName, inputVarName)
     }
 }

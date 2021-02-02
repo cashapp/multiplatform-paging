@@ -16,14 +16,15 @@
 
 package androidx.navigation.testapp
 
+import android.graphics.Color
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
-
+import androidx.core.view.ViewCompat
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 
@@ -43,12 +44,30 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val tv = view.findViewById<TextView>(R.id.text)
-        tv.text = arguments?.getString("myarg")
+        val myarg = arguments?.getString("myarg")
+        tv.text = myarg
+
+        view.setBackgroundColor(
+            if (myarg == "one") {
+                Color.GREEN
+            } else {
+                Color.RED
+            }
+        )
 
         val b = view.findViewById<Button>(R.id.next_button)
+        ViewCompat.setTransitionName(b, "next")
         b.setOnClickListener {
-            findNavController().navigate(R.id.next, null, null,
-                    FragmentNavigatorExtras(b to "next"))
+            findNavController().navigate(
+                R.id.next, null, null,
+                FragmentNavigatorExtras(b to "next")
+            )
+        }
+        view.findViewById<Button>(R.id.learn_more).setOnClickListener {
+            val args = Bundle().apply {
+                putString("myarg", myarg)
+            }
+            findNavController().navigate(R.id.learn_more, args, null)
         }
     }
 }

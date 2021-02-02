@@ -16,30 +16,8 @@
 // Add ext.libs for library versions
 def libs = [:]
 
-libs.exclude_annotations_transitive = {
-    exclude group: 'androidx.annotation'
-    transitive = true
-}
-
 libs.exclude_bytebuddy = {
     exclude group: 'net.bytebuddy'
-}
-
-libs.exclude_support = {
-    exclude group: 'com.android.support'
-    exclude group: 'androidx.annotation'
-}
-
-libs.exclude_for_material = {
-    transitive = true
-    exclude group: 'androidx.annotation'
-    exclude group: 'androidx.core'
-    exclude group: 'androidx.legacy'
-    exclude group: 'androidx.fragment'
-    exclude group: 'androidx.transition'
-    exclude group: 'androidx.appcompat'
-    exclude group: 'androidx.recyclerview'
-    exclude group: 'androidx.cardview'
 }
 
 libs.exclude_for_espresso = {
@@ -51,11 +29,6 @@ libs.exclude_for_espresso = {
     exclude group: 'androidx.fragment'
     exclude group: 'com.google.android.material'
     exclude group: 'androidx.core'
-}
-
-libs.support_exclude_config = {
-    exclude group: 'android.arch.core'
-    exclude group: 'androidx.lifecycle'
 }
 
 rootProject.ext['libs'] = libs

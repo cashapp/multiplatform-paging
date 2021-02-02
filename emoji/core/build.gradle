@@ -1,35 +1,40 @@
-import static androidx.build.dependencies.DependenciesKt.*
+import androidx.build.BundleInsideHelper
 import androidx.build.LibraryGroups
 import androidx.build.LibraryVersions
-import java.util.zip.ZipException
-import java.util.zip.ZipFile
+import androidx.build.Publish
+
+import static androidx.build.dependencies.DependenciesKt.*
 
 plugins {
-    id("SupportAndroidLibraryPlugin")
+    id("AndroidXPlugin")
+    id("com.android.library")
+    id("com.github.johnrengelman.shadow")
 }
 
 ext {
     fontDir = project(':noto-emoji-compat').projectDir
 }
 
-configurations {
-    repackage
-}
+BundleInsideHelper.forInsideAar(
+    project,
+    /* from = */ "com.google.flatbuffers",
+    /* to =   */ "androidx.text.emoji.flatbuffer"
+)
 
 dependencies {
-    repackage project(path: ':noto-emoji-compat', configuration: "parser")
-    // Wrap the noto-emoji-compat dependency in a FileCollection so that the Android Gradle plugin
-    // treats this as local jar and package it inside the aar.
-    api files(configurations.repackage)
+    bundleInside(project(":noto-emoji-compat"))
 
-    api(project(":core"))
+    api("androidx.core:core:1.3.0-rc01")
+    implementation("androidx.collection:collection:1.1.0")
 
-    androidTestImplementation(TEST_RUNNER)
-    androidTestImplementation(TEST_RULES)
+    androidTestImplementation(ANDROIDX_TEST_EXT_JUNIT)
+    androidTestImplementation(ANDROIDX_TEST_CORE)
+    androidTestImplementation(ANDROIDX_TEST_RUNNER)
+    androidTestImplementation(ANDROIDX_TEST_RULES)
     androidTestImplementation(ESPRESSO_CORE, libs.exclude_for_espresso)
     androidTestImplementation(MOCKITO_CORE, libs.exclude_bytebuddy) // DexMaker has it"s own MockMaker
     androidTestImplementation(DEXMAKER_MOCKITO, libs.exclude_bytebuddy) // DexMaker has it"s own MockMaker
-    androidTestImplementation project(':internal-testutils')
+    androidTestImplementation project(':internal-testutils-runtime')
 }
 
 android {
@@ -39,8 +44,8 @@ android {
             manifest.srcFile 'AndroidManifest.xml'
             res.srcDirs += 'src/main/res-public'
             resources {
-                srcDirs = [fontDir.getAbsolutePath()]
-                includes = ["LICENSE_UNICODE", "LICENSE_OFL"]
+                srcDirs += [fontDir.getAbsolutePath()]
+                includes += ["LICENSE_UNICODE", "LICENSE_OFL"]
             }
         }
 
@@ -53,10 +58,10 @@ android {
     }
 }
 
-supportLibrary {
+androidx {
     name = "Android Emoji Compat"
-    publish = true
-    mavenVersion = LibraryVersions.SUPPORT_LIBRARY
+    publish = Publish.SNAPSHOT_AND_RELEASE
+    mavenVersion = LibraryVersions.EMOJI
     mavenGroup = LibraryGroups.EMOJI
     inceptionYear = "2017"
     description = "Core library to enable emoji compatibility in Kitkat and newer devices to avoid the empty emoji characters."

@@ -16,36 +16,37 @@
 
 package androidx.room.vo
 
-import androidx.room.ext.AndroidTypeNames
+import androidx.room.ext.CollectionTypeNames
 import androidx.room.ext.CommonTypeNames
 import androidx.room.ext.L
 import androidx.room.ext.N
 import androidx.room.ext.T
-import androidx.room.ext.typeName
 import androidx.room.parser.ParsedQuery
 import androidx.room.parser.SQLTypeAffinity
 import androidx.room.parser.SqlParser
+import androidx.room.compiler.processing.XType
 import androidx.room.processor.Context
-import androidx.room.processor.ProcessorErrors.CANNOT_FIND_QUERY_RESULT_ADAPTER
+import androidx.room.processor.ProcessorErrors.cannotFindQueryResultAdapter
 import androidx.room.processor.ProcessorErrors.relationAffinityMismatch
+import androidx.room.processor.ProcessorErrors.relationJunctionChildAffinityMismatch
+import androidx.room.processor.ProcessorErrors.relationJunctionParentAffinityMismatch
 import androidx.room.solver.CodeGenScope
 import androidx.room.solver.query.parameter.QueryParameterAdapter
 import androidx.room.solver.query.result.RowAdapter
 import androidx.room.solver.query.result.SingleColumnRowAdapter
-import androidx.room.verifier.DatabaseVerificaitonErrors
+import androidx.room.verifier.DatabaseVerificationErrors
 import androidx.room.writer.QueryWriter
 import androidx.room.writer.RelationCollectorMethodWriter
-import com.google.auto.common.MoreTypes
-import com.squareup.javapoet.ArrayTypeName
+import capitalize
 import com.squareup.javapoet.ClassName
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.ParameterizedTypeName
 import com.squareup.javapoet.TypeName
 import stripNonJava
+import java.nio.ByteBuffer
 import java.util.ArrayList
 import java.util.HashSet
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
+import java.util.Locale
 
 /**
  * Internal class that is used to manage fetching 1/N to N relationships.
@@ -55,10 +56,11 @@ data class RelationCollector(
     val affinity: SQLTypeAffinity,
     val mapTypeName: ParameterizedTypeName,
     val keyTypeName: TypeName,
-    val collectionTypeName: ParameterizedTypeName,
+    val relationTypeName: TypeName,
     val queryWriter: QueryWriter,
     val rowAdapter: RowAdapter,
-    val loadAllQuery: ParsedQuery
+    val loadAllQuery: ParsedQuery,
+    val relationTypeIsCollection: Boolean
 ) {
     // variable name of map containing keys to relation collections, set when writing the code
     // generator in writeInitCode
@@ -66,7 +68,8 @@ data class RelationCollector(
 
     fun writeInitCode(scope: CodeGenScope) {
         varName = scope.getTmpVar(
-                "_collection${relation.field.getPath().stripNonJava().capitalize()}")
+            "_collection${relation.field.getPath().stripNonJava().capitalize(Locale.US)}"
+        )
         scope.builder().apply {
             addStatement("final $T $L = new $T()", mapTypeName, varName, mapTypeName)
         }
@@ -83,15 +86,22 @@ data class RelationCollector(
         }?.indexVar
         scope.builder().apply {
             readKey(cursorVarName, indexVar, scope) { tmpVar ->
-                val tmpCollectionVar = scope.getTmpVar(
-                        "_tmp${relation.field.name.stripNonJava().capitalize()}Collection")
-                addStatement("$T $L = $L.get($L)", collectionTypeName, tmpCollectionVar,
-                        varName, tmpVar)
-                beginControlFlow("if ($L == null)", tmpCollectionVar).apply {
-                    addStatement("$L = new $T()", tmpCollectionVar, collectionTypeName)
-                    addStatement("$L.put($L, $L)", varName, tmpVar, tmpCollectionVar)
+                if (relationTypeIsCollection) {
+                    val tmpCollectionVar = scope.getTmpVar(
+                        "_tmp${relation.field.name.stripNonJava().capitalize(Locale.US)}Collection"
+                    )
+                    addStatement(
+                        "$T $L = $L.get($L)", relationTypeName, tmpCollectionVar,
+                        varName, tmpVar
+                    )
+                    beginControlFlow("if ($L == null)", tmpCollectionVar).apply {
+                        addStatement("$L = new $T()", tmpCollectionVar, relationTypeName)
+                        addStatement("$L.put($L, $L)", varName, tmpVar, tmpCollectionVar)
+                    }
+                    endControlFlow()
+                } else {
+                    addStatement("$L.put($L, null)", varName, tmpVar)
                 }
-                endControlFlow()
             }
         }
     }
@@ -105,24 +115,28 @@ data class RelationCollector(
         val indexVar = fieldsWithIndices.firstOrNull {
             it.field === relation.parentField
         }?.indexVar
-        val tmpCollectionVar = scope.getTmpVar(
-                "_tmp${relation.field.name.stripNonJava().capitalize()}Collection")
+        val tmpvarNameSuffix = if (relationTypeIsCollection) "Collection" else ""
+        val tmpRelationVar = scope.getTmpVar(
+            "_tmp${relation.field.name.stripNonJava().capitalize(Locale.US)}$tmpvarNameSuffix"
+        )
         scope.builder().apply {
-            addStatement("$T $L = null", collectionTypeName, tmpCollectionVar)
+            addStatement("$T $L = null", relationTypeName, tmpRelationVar)
             readKey(cursorVarName, indexVar, scope) { tmpVar ->
-                addStatement("$L = $L.get($L)", tmpCollectionVar, varName, tmpVar)
+                addStatement("$L = $L.get($L)", tmpRelationVar, varName, tmpVar)
             }
-            beginControlFlow("if ($L == null)", tmpCollectionVar).apply {
-                addStatement("$L = new $T()", tmpCollectionVar, collectionTypeName)
+            if (relationTypeIsCollection) {
+                beginControlFlow("if ($L == null)", tmpRelationVar).apply {
+                    addStatement("$L = new $T()", tmpRelationVar, relationTypeName)
+                }
+                endControlFlow()
             }
-            endControlFlow()
         }
-        return tmpCollectionVar to relation.field
+        return tmpRelationVar to relation.field
     }
 
     fun writeCollectionCode(scope: CodeGenScope) {
         val method = scope.writer
-                .getOrCreateMethod(RelationCollectorMethodWriter(this))
+            .getOrCreateMethod(RelationCollectorMethodWriter(this))
         scope.builder().apply {
             addStatement("$N($L)", method, varName)
         }
@@ -144,21 +158,31 @@ data class RelationCollector(
             }
         }
         scope.builder().apply {
-            val keyType = if (mapTypeName.rawType == AndroidTypeNames.LONG_SPARSE_ARRAY) {
+            val keyType = if (mapTypeName.rawType == CollectionTypeNames.LONG_SPARSE_ARRAY) {
                 keyTypeName.unbox()
             } else {
                 keyTypeName
             }
             val tmpVar = scope.getTmpVar("_tmpKey")
-            if (relation.parentField.nonNull) {
-                addStatement("final $T $L = $L.$L($L)",
-                        keyType, tmpVar, cursorVarName, cursorGetter, indexVar)
+            fun addKeyReadStatement() {
+                if (keyTypeName == TypeName.get(ByteBuffer::class.java)) {
+                    addStatement(
+                        "final $T $L = $T.wrap($L.$L($L))",
+                        keyType, tmpVar, keyTypeName, cursorVarName, cursorGetter, indexVar
+                    )
+                } else {
+                    addStatement(
+                        "final $T $L = $L.$L($L)",
+                        keyType, tmpVar, cursorVarName, cursorGetter, indexVar
+                    )
+                }
                 this.postRead(tmpVar)
+            }
+            if (relation.parentField.nonNull) {
+                addKeyReadStatement()
             } else {
                 beginControlFlow("if (!$L.isNull($L))", cursorVarName, indexVar).apply {
-                    addStatement("final $T $L = $L.$L($L)",
-                            keyType, tmpVar, cursorVarName, cursorGetter, indexVar)
-                    this.postRead(tmpVar)
+                    addKeyReadStatement()
                 }
                 endControlFlow()
             }
@@ -179,8 +203,10 @@ data class RelationCollector(
             scope.builder().apply {
                 val itrIndexVar = "i"
                 val itrItemVar = scope.getTmpVar("_item")
-                beginControlFlow("for (int $L = 0; $L < $L.size(); i++)",
-                        itrIndexVar, itrIndexVar, inputVarName).apply {
+                beginControlFlow(
+                    "for (int $L = 0; $L < $L.size(); i++)",
+                    itrIndexVar, itrIndexVar, inputVarName
+                ).apply {
                     addStatement("long $L = $L.keyAt($L)", itrItemVar, inputVarName, itrIndexVar)
                     addStatement("$L.bindLong($L, $L)", stmtVarName, startIndexVarName, itrItemVar)
                     addStatement("$L ++", startIndexVarName)
@@ -194,115 +220,85 @@ data class RelationCollector(
             outputVarName: String,
             scope: CodeGenScope
         ) {
-            scope.builder().addStatement("final $T $L = $L.size()",
-                    TypeName.INT, outputVarName, inputVarName)
+            scope.builder().addStatement(
+                "final $T $L = $L.size()",
+                TypeName.INT, outputVarName, inputVarName
+            )
         }
     }
 
     companion object {
 
         private val LONG_SPARSE_ARRAY_KEY_QUERY_PARAM_ADAPTER =
-                LongSparseArrayKeyQueryParameterAdapter()
+            LongSparseArrayKeyQueryParameterAdapter()
 
         fun createCollectors(
             baseContext: Context,
             relations: List<Relation>
         ): List<RelationCollector> {
             return relations.map { relation ->
-                // decide on the affinity
-                val context = baseContext.fork(relation.field.element)
-                val parentAffinity = relation.parentField.cursorValueReader?.affinity()
-                val childAffinity = relation.entityField.cursorValueReader?.affinity()
-                val affinity = if (parentAffinity != null && parentAffinity == childAffinity) {
-                    parentAffinity
-                } else {
-                    context.logger.w(Warning.RELATION_TYPE_MISMATCH, relation.field.element,
-                            relationAffinityMismatch(
-                                    parentColumn = relation.parentField.columnName,
-                                    childColumn = relation.entityField.columnName,
-                                    parentAffinity = parentAffinity,
-                                    childAffinity = childAffinity))
-                    SQLTypeAffinity.TEXT
-                }
+                val context = baseContext.fork(
+                    element = relation.field.element,
+                    forceSuppressedWarnings = setOf(Warning.CURSOR_MISMATCH)
+                )
+                val affinity = affinityFor(context, relation)
                 val keyType = keyTypeFor(context, affinity)
-                val collectionTypeName = if (relation.field.typeName is ParameterizedTypeName) {
-                    val paramType = relation.field.typeName as ParameterizedTypeName
-                    if (paramType.rawType == CommonTypeNames.LIST) {
-                        ParameterizedTypeName.get(ClassName.get(ArrayList::class.java),
-                                relation.pojoTypeName)
-                    } else if (paramType.rawType == CommonTypeNames.SET) {
-                        ParameterizedTypeName.get(ClassName.get(HashSet::class.java),
-                                relation.pojoTypeName)
-                    } else {
-                        ParameterizedTypeName.get(ClassName.get(ArrayList::class.java),
-                                relation.pojoTypeName)
-                    }
-                } else {
-                    ParameterizedTypeName.get(ClassName.get(ArrayList::class.java),
-                            relation.pojoTypeName)
-                }
-
-                val canUseLongSparseArray = context.processingEnv.elementUtils
-                        .getTypeElement(AndroidTypeNames.LONG_SPARSE_ARRAY.toString()) != null
-                val canUseArrayMap = context.processingEnv.elementUtils
-                        .getTypeElement(AndroidTypeNames.ARRAY_MAP.toString()) != null
-                val tmpMapType = when {
-                    canUseLongSparseArray && affinity == SQLTypeAffinity.INTEGER -> {
-                        ParameterizedTypeName.get(AndroidTypeNames.LONG_SPARSE_ARRAY,
-                                collectionTypeName)
-                    }
-                    canUseArrayMap -> {
-                        ParameterizedTypeName.get(AndroidTypeNames.ARRAY_MAP,
-                                keyType, collectionTypeName)
-                    }
-                    else -> {
-                        ParameterizedTypeName.get(ClassName.get(java.util.HashMap::class.java),
-                                keyType, collectionTypeName)
-                    }
-                }
+                val (relationTypeName, isRelationCollection) = relationTypeFor(relation)
+                val tmpMapType = temporaryMapTypeFor(context, affinity, keyType, relationTypeName)
 
                 val loadAllQuery = relation.createLoadAllSql()
                 val parsedQuery = SqlParser.parse(loadAllQuery)
-                context.checker.check(parsedQuery.errors.isEmpty(), relation.field.element,
-                        parsedQuery.errors.joinToString("\n"))
+                context.checker.check(
+                    parsedQuery.errors.isEmpty(), relation.field.element,
+                    parsedQuery.errors.joinToString("\n")
+                )
                 if (parsedQuery.errors.isEmpty()) {
                     val resultInfo = context.databaseVerifier?.analyze(loadAllQuery)
                     parsedQuery.resultInfo = resultInfo
                     if (resultInfo?.error != null) {
-                        context.logger.e(relation.field.element,
-                                DatabaseVerificaitonErrors.cannotVerifyQuery(resultInfo.error))
+                        context.logger.e(
+                            relation.field.element,
+                            DatabaseVerificationErrors.cannotVerifyQuery(resultInfo.error)
+                        )
                     }
                 }
                 val resultInfo = parsedQuery.resultInfo
 
-                val usingLongSparseArray = tmpMapType.rawType == AndroidTypeNames.LONG_SPARSE_ARRAY
+                val usingLongSparseArray =
+                    tmpMapType.rawType == CollectionTypeNames.LONG_SPARSE_ARRAY
                 val queryParam = if (usingLongSparseArray) {
-                    val longSparseArrayElement = context.processingEnv.elementUtils
-                            .getTypeElement(AndroidTypeNames.LONG_SPARSE_ARRAY.toString())
+                    val longSparseArrayElement = context.processingEnv
+                        .requireTypeElement(CollectionTypeNames.LONG_SPARSE_ARRAY)
                     QueryParameter(
-                            name = RelationCollectorMethodWriter.PARAM_MAP_VARIABLE,
-                            sqlName = RelationCollectorMethodWriter.PARAM_MAP_VARIABLE,
-                            type = MoreTypes.asDeclared(longSparseArrayElement.asType()),
-                            queryParamAdapter = LONG_SPARSE_ARRAY_KEY_QUERY_PARAM_ADAPTER
+                        name = RelationCollectorMethodWriter.PARAM_MAP_VARIABLE,
+                        sqlName = RelationCollectorMethodWriter.PARAM_MAP_VARIABLE,
+                        type = longSparseArrayElement.type,
+                        queryParamAdapter = LONG_SPARSE_ARRAY_KEY_QUERY_PARAM_ADAPTER
                     )
                 } else {
                     val keyTypeMirror = keyTypeMirrorFor(context, affinity)
-                    val set = context.processingEnv.elementUtils.getTypeElement("java.util.Set")
-                    val keySet = context.processingEnv.typeUtils.getDeclaredType(set, keyTypeMirror)
+                    val set = context.processingEnv.requireTypeElement("java.util.Set")
+                    val keySet = context.processingEnv.getDeclaredType(set, keyTypeMirror)
                     QueryParameter(
-                            name = RelationCollectorMethodWriter.KEY_SET_VARIABLE,
-                            sqlName = RelationCollectorMethodWriter.KEY_SET_VARIABLE,
-                            type = keySet,
-                            queryParamAdapter = context.typeAdapterStore.findQueryParameterAdapter(
-                                    keySet)
+                        name = RelationCollectorMethodWriter.KEY_SET_VARIABLE,
+                        sqlName = RelationCollectorMethodWriter.KEY_SET_VARIABLE,
+                        type = keySet,
+                        queryParamAdapter = context.typeAdapterStore.findQueryParameterAdapter(
+                            typeMirror = keySet,
+                            isMultipleParameter = true
+                        )
                     )
                 }
 
                 val queryWriter = QueryWriter(
-                        parameters = listOf(queryParam),
-                        sectionToParamMapping = listOf(Pair(parsedQuery.bindSections.first(),
-                                queryParam)),
-                        query = parsedQuery
+                    parameters = listOf(queryParam),
+                    sectionToParamMapping = listOf(
+                        Pair(
+                            parsedQuery.bindSections.first(),
+                            queryParam
+                        )
+                    ),
+                    query = parsedQuery
                 )
 
                 // row adapter that matches full response
@@ -310,16 +306,15 @@ data class RelationCollector(
                     return context.typeAdapterStore.findRowAdapter(relation.pojoType, parsedQuery)
                 }
                 val rowAdapter = if (relation.projection.size == 1 && resultInfo != null &&
-                        (resultInfo.columns.size == 1 || resultInfo.columns.size == 2)) {
+                    (resultInfo.columns.size == 1 || resultInfo.columns.size == 2)
+                ) {
                     // check for a column adapter first
                     val cursorReader = context.typeAdapterStore.findCursorValueReader(
-                            relation.pojoType, resultInfo.columns.first().type)
+                        relation.pojoType, resultInfo.columns.first().type
+                    )
                     if (cursorReader == null) {
                         getDefaultRowAdapter()
                     } else {
-                        context.logger.d("Choosing cursor adapter for the return value since" +
-                                " the query returns only 1 or 2 columns and there is a cursor" +
-                                " adapter for the return type.")
                         SingleColumnRowAdapter(cursorReader)
                     }
                 } else {
@@ -327,46 +322,166 @@ data class RelationCollector(
                 }
 
                 if (rowAdapter == null) {
-                    context.logger.e(relation.field.element, CANNOT_FIND_QUERY_RESULT_ADAPTER)
+                    context.logger.e(
+                        relation.field.element,
+                        cannotFindQueryResultAdapter(relation.pojoType.toString())
+                    )
                     null
                 } else {
                     RelationCollector(
-                            relation = relation,
-                            affinity = affinity,
-                            mapTypeName = tmpMapType,
-                            keyTypeName = keyType,
-                            collectionTypeName = collectionTypeName,
-                            queryWriter = queryWriter,
-                            rowAdapter = rowAdapter,
-                            loadAllQuery = parsedQuery
+                        relation = relation,
+                        affinity = affinity,
+                        mapTypeName = tmpMapType,
+                        keyTypeName = keyType,
+                        relationTypeName = relationTypeName,
+                        queryWriter = queryWriter,
+                        rowAdapter = rowAdapter,
+                        loadAllQuery = parsedQuery,
+                        relationTypeIsCollection = isRelationCollection
                     )
                 }
             }.filterNotNull()
         }
 
-        private fun keyTypeMirrorFor(context: Context, affinity: SQLTypeAffinity): TypeMirror {
-            val types = context.processingEnv.typeUtils
-            val elements = context.processingEnv.elementUtils
+        // Gets and check the affinity of the relating columns.
+        private fun affinityFor(context: Context, relation: Relation): SQLTypeAffinity {
+            fun checkAffinity(
+                first: SQLTypeAffinity?,
+                second: SQLTypeAffinity?,
+                onAffinityMismatch: () -> Unit
+            ) = if (first != null && first == second) {
+                first
+            } else {
+                onAffinityMismatch()
+                SQLTypeAffinity.TEXT
+            }
+
+            val parentAffinity = relation.parentField.cursorValueReader?.affinity()
+            val childAffinity = relation.entityField.cursorValueReader?.affinity()
+            val junctionParentAffinity =
+                relation.junction?.parentField?.cursorValueReader?.affinity()
+            val junctionChildAffinity =
+                relation.junction?.entityField?.cursorValueReader?.affinity()
+            return if (relation.junction != null) {
+                checkAffinity(childAffinity, junctionChildAffinity) {
+                    context.logger.w(
+                        Warning.RELATION_TYPE_MISMATCH, relation.field.element,
+                        relationJunctionChildAffinityMismatch(
+                            childColumn = relation.entityField.columnName,
+                            junctionChildColumn = relation.junction.entityField.columnName,
+                            childAffinity = childAffinity,
+                            junctionChildAffinity = junctionChildAffinity
+                        )
+                    )
+                }
+                checkAffinity(parentAffinity, junctionParentAffinity) {
+                    context.logger.w(
+                        Warning.RELATION_TYPE_MISMATCH, relation.field.element,
+                        relationJunctionParentAffinityMismatch(
+                            parentColumn = relation.parentField.columnName,
+                            junctionParentColumn = relation.junction.parentField.columnName,
+                            parentAffinity = parentAffinity,
+                            junctionParentAffinity = junctionParentAffinity
+                        )
+                    )
+                }
+            } else {
+                checkAffinity(parentAffinity, childAffinity) {
+                    context.logger.w(
+                        Warning.RELATION_TYPE_MISMATCH, relation.field.element,
+                        relationAffinityMismatch(
+                            parentColumn = relation.parentField.columnName,
+                            childColumn = relation.entityField.columnName,
+                            parentAffinity = parentAffinity,
+                            childAffinity = childAffinity
+                        )
+                    )
+                }
+            }
+        }
+
+        // Gets the resulting relation type name. (i.e. the Pojo's @Relation field type name.)
+        private fun relationTypeFor(relation: Relation) =
+            if (relation.field.typeName is ParameterizedTypeName) {
+                val paramType = relation.field.typeName as ParameterizedTypeName
+                val paramTypeName = if (paramType.rawType == CommonTypeNames.LIST) {
+                    ParameterizedTypeName.get(
+                        ClassName.get(ArrayList::class.java),
+                        relation.pojoTypeName
+                    )
+                } else if (paramType.rawType == CommonTypeNames.SET) {
+                    ParameterizedTypeName.get(
+                        ClassName.get(HashSet::class.java),
+                        relation.pojoTypeName
+                    )
+                } else {
+                    ParameterizedTypeName.get(
+                        ClassName.get(ArrayList::class.java),
+                        relation.pojoTypeName
+                    )
+                }
+                paramTypeName to true
+            } else {
+                relation.pojoTypeName to false
+            }
+
+        // Gets the type name of the temporary key map.
+        private fun temporaryMapTypeFor(
+            context: Context,
+            affinity: SQLTypeAffinity,
+            keyType: TypeName,
+            relationTypeName: TypeName
+        ): ParameterizedTypeName {
+            val canUseLongSparseArray = context.processingEnv
+                .findTypeElement(CollectionTypeNames.LONG_SPARSE_ARRAY) != null
+            val canUseArrayMap = context.processingEnv
+                .findTypeElement(CollectionTypeNames.ARRAY_MAP) != null
+            return when {
+                canUseLongSparseArray && affinity == SQLTypeAffinity.INTEGER -> {
+                    ParameterizedTypeName.get(
+                        CollectionTypeNames.LONG_SPARSE_ARRAY,
+                        relationTypeName
+                    )
+                }
+                canUseArrayMap -> {
+                    ParameterizedTypeName.get(
+                        CollectionTypeNames.ARRAY_MAP,
+                        keyType, relationTypeName
+                    )
+                }
+                else -> {
+                    ParameterizedTypeName.get(
+                        ClassName.get(java.util.HashMap::class.java),
+                        keyType, relationTypeName
+                    )
+                }
+            }
+        }
+
+        // Gets the type mirror of the relationship key.
+        private fun keyTypeMirrorFor(context: Context, affinity: SQLTypeAffinity): XType {
+            val processingEnv = context.processingEnv
             return when (affinity) {
-                SQLTypeAffinity.INTEGER -> elements.getTypeElement("java.lang.Long").asType()
-                SQLTypeAffinity.REAL -> elements.getTypeElement("java.lang.Double").asType()
+                SQLTypeAffinity.INTEGER -> processingEnv.requireType("java.lang.Long")
+                SQLTypeAffinity.REAL -> processingEnv.requireType("java.lang.Double")
                 SQLTypeAffinity.TEXT -> context.COMMON_TYPES.STRING
-                SQLTypeAffinity.BLOB -> types.getArrayType(types.getPrimitiveType(TypeKind.BYTE))
+                SQLTypeAffinity.BLOB -> processingEnv.requireType("java.nio.ByteBuffer")
                 else -> {
                     context.COMMON_TYPES.STRING
                 }
             }
         }
 
+        // Gets the type name of the relationship key.
         private fun keyTypeFor(context: Context, affinity: SQLTypeAffinity): TypeName {
             return when (affinity) {
                 SQLTypeAffinity.INTEGER -> TypeName.LONG.box()
                 SQLTypeAffinity.REAL -> TypeName.DOUBLE.box()
                 SQLTypeAffinity.TEXT -> TypeName.get(String::class.java)
-                SQLTypeAffinity.BLOB -> ArrayTypeName.of(TypeName.BYTE)
+                SQLTypeAffinity.BLOB -> TypeName.get(ByteBuffer::class.java)
                 else -> {
                     // no affinity select from type
-                    context.COMMON_TYPES.STRING.typeName()
+                    context.COMMON_TYPES.STRING.typeName
                 }
             }
         }

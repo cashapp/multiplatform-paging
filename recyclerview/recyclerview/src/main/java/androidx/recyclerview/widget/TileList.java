@@ -56,7 +56,14 @@ class TileList<T> {
         mTiles.clear();
     }
 
+    /**
+     * Returns the {@link Tile} at the provided {@param index}, or {@code null} if the index
+     * provided is out of bounds.
+     */
     public Tile<T> getAtIndex(int index) {
+        if (index < 0 || index >= mTiles.size()) {
+            return null;
+        }
         return mTiles.valueAt(index);
     }
 
@@ -90,8 +97,9 @@ class TileList<T> {
         Tile<T> mNext;  // Used only for pooling recycled tiles.
 
         public Tile(Class<T> klass, int size) {
-            //noinspection unchecked
-            mItems = (T[]) Array.newInstance(klass, size);
+            @SuppressWarnings("unchecked")
+            T[] items = (T[]) Array.newInstance(klass, size);
+            mItems = items;
         }
 
         boolean containsPosition(int pos) {

@@ -28,15 +28,19 @@ import org.objectweb.asm.ClassWriter
 class ByteCodeTransformer internal constructor(
     private val context: TransformationContext
 ) : Transformer {
-
-    override fun canTransform(file: ArchiveFile) = file.isClassFile()
+    // Does not yet support single bytecode file transformation, file has to be within archive.
+    override fun canTransform(file: ArchiveFile) = file.isClassFile() && !file.isSingleFile
 
     override fun runTransform(file: ArchiveFile) {
         val reader = ClassReader(file.data)
         val writer = ClassWriter(0 /* flags */)
 
         val remapper = CoreRemapperImpl(context, writer)
-        reader.accept(remapper.classRemapper, 0 /* flags */)
+        try {
+            reader.accept(remapper.classRemapper, 0 /* flags */)
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            throw InvalidByteCodeException("Error processing '${file.relativePath}' bytecode.", e)
+        }
 
         if (!remapper.changesDone) {
             file.setNewDataSilently(writer.toByteArray())
@@ -47,3 +51,12 @@ class ByteCodeTransformer internal constructor(
         file.updateRelativePath(remapper.rewritePath(file.relativePath))
     }
 }
+
+/**
+ * Thrown when rewriting a library with bytecode that can't be processed via ASM.
+ */
+// Happens for instance in b/140747218
+class InvalidByteCodeException(
+    message: String,
+    exception: Throwable
+) : Exception(message, exception)

@@ -23,21 +23,25 @@ import static androidx.recyclerview.widget.ItemTouchHelper.START;
 import static androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.animation.ValueAnimator;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Pair;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.Suppress;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.testutils.AnimationDurationScaleRule;
 import androidx.testutils.PollingCheck;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,11 +58,16 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         public WrappedRecyclerView mWrappedRecyclerView;
     }
 
-    private LoggingCalback mCalback;
+    private LoggingCallback mCallback;
 
     private LoggingItemTouchHelper mItemTouchHelper;
 
     private Boolean mSetupRTL;
+
+    @Rule
+    public final AnimationDurationScaleRule mAnimationDurationScaleRule =
+            AnimationDurationScaleRule.create();
+
 
     public ItemTouchHelperTest() {
         super(false);
@@ -94,8 +103,8 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
 
     private RecyclerViewState setupItemTouchHelper(final RecyclerViewState rvs, int dragDirs,
             int swipeDirs) throws Throwable {
-        mCalback = new LoggingCalback(dragDirs, swipeDirs);
-        mItemTouchHelper = new LoggingItemTouchHelper(mCalback);
+        mCallback = new LoggingCallback(dragDirs, swipeDirs);
+        mItemTouchHelper = new LoggingItemTouchHelper(mCallback);
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -143,26 +152,54 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
     }
 
     @Test
-    public void attachToNullRecycleViewDuringLongPress() throws Throwable {
+    public void attachToRecyclerView_duringLongPressWithNullRV_doesNotCrash() throws Throwable {
+
+        // Arrange
+        final RecyclerViewState rvs = setupItemTouchHelper(setupRecyclerView(), END, 0);
+        rvs.mLayoutManager.expectLayouts(1);
+        setRecyclerView(rvs.mWrappedRecyclerView);
+        rvs.mLayoutManager.waitForLayout(1);
+        final RecyclerView.ViewHolder target = mRecyclerView
+                .findViewHolderForAdapterPosition(1);
+
+        float longPressTime = ViewConfiguration.getLongPressTimeout() * 1.5f;
+
+        // Act: Long press the item, and half way through the long press, attach the
+        // ItemTouchHelper to null, then wait for the long press to finish.
+        TouchUtils.longClickView(getInstrumentation(), target.itemView, longPressTime,
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            mActivityRule.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mItemTouchHelper.attachToRecyclerView(null);
+                                }
+                            });
+                        } catch (Throwable throwable) {
+                            postExceptionToInstrumentation(throwable);
+                        }
+                    }
+                });
+
+        // Assert: Make sure we didn't get an exception on the main thread.
+        checkForMainThreadException();
+    }
+
+    @Test
+    public void attachToRecyclerView_calledDuringLongPressWithAnRV_longPressListenerDoesNotFire()
+            throws Throwable {
+
+        // Arrange
+
+        // Add the main RV, already attached to the ItemTouchHelper.
         final RecyclerViewState rvs = setupItemTouchHelper(setupRecyclerView(), END, 0);
         rvs.mLayoutManager.expectLayouts(1);
         setRecyclerView(rvs.mWrappedRecyclerView);
         rvs.mLayoutManager.waitForLayout(1);
 
-        final RecyclerView.ViewHolder target = mRecyclerView
-                .findViewHolderForAdapterPosition(1);
-        target.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                mItemTouchHelper.attachToRecyclerView(null);
-                return false;
-            }
-        });
-        TouchUtils.longClickView(getInstrumentation(), target.itemView);
-    }
-
-    @Test
-    public void attachToAnotherRecycleViewDuringLongPress() throws Throwable {
+        // Add a second RV that we will attach to.
         final RecyclerViewState rvs2 = setupRecyclerView();
         rvs2.mLayoutManager.expectLayouts(1);
         mActivityRule.runOnUiThread(new Runnable() {
@@ -173,22 +210,46 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         });
         rvs2.mLayoutManager.waitForLayout(1);
 
-        final RecyclerViewState rvs = setupItemTouchHelper(setupRecyclerView(), END, 0);
-        rvs.mLayoutManager.expectLayouts(1);
-        setRecyclerView(rvs.mWrappedRecyclerView);
-        rvs.mLayoutManager.waitForLayout(1);
+        float longPressTime = ViewConfiguration.getLongPressTimeout() * 1.5f;
 
+        // The RV item we will long press.
         final RecyclerView.ViewHolder target = mRecyclerView
                 .findViewHolderForAdapterPosition(1);
-        target.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                mItemTouchHelper.attachToRecyclerView(rvs2.mWrappedRecyclerView);
-                return false;
-            }
-        });
-        TouchUtils.longClickView(getInstrumentation(), target.itemView);
-        assertEquals(0, mCalback.mHasDragFlag.size());
+
+        // Act
+
+        // Long press the item, and half way through the long press, attach the ItemTouchHelper
+        // to the other RV, then wait for the long press to finish.
+        TouchUtils.longClickView(getInstrumentation(), target.itemView, longPressTime,
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            mActivityRule.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mItemTouchHelper.attachToRecyclerView(
+                                            rvs2.mWrappedRecyclerView);
+                                }
+                            });
+                        } catch (Throwable throwable) {
+                            postExceptionToInstrumentation(throwable);
+                        }
+                    }
+                });
+
+        // Assert
+
+        // The long press on the original item should not have triggered a long press on the
+        // ItemTouchHelper.
+        //
+        // This check is a stand in for a better way to see if the ItemTouchHelper's internal
+        // long press callback method was called.  mCallback.mHasDragFlag will only be 0 if the
+        // ItemTouchHelper's long press call back method was never called.
+        assertEquals(0, mCallback.mHasDragFlag.size());
+
+        // Make sure we didn't get an exception the main thread.
+        checkForMainThreadException();
     }
 
     public void basicSwipeTest(int dir, int swipeDirs, int targetX) throws Throwable {
@@ -204,10 +265,10 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         PollingCheck.waitFor(1000, new PollingCheck.PollingCheckCondition() {
             @Override
             public boolean canProceed() {
-                return mCalback.getSwipe(target) != null;
+                return mCallback.getSwipe(target) != null;
             }
         });
-        final SwipeRecord swipe = mCalback.getSwipe(target);
+        final SwipeRecord swipe = mCallback.getSwipe(target);
         assertNotNull(swipe);
         assertEquals(dir, swipe.dir);
         assertEquals(1, mItemTouchHelper.mRecoverAnimations.size());
@@ -219,7 +280,60 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         waitForAnimations();
         assertEquals(0, mItemTouchHelper.mRecoverAnimations.size());
         assertEquals(0, mItemTouchHelper.mPendingCleanup.size());
-        assertTrue(mCalback.isCleared(target));
+        assertTrue(mCallback.isCleared(target));
+    }
+
+    @Test
+    public void attachToRecyclerView_recoveryAnimRunningNullRv_recoveryAnimStopped()
+            throws Throwable {
+        // enable animations for this test
+        mAnimationDurationScaleRule.setAnimationDurationScale(1f);
+        // Arrange
+        final RecyclerViewState rvs = setupItemTouchHelper(setupRecyclerView(), 0,
+                LEFT | RIGHT);
+        rvs.mLayoutManager.expectLayouts(1);
+        setRecyclerView(rvs.mWrappedRecyclerView);
+        rvs.mLayoutManager.waitForLayout(1);
+
+        // Drag the child view to the right by as many pixels as the child is wide, then release
+        // without waiting for idle sync.
+        int targetX = mRecyclerView.getChildAt(0).getWidth();
+        final RecyclerView.ViewHolder target = mRecyclerView.findViewHolderForAdapterPosition(
+                1);
+        TouchUtils.dragViewToX(getInstrumentation(), target.itemView, Gravity.CENTER, targetX,
+                false);
+
+        // Wait for there to be a recovery animation which means that the item is in the process
+        // of animating.
+        PollingCheck.waitFor(1000, new PollingCheck.PollingCheckCondition() {
+            @Override
+            public boolean canProceed() {
+                return mItemTouchHelper.mRecoverAnimations.size() > 0;
+            }
+        });
+
+        mActivityRule.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Verify the assumption that at this time there should be one, and only one,
+                // recovery animation running.
+                assertEquals(1, mItemTouchHelper.mRecoverAnimations.size());
+                ValueAnimator valueAnimator =
+                        mItemTouchHelper.mRecoverAnimations.get(0).mValueAnimator;
+                // Verify the assumption that the animator should be currently running.
+                assertTrue(valueAnimator.isRunning());
+
+                // Act
+
+                mItemTouchHelper.attachToRecyclerView(null);
+
+                // Assert
+
+                // After we attach to a null RecyclerView, the animation should no longer be
+                // running.
+                assertFalse(valueAnimator.isRunning());
+            }
+        });
     }
 
     private void waitForAnimations() throws InterruptedException {
@@ -228,7 +342,7 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         }
     }
 
-    private static class LoggingCalback extends SimpleCallback {
+    private static class LoggingCallback extends SimpleCallback {
 
         private List<MoveRecord> mMoveRecordList = new ArrayList<MoveRecord>();
 
@@ -236,9 +350,9 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
 
         private List<RecyclerView.ViewHolder> mCleared = new ArrayList<RecyclerView.ViewHolder>();
 
-        public List<Pair<RecyclerView, RecyclerView.ViewHolder>> mHasDragFlag = new ArrayList<>();
+        private List<Pair<RecyclerView, RecyclerView.ViewHolder>> mHasDragFlag = new ArrayList<>();
 
-        LoggingCalback(int dragDirs, int swipeDirs) {
+        LoggingCallback(int dragDirs, int swipeDirs) {
             super(dragDirs, swipeDirs);
         }
 
@@ -319,8 +433,8 @@ public class ItemTouchHelperTest extends BaseRecyclerViewInstrumentationTest {
         MoveRecord(RecyclerView.ViewHolder from, RecyclerView.ViewHolder to) {
             this.from = from;
             this.to = to;
-            fromPos = from.getAdapterPosition();
-            toPos = to.getAdapterPosition();
+            fromPos = from.getAbsoluteAdapterPosition();
+            toPos = to.getAbsoluteAdapterPosition();
         }
     }
 }

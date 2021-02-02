@@ -16,14 +16,20 @@
 
 package com.android.tools.build.jetifier.processor.archive
 
+import com.android.tools.build.jetifier.processor.TimestampsPolicy
 import java.io.IOException
 import java.io.OutputStream
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
 
 /**
  * Represents a file in the archive that is not an archive.
  */
-class ArchiveFile(relativePath: Path, data: ByteArray) : ArchiveItem {
+class ArchiveFile(
+    relativePath: Path,
+    data: ByteArray,
+    override val lastModifiedTime: FileTime? = null
+) : ArchiveItem {
 
     override var relativePath = relativePath
         private set
@@ -34,15 +40,27 @@ class ArchiveFile(relativePath: Path, data: ByteArray) : ArchiveItem {
     override var wasChanged: Boolean = false
         private set
 
+    override var markedForRemoval: Boolean = false
+
     var data: ByteArray = data
         private set
+
+    // If this is true, treat the file as a single file not part of an archive.
+    var isSingleFile: Boolean = false
+        private set
+
+    override fun findAllFiles(selector: (ArchiveFile) -> Boolean, result: FileSearchResult) {
+        if (selector(this)) {
+            result.addFile(this)
+        }
+    }
 
     override fun accept(visitor: ArchiveItemVisitor) {
         visitor.visit(this)
     }
 
     @Throws(IOException::class)
-    override fun writeSelfTo(outputStream: OutputStream) {
+    override fun writeSelfTo(outputStream: OutputStream, timestampsPolicy: TimestampsPolicy) {
         outputStream.write(data)
     }
 
@@ -75,5 +93,9 @@ class ArchiveFile(relativePath: Path, data: ByteArray) : ArchiveItem {
      */
     fun setNewDataSilently(newData: ByteArray) {
         data = newData
+    }
+
+    fun setIsSingleFile(isSingleFile: Boolean) {
+        this.isSingleFile = isSingleFile
     }
 }

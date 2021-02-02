@@ -38,12 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 class MultiInstanceInvalidationClient {
 
     /**
-     * If this is {@link null}, this {@link MultiInstanceInvalidationClient} is no longer available.
+     * The application context.
      */
     // synthetic access
     @SuppressWarnings("WeakerAccess")
-    @Nullable
-    Context mContext;
+    final Context mAppContext;
 
     /**
      * The name of the database file.
@@ -109,7 +108,6 @@ class MultiInstanceInvalidationClient {
         public void onServiceDisconnected(ComponentName name) {
             mExecutor.execute(mRemoveObserverRunnable);
             mService = null;
-            mContext = null;
         }
 
     };
@@ -140,25 +138,6 @@ class MultiInstanceInvalidationClient {
         }
     };
 
-    private final Runnable mTearDownRunnable = new Runnable() {
-        @Override
-        public void run() {
-            mInvalidationTracker.removeObserver(mObserver);
-            try {
-                final IMultiInstanceInvalidationService service = mService;
-                if (service != null) {
-                    service.unregisterCallback(mCallback, mClientId);
-                }
-            } catch (RemoteException e) {
-                Log.w(Room.LOG_TAG, "Cannot unregister multi-instance invalidation callback", e);
-            }
-            if (mContext != null) {
-                mContext.unbindService(mServiceConnection);
-                mContext = null;
-            }
-        }
-    };
-
     /**
      * @param context             The Context to be used for binding
      *                            {@link IMultiInstanceInvalidationService}.
@@ -168,19 +147,23 @@ class MultiInstanceInvalidationClient {
      */
     MultiInstanceInvalidationClient(Context context, String name,
             InvalidationTracker invalidationTracker, Executor executor) {
-        mContext = context.getApplicationContext();
+        mAppContext = context.getApplicationContext();
         mName = name;
         mInvalidationTracker = invalidationTracker;
         mExecutor = executor;
-        mObserver = new InvalidationTracker.Observer(invalidationTracker.mTableNames) {
+        // Use all tables names for observer.
+        final Set<String> tableNames = invalidationTracker.mTableIdLookup.keySet();
+        mObserver = new InvalidationTracker.Observer(tableNames.toArray(new String[0])) {
             @Override
             public void onInvalidated(@NonNull Set<String> tables) {
                 if (mStopped.get()) {
                     return;
                 }
                 try {
-                    mService.broadcastInvalidation(mClientId,
-                            tables.toArray(new String[0]));
+                    final IMultiInstanceInvalidationService service = mService;
+                    if (service != null) {
+                        service.broadcastInvalidation(mClientId, tables.toArray(new String[0]));
+                    }
                 } catch (RemoteException e) {
                     Log.w(Room.LOG_TAG, "Cannot broadcast invalidation", e);
                 }
@@ -191,13 +174,22 @@ class MultiInstanceInvalidationClient {
                 return true;
             }
         };
-        Intent intent = new Intent(mContext, MultiInstanceInvalidationService.class);
-        mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        Intent intent = new Intent(mAppContext, MultiInstanceInvalidationService.class);
+        mAppContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     void stop() {
         if (mStopped.compareAndSet(false, true)) {
-            mExecutor.execute(mTearDownRunnable);
+            mInvalidationTracker.removeObserver(mObserver);
+            try {
+                final IMultiInstanceInvalidationService service = mService;
+                if (service != null) {
+                    service.unregisterCallback(mCallback, mClientId);
+                }
+            } catch (RemoteException e) {
+                Log.w(Room.LOG_TAG, "Cannot unregister multi-instance invalidation callback", e);
+            }
+            mAppContext.unbindService(mServiceConnection);
         }
     }
 }

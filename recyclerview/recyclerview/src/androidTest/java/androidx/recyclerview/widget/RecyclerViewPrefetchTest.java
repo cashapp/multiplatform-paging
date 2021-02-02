@@ -21,9 +21,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import android.os.Build;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,12 +32,17 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@SmallTest
+@LargeTest
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.LOLLIPOP)
 @RunWith(AndroidJUnit4.class)
 public class RecyclerViewPrefetchTest extends BaseRecyclerViewInstrumentationTest {
     private class PrefetchLayoutManager extends TestLayoutManager {
         CountDownLatch prefetchLatch = new CountDownLatch(1);
+
+        @Override
+        public boolean canScrollHorizontally() {
+            return false;
+        }
 
         @Override
         public boolean canScrollVertically() {
@@ -60,7 +65,11 @@ public class RecyclerViewPrefetchTest extends BaseRecyclerViewInstrumentationTes
         @Override
         public void collectAdjacentPrefetchPositions(int dx, int dy, RecyclerView.State state,
                 LayoutPrefetchRegistry layoutPrefetchRegistry) {
-            prefetchLatch.countDown();
+            if (dy > 0) {
+                // only a valid prefetch if it gets direction correct, since that's what drives
+                // which item to load
+                prefetchLatch.countDown();
+            }
             layoutPrefetchRegistry.addPosition(6, 0);
         }
 
@@ -98,6 +107,6 @@ public class RecyclerViewPrefetchTest extends BaseRecyclerViewInstrumentationTes
 
         layout.waitForPrefetch(10);
         assertThat(cachedViews().size(), is(1));
-        assertThat(cachedViews().get(0).getAdapterPosition(), is(6));
+        assertThat(cachedViews().get(0).getAbsoluteAdapterPosition(), is(6));
     }
 }

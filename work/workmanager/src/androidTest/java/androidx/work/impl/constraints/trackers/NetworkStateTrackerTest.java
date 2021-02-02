@@ -27,11 +27,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
+import android.net.Network;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.work.impl.constraints.NetworkState;
+import androidx.work.impl.utils.taskexecutor.InstantWorkTaskExecutor;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +49,7 @@ public class NetworkStateTrackerTest {
     private Context mMockContext;
     private ConnectivityManager mMockConnectivityManager;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         mMockContext = mock(Context.class);
@@ -54,7 +58,7 @@ public class NetworkStateTrackerTest {
         when(mMockContext.getSystemService(eq(Context.CONNECTIVITY_SERVICE)))
                 .thenReturn(mMockConnectivityManager);
 
-        mTracker = new NetworkStateTracker(mMockContext);
+        mTracker = new NetworkStateTracker(mMockContext, new InstantWorkTaskExecutor());
     }
 
     @Test
@@ -111,5 +115,16 @@ public class NetworkStateTrackerTest {
     public void testStopTracking_beforeApi24() {
         mTracker.stopTracking();
         verify(mMockContext).unregisterReceiver(any(BroadcastReceiver.class));
+    }
+
+    @Test
+    @MediumTest
+    @SdkSuppress(minSdkVersion = 24)
+    public void handleSecurityExceptions_whenValidatingNetworkState() {
+        Network activeNetwork = mock(Network.class);
+        when(mMockConnectivityManager.getActiveNetwork()).thenReturn(activeNetwork);
+        when(mMockConnectivityManager.getNetworkCapabilities(activeNetwork))
+                .thenThrow(new SecurityException("Exception"));
+        assertThat(mTracker.isActiveNetworkValidated(), is(false));
     }
 }

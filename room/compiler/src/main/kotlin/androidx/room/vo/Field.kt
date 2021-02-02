@@ -16,40 +16,53 @@
 
 package androidx.room.vo
 
-import androidx.room.ext.isNonNull
-import androidx.room.ext.typeName
+import androidx.room.compiler.processing.XFieldElement
+import androidx.room.compiler.processing.XNullability
+import androidx.room.compiler.processing.XType
 import androidx.room.migration.bundle.FieldBundle
 import androidx.room.parser.Collate
 import androidx.room.parser.SQLTypeAffinity
 import androidx.room.solver.types.CursorValueReader
 import androidx.room.solver.types.StatementValueBinder
+import capitalize
 import com.squareup.javapoet.TypeName
-import javax.lang.model.element.Element
-import javax.lang.model.type.TypeMirror
+import decapitalize
+import java.util.Locale
+
 // used in cache matching, must stay as a data class or implement equals
-data class Field(val element: Element, val name: String, val type: TypeMirror,
-                 var affinity: SQLTypeAffinity?,
-                 val collate: Collate? = null,
-                 val columnName: String = name,
-                 /* means that this field does not belong to parent, instead, it belongs to a
-                 * embedded child of the main Pojo*/
-                 val parent: EmbeddedField? = null,
-                 // index might be removed when being merged into an Entity
-                 var indexed: Boolean = false) : HasSchemaIdentity {
+data class Field(
+    val element: XFieldElement,
+    val name: String,
+    val type: XType,
+    var affinity: SQLTypeAffinity?,
+    val collate: Collate? = null,
+    val columnName: String = name,
+    val defaultValue: String? = null,
+    // null here means that this field does not belong to parent, instead, it belongs to an
+    // embedded child of the main Pojo
+    val parent: EmbeddedField? = null,
+    // index might be removed when being merged into an Entity
+    var indexed: Boolean = false,
+    /** Whether the table column for this field should be NOT NULL */
+    val nonNull: Boolean = calcNonNull(type, parent)
+) : HasSchemaIdentity {
     lateinit var getter: FieldGetter
     lateinit var setter: FieldSetter
     // binds the field into a statement
     var statementBinder: StatementValueBinder? = null
     // reads this field from a cursor column
     var cursorValueReader: CursorValueReader? = null
-    val typeName: TypeName by lazy { type.typeName() }
-
-    /** Whether the table column for this field should be NOT NULL */
-    val nonNull = element.isNonNull() && (parent == null || parent.isNonNullRecursively())
+    val typeName: TypeName by lazy { type.typeName }
 
     override fun getIdKey(): String {
-        // we don't get the collate information from sqlite so ignoring it here.
-        return "$columnName-${affinity?.name ?: SQLTypeAffinity.TEXT.name}-$nonNull"
+        return buildString {
+            // we don't get the collate information from sqlite so ignoring it here.
+            append("$columnName-${affinity?.name ?: SQLTypeAffinity.TEXT.name}-$nonNull")
+            // defaultValue was newly added; it should affect the ID only when it is used.
+            if (defaultValue != null) {
+                append("-defaultValue=$defaultValue")
+            }
+        }
     }
 
     /**
@@ -83,15 +96,15 @@ data class Field(val element: Element, val name: String, val type: TypeMirror,
                 result.add(name.substring(1))
             }
             if (name.startsWith("m") && name[1].isUpperCase()) {
-                result.add(name.substring(1).decapitalize())
+                result.add(name.substring(1).decapitalize(Locale.US))
             }
 
             if (typeName == TypeName.BOOLEAN || typeName == TypeName.BOOLEAN.box()) {
                 if (name.length > 2 && name.startsWith("is") && name[2].isUpperCase()) {
-                    result.add(name.substring(2).decapitalize())
+                    result.add(name.substring(2).decapitalize(Locale.US))
                 }
                 if (name.length > 3 && name.startsWith("has") && name[3].isUpperCase()) {
-                    result.add(name.substring(3).decapitalize())
+                    result.add(name.substring(3).decapitalize(Locale.US))
                 }
             }
         }
@@ -99,18 +112,18 @@ data class Field(val element: Element, val name: String, val type: TypeMirror,
     }
 
     val getterNameWithVariations by lazy {
-        nameWithVariations.map { "get${it.capitalize()}" } +
-                if (typeName == TypeName.BOOLEAN || typeName == TypeName.BOOLEAN.box()) {
-                    nameWithVariations.flatMap {
-                        listOf("is${it.capitalize()}", "has${it.capitalize()}")
-                    }
-                } else {
-                    emptyList()
+        nameWithVariations.map { "get${it.capitalize(Locale.US)}" } +
+            if (typeName == TypeName.BOOLEAN || typeName == TypeName.BOOLEAN.box()) {
+                nameWithVariations.flatMap {
+                    listOf("is${it.capitalize(Locale.US)}", "has${it.capitalize(Locale.US)}")
                 }
+            } else {
+                emptyList()
+            }
     }
 
     val setterNameWithVariations by lazy {
-        nameWithVariations.map { "set${it.capitalize()}" }
+        nameWithVariations.map { "set${it.capitalize(Locale.US)}" }
     }
 
     /**
@@ -127,10 +140,21 @@ data class Field(val element: Element, val name: String, val type: TypeMirror,
         if (collate != null) {
             columnSpec.append(" COLLATE ${collate.name}")
         }
+        if (defaultValue != null) {
+            columnSpec.append(" DEFAULT $defaultValue")
+        }
         return "`$columnName` ${(affinity ?: SQLTypeAffinity.TEXT).name}$columnSpec"
     }
 
-    fun toBundle(): FieldBundle = FieldBundle(pathWithDotNotation, columnName,
-            affinity?.name ?: SQLTypeAffinity.TEXT.name, nonNull
+    fun toBundle(): FieldBundle = FieldBundle(
+        pathWithDotNotation, columnName,
+        affinity?.name ?: SQLTypeAffinity.TEXT.name, nonNull, defaultValue
     )
+
+    companion object {
+        fun calcNonNull(type: XType, parent: EmbeddedField?): Boolean {
+            return XNullability.NONNULL == type.nullability &&
+                (parent == null || parent.isNonNullRecursively())
+        }
+    }
 }

@@ -16,19 +16,16 @@
 
 package androidx.room.solver.query.result
 
+import androidx.room.ext.AndroidTypeNames
+import androidx.room.ext.CallableTypeSpecBuilder
 import androidx.room.ext.L
 import androidx.room.ext.N
 import androidx.room.ext.RoomGuavaTypeNames
+import androidx.room.ext.RoomTypeNames
 import androidx.room.ext.T
-import androidx.room.ext.typeName
+import androidx.room.compiler.processing.XType
 import androidx.room.solver.CodeGenScope
-import androidx.room.writer.DaoWriter
 import com.squareup.javapoet.FieldSpec
-import com.squareup.javapoet.MethodSpec
-import com.squareup.javapoet.ParameterizedTypeName
-import com.squareup.javapoet.TypeSpec
-import javax.lang.model.element.Modifier
-import javax.lang.model.type.TypeMirror
 
 /**
  * A ResultBinder that emits a ListenableFuture<T> where T is the input {@code typeArg}.
@@ -36,10 +33,9 @@ import javax.lang.model.type.TypeMirror
  * <p>The Future runs on the background thread Executor.
  */
 class GuavaListenableFutureQueryResultBinder(
-    val typeArg: TypeMirror,
+    val typeArg: XType,
     adapter: QueryResultAdapter?
-)
-    : BaseObservableQueryResultBinder(adapter) {
+) : BaseObservableQueryResultBinder(adapter) {
 
     override fun convertAndReturn(
         roomSQLiteQueryVar: String,
@@ -48,56 +44,37 @@ class GuavaListenableFutureQueryResultBinder(
         inTransaction: Boolean,
         scope: CodeGenScope
     ) {
-        // Callable<T>
-        val callableImpl = createCallableOfT(
-                roomSQLiteQueryVar,
-                dbField,
-                inTransaction,
-                scope)
+        val cancellationSignalVar = scope.getTmpVar("_cancellationSignal")
+        scope.builder().addStatement(
+            "final $T $L = $T.createCancellationSignal()",
+            AndroidTypeNames.CANCELLATION_SIGNAL,
+            cancellationSignalVar,
+            RoomTypeNames.DB_UTIL
+        )
+
+        // Callable<T> // Note that this callable does not release the query object.
+        val callableImpl = CallableTypeSpecBuilder(typeArg.typeName) {
+            createRunQueryAndReturnStatements(
+                builder = this,
+                roomSQLiteQueryVar = roomSQLiteQueryVar,
+                dbField = dbField,
+                inTransaction = inTransaction,
+                scope = scope,
+                cancellationSignalVar = cancellationSignalVar
+            )
+        }.build()
 
         scope.builder().apply {
             addStatement(
-                    "return $T.createListenableFuture($N, $L, $L, $L)",
-                    RoomGuavaTypeNames.GUAVA_ROOM,
-                    DaoWriter.dbField,
-                    callableImpl,
-                    roomSQLiteQueryVar,
-                    canReleaseQuery)
+                "return $T.createListenableFuture($N, $L, $L, $L, $L, $L)",
+                RoomGuavaTypeNames.GUAVA_ROOM,
+                dbField,
+                if (inTransaction) "true" else "false",
+                callableImpl,
+                roomSQLiteQueryVar,
+                canReleaseQuery,
+                cancellationSignalVar
+            )
         }
-    }
-
-    /**
-     * Returns an anonymous subclass of Callable<T> that executes the database transaction and
-     * constitutes the result T.
-     *
-     * <p>Note that this method does not release the query object.
-     */
-    private fun createCallableOfT(
-        roomSQLiteQueryVar: String,
-        dbField: FieldSpec,
-        inTransaction: Boolean,
-        scope: CodeGenScope
-    ): TypeSpec {
-        return TypeSpec.anonymousClassBuilder("").apply {
-            superclass(
-                    ParameterizedTypeName.get(java.util.concurrent.Callable::class.typeName(),
-                            typeArg.typeName()))
-            addMethod(
-                    MethodSpec.methodBuilder("call").apply {
-                        // public T call() throws Exception {}
-                        returns(typeArg.typeName())
-                        addAnnotation(Override::class.typeName())
-                        addModifiers(Modifier.PUBLIC)
-                        addException(Exception::class.typeName())
-
-                        // Body.
-                        createRunQueryAndReturnStatements(
-                                builder = this,
-                                roomSQLiteQueryVar = roomSQLiteQueryVar,
-                                dbField = dbField,
-                                inTransaction = inTransaction,
-                                scope = scope)
-                    }.build())
-        }.build()
     }
 }

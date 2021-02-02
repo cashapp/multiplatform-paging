@@ -16,8 +16,10 @@
 
 package com.android.tools.build.jetifier.processor.archive
 
+import com.android.tools.build.jetifier.processor.TimestampsPolicy
 import java.io.OutputStream
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
 
 /**
  * Abstraction to represent archive and its files as a one thing before and after transformation
@@ -46,6 +48,22 @@ interface ArchiveItem {
     val wasChanged: Boolean
 
     /**
+     * The original modified time of this file when it was extracted from its archive. Can be null
+     * if the time was not set or if the file is the root archive itself.
+     */
+    val lastModifiedTime: FileTime?
+
+    /**
+     * Whether to exclude this item from the generated output.
+     */
+    var markedForRemoval: Boolean
+
+    /**
+     * Finds all the files satisfying the given [selector] and adds them to [result].
+     */
+    fun findAllFiles(selector: (ArchiveFile) -> Boolean, result: FileSearchResult)
+
+    /**
      * Accepts visitor.
      */
     fun accept(visitor: ArchiveItemVisitor)
@@ -53,14 +71,30 @@ interface ArchiveItem {
     /**
      * Writes its internal data (or other nested files) into the given output stream.
      */
-    fun writeSelfTo(outputStream: OutputStream)
+    fun writeSelfTo(outputStream: OutputStream, timestampsPolicy: TimestampsPolicy)
 
-    fun isPomFile() = fileName.equals("pom.xml", ignoreCase = true)
-            || fileName.endsWith(".pom", ignoreCase = true)
+    fun isPomFile() = fileName.equals("pom.xml", ignoreCase = true) ||
+        fileName.endsWith(".pom", ignoreCase = true)
 
     fun isClassFile() = fileName.endsWith(".class", ignoreCase = true)
 
     fun isXmlFile() = fileName.endsWith(".xml", ignoreCase = true)
 
-    fun isProGuardFile () = fileName.equals("proguard.txt", ignoreCase = true)
+    fun isProGuardFile() = fileName.equals("proguard.txt", ignoreCase = true)
+
+    fun isJavaFile() = fileName.endsWith(".java")
+}
+
+/**
+ * Aggregated result of all the files that were found.
+ *
+ * @see ArchiveItem.findAllFiles
+ */
+class FileSearchResult {
+
+    val all = mutableSetOf<ArchiveFile>()
+
+    fun addFile(file: ArchiveFile) {
+        all.add(file)
+    }
 }

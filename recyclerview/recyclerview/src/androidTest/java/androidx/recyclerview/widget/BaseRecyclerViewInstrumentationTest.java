@@ -33,6 +33,8 @@ import android.app.Instrumentation;
 import android.graphics.Rect;
 import android.os.Looper;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,14 +44,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.test.R;
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.testutils.ActivityScenarioResetRule;
 import androidx.testutils.PollingCheck;
+import androidx.testutils.ResettableActivityScenarioRule;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 
 import java.lang.reflect.InvocationTargetException;
@@ -79,9 +83,13 @@ abstract public class BaseRecyclerViewInstrumentationTest {
 
     Thread mInstrumentationThread;
 
+    // One activity launch per test class
+    @ClassRule
+    public static ResettableActivityScenarioRule<TestActivity> mActivityRule =
+            new ResettableActivityScenarioRule<>(TestActivity.class);
     @Rule
-    public ActivityTestRule<TestActivity> mActivityRule =
-            new ActivityTestRule<>(TestActivity.class);
+    public ActivityScenarioResetRule<TestActivity> mActivityResetRule =
+            new TestActivity.ResetRule(mActivityRule.getScenario());
 
     public BaseRecyclerViewInstrumentationTest() {
         this(false);
@@ -294,6 +302,18 @@ abstract public class BaseRecyclerViewInstrumentationTest {
                 latch.await(seconds, TimeUnit.SECONDS));
     }
 
+    public void waitForDraw(int seconds) throws Throwable {
+        final TestedFrameLayout container = getActivity().getContainer();
+        container.expectDraws(1);
+        mActivityRule.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                container.invalidate();
+            }
+        });
+        container.waitForDraw(seconds);
+    }
+
     public void waitForIdleScroll(final RecyclerView recyclerView) throws Throwable {
         final CountDownLatch latch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(new Runnable() {
@@ -341,15 +361,17 @@ abstract public class BaseRecyclerViewInstrumentationTest {
     public void setRecyclerView(final RecyclerView recyclerView) throws Throwable {
         setRecyclerView(recyclerView, true);
     }
-    public void setRecyclerView(final RecyclerView recyclerView, boolean assignDummyPool)
+    public void setRecyclerView(final RecyclerView recyclerView,
+            boolean createAndSetRecycledViewPoolTestDouble)
             throws Throwable {
-        setRecyclerView(recyclerView, assignDummyPool, true);
+        setRecyclerView(recyclerView, createAndSetRecycledViewPoolTestDouble, true);
     }
-    public void setRecyclerView(final RecyclerView recyclerView, boolean assignDummyPool,
+    public void setRecyclerView(final RecyclerView recyclerView,
+            boolean createAndSetRecycledViewPoolTestDouble,
             boolean addPositionCheckItemAnimator)
             throws Throwable {
         mRecyclerView = recyclerView;
-        if (assignDummyPool) {
+        if (createAndSetRecycledViewPoolTestDouble) {
             RecyclerView.RecycledViewPool pool = new RecyclerView.RecycledViewPool() {
                 @Override
                 public RecyclerView.ViewHolder getRecycledView(int viewType) {
@@ -367,6 +389,7 @@ abstract public class BaseRecyclerViewInstrumentationTest {
                 @Override
                 public void putRecycledView(RecyclerView.ViewHolder scrap) {
                     assertNull(scrap.mOwnerRecyclerView);
+                    assertNull(scrap.getBindingAdapter());
                     super.putRecycledView(scrap);
                 }
             };
@@ -381,7 +404,7 @@ abstract public class BaseRecyclerViewInstrumentationTest {
                     if (!vh.isRemoved()) {
                         assertNotSame("If getItemOffsets is called, child should have a valid"
                                         + " adapter position unless it is removed : " + vh,
-                                vh.getAdapterPosition(), RecyclerView.NO_POSITION);
+                                vh.getAbsoluteAdapterPosition(), RecyclerView.NO_POSITION);
                     }
                 }
             });
@@ -507,11 +530,11 @@ abstract public class BaseRecyclerViewInstrumentationTest {
         getInstrumentation().waitForIdleSync();
     }
 
-    void freezeLayout(final boolean freeze) throws Throwable {
+    void suppressLayout(final boolean suppress) throws Throwable {
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.setLayoutFrozen(freeze);
+                mRecyclerView.suppressLayout(suppress);
             }
         });
     }
@@ -548,7 +571,7 @@ abstract public class BaseRecyclerViewInstrumentationTest {
             mData = data;
         }
     }
-    class DumbLayoutManager extends TestLayoutManager {
+    class SimpleTestLayoutManager extends TestLayoutManager {
         @Override
         public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
             detachAndScrapAttachedViews(recycler);
@@ -786,6 +809,10 @@ abstract public class BaseRecyclerViewInstrumentationTest {
             this.mFocusable = mFocusable;
         }
 
+        public String getDisplayText() {
+            return mText + "(" + mId + ")";
+        }
+
         @Override
         public String toString() {
             return "Item{" +
@@ -885,19 +912,27 @@ abstract public class BaseRecyclerViewInstrumentationTest {
             TextView itemView = new TextView(parent.getContext());
             itemView.setFocusableInTouchMode(true);
             itemView.setFocusable(true);
+            itemView.setGravity(Gravity.CENTER);
+            itemView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f);
             return new TestViewHolder(itemView);
         }
 
         @Override
         public void onBindViewHolder(@NonNull TestViewHolder holder, int position) {
             assertNotNull(holder.mOwnerRecyclerView);
-            assertEquals(position, holder.getAdapterPosition());
+            assertSame(this, holder.getBindingAdapter());
+            assertEquals(position, holder.getAbsoluteAdapterPosition());
             final Item item = mItems.get(position);
-            ((TextView) (holder.itemView)).setText(item.mText + "(" + item.mId + ")");
+            getTextViewInHolder(holder).setText(item.getDisplayText());
+            holder.itemView.setBackgroundColor(position % 2 == 0 ? 0xFFFF0000 : 0xFF0000FF);
             holder.mBoundItem = item;
             if (mLayoutParams != null) {
                 holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(mLayoutParams));
             }
+        }
+
+        protected TextView getTextViewInHolder(TestViewHolder holder) {
+            return (TextView) holder.itemView;
         }
 
         public Item getItemAt(int position) {
@@ -907,7 +942,7 @@ abstract public class BaseRecyclerViewInstrumentationTest {
         @Override
         public void onViewRecycled(@NonNull TestViewHolder holder) {
             super.onViewRecycled(holder);
-            final int adapterPosition = holder.getAdapterPosition();
+            final int adapterPosition = holder.getAbsoluteAdapterPosition();
             final boolean shouldHavePosition = !holder.isRemoved() && holder.isBound() &&
                     !holder.isAdapterPositionUnknown() && !holder.isInvalid();
             String log = "Position check for " + holder.toString();

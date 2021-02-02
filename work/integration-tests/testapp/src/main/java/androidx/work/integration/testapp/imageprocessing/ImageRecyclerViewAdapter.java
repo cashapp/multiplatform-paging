@@ -18,8 +18,6 @@ package androidx.work.integration.testapp.imageprocessing;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.integration.testapp.R;
 import androidx.work.integration.testapp.db.Image;
 
@@ -56,7 +55,7 @@ public class ImageRecyclerViewAdapter extends
         private ImageView mImageView;
         private TextView mTextView;
         private ProgressBar mProgressBar;
-        private AsyncTask<Image, Void, Bitmap> mBitmapLoadTask;
+        private android.os.AsyncTask<Image, Void, Bitmap> mBitmapLoadTask;
         private boolean mShouldLoad;
 
         ViewHolder(View itemView) {
@@ -66,13 +65,14 @@ public class ImageRecyclerViewAdapter extends
             mProgressBar = itemView.findViewById(R.id.progressBar);
         }
 
+        @SuppressWarnings("deprecation") /* AsyncTask */
         public void load(final Image image) {
             if (TextUtils.isEmpty(image.mProcessedFilePath)) {
                 mTextView.setText(image.mOriginalAssetName);
                 mProgressBar.setVisibility(View.VISIBLE);
                 mImageView.setVisibility(View.GONE);
             } else {
-                mBitmapLoadTask = new AsyncTask<Image, Void, Bitmap>() {
+                mBitmapLoadTask = new android.os.AsyncTask<Image, Void, Bitmap>() {
                     @Override
                     protected void onPostExecute(Bitmap bitmap) {
                         if (mShouldLoad) {

@@ -16,23 +16,31 @@
 
 package androidx.work;
 
-import android.arch.persistence.room.TypeConverter;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RestrictTo;
-import android.support.annotation.VisibleForTesting;
+import android.annotation.SuppressLint;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
+import androidx.room.TypeConverter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Persistable set of key/value pairs which are passed as inputs and outputs for {@link Worker}s.
+ * A persistable set of key/value pairs which are used as inputs and outputs for
+ * {@link ListenableWorker}s.  Keys are Strings, and values can be Strings, primitive types, or
+ * their array variants.
+ * <p>
  * This is a lightweight container, and should not be considered your data store.  As such, there is
  * an enforced {@link #MAX_DATA_BYTES} limit on the serialized (byte array) size of the payloads.
  * This class will throw {@link IllegalStateException}s if you try to serialize or deserialize past
@@ -41,10 +49,19 @@ import java.util.Map;
 
 public final class Data {
 
-    public static final Data EMPTY = new Data.Builder().build();
-    public static final int MAX_DATA_BYTES = 10 * 1024;    // 10KB
+    private static final String TAG = Logger.tagWithPrefix("Data");
 
-    private static final String TAG = "Data";
+    /**
+     * An empty Data object with no elements.
+     */
+    public static final Data EMPTY = new Data.Builder().build();
+
+    /**
+     * The maximum number of bytes for Data when it is serialized (converted to a byte array).
+     * Please see the class-level Javadoc for more information.
+     */
+    @SuppressLint("MinMaxConstant")
+    public static final int MAX_DATA_BYTES = 10 * 1024;    // 10KB
 
     @SuppressWarnings("WeakerAccess") /* synthetic access */
     Map<String, Object> mValues;
@@ -56,12 +73,12 @@ public final class Data {
         mValues = new HashMap<>(other.mValues);
     }
 
-    Data(Map<String, ?> values) {
+    Data(@NonNull Map<String, ?> values) {
         mValues = new HashMap<>(values);
     }
 
     /**
-     * Get the boolean value for the given key.
+     * Gets the boolean value for the given key.
      *
      * @param key The key for the argument
      * @param defaultValue The default value to return if the key is not found
@@ -77,7 +94,7 @@ public final class Data {
     }
 
     /**
-     * Get the boolean array value for the given key.
+     * Gets the boolean array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -96,9 +113,44 @@ public final class Data {
         }
     }
 
+    /**
+     * Gets the byte value for the given key.
+     *
+     * @param key The key for the argument
+     * @param defaultValue The default value to return if the key is not found
+     * @return The value specified by the key if it exists; the default value otherwise
+     */
+    public byte getByte(@NonNull String key, byte defaultValue) {
+        Object value = mValues.get(key);
+        if (value instanceof Byte) {
+            return (byte) value;
+        } else {
+            return defaultValue;
+        }
+    }
 
     /**
-     * Get the integer value for the given key.
+     * Gets the byte array value for the given key.
+     *
+     * @param key The key for the argument
+     * @return The value specified by the key if it exists; {@code null} otherwise
+     */
+    public @Nullable byte[] getByteArray(@NonNull String key) {
+        Object value = mValues.get(key);
+        if (value instanceof Byte[]) {
+            Byte[] array = (Byte[]) value;
+            byte[] returnArray = new byte[array.length];
+            for (int i = 0; i < array.length; ++i) {
+                returnArray[i] = array[i];
+            }
+            return returnArray;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Gets the integer value for the given key.
      *
      * @param key The key for the argument
      * @param defaultValue The default value to return if the key is not found
@@ -114,7 +166,7 @@ public final class Data {
     }
 
     /**
-     * Get the integer array value for the given key.
+     * Gets the integer array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -134,7 +186,7 @@ public final class Data {
     }
 
     /**
-     * Get the long value for the given key.
+     * Gets the long value for the given key.
      *
      * @param key The key for the argument
      * @param defaultValue The default value to return if the key is not found
@@ -150,7 +202,7 @@ public final class Data {
     }
 
     /**
-     * Get the long array value for the given key.
+     * Gets the long array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -170,7 +222,7 @@ public final class Data {
     }
 
     /**
-     * Get the float value for the given key.
+     * Gets the float value for the given key.
      *
      * @param key The key for the argument
      * @param defaultValue The default value to return if the key is not found
@@ -186,7 +238,7 @@ public final class Data {
     }
 
     /**
-     * Get the float array value for the given key.
+     * Gets the float array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -206,7 +258,7 @@ public final class Data {
     }
 
     /**
-     * Get the double value for the given key.
+     * Gets the double value for the given key.
      *
      * @param key The key for the argument
      * @param defaultValue The default value to return if the key is not found
@@ -222,7 +274,7 @@ public final class Data {
     }
 
     /**
-     * Get the double array value for the given key.
+     * Gets the double array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -242,7 +294,7 @@ public final class Data {
     }
 
     /**
-     * Get the String value for the given key.
+     * Gets the String value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; the default value otherwise
@@ -257,7 +309,7 @@ public final class Data {
     }
 
     /**
-     * Get the String array value for the given key.
+     * Gets the String array value for the given key.
      *
      * @param key The key for the argument
      * @return The value specified by the key if it exists; {@code null} otherwise
@@ -282,9 +334,40 @@ public final class Data {
     }
 
     /**
-     * @return The number of arguments
+     * Converts this Data to a byte array suitable for sending to other processes in your
+     * application.  There are no versioning guarantees with this byte array, so you should not
+     * use this for IPCs between applications or persistence.
+     *
+     * @return The byte array representation of the input
+     * @throws IllegalStateException if the serialized payload is bigger than
+     *                               {@link #MAX_DATA_BYTES}
+     */
+    @NonNull
+    public byte[] toByteArray() {
+        return Data.toByteArrayInternal(this);
+    }
+
+     /**
+     * Returns {@code true} if the instance of {@link Data} has a non-null value corresponding to
+     * the given {@link String} key with the expected type of {@code T}.
+     *
+     * @param key   The {@link String} key
+     * @param klass The {@link Class} container for the expected type
+     * @param <T>   The expected type
+     * @return {@code true} If the instance of {@link Data} has a value for the given
+     * {@link String} key with the expected type.
+     */
+    public <T> boolean hasKeyWithValueOfType(@NonNull String key, @NonNull Class<T> klass) {
+        Object value = mValues.get(key);
+        return value != null && klass.isAssignableFrom(value.getClass());
+    }
+
+    /**
+     * @return The number of elements in this Data object.
+     * @hide
      */
     @VisibleForTesting
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public int size() {
         return mValues.size();
     }
@@ -295,12 +378,12 @@ public final class Data {
      * @param data The {@link Data} object to convert
      * @return The byte array representation of the input
      * @throws IllegalStateException if the serialized payload is bigger than
-     *         {@link #MAX_DATA_BYTES}
+     *                               {@link #MAX_DATA_BYTES}
      * @hide
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     @TypeConverter
-    public static @NonNull byte[] toByteArray(@NonNull Data data) throws IllegalStateException {
+    public static @NonNull byte[] toByteArrayInternal(@NonNull Data data) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ObjectOutputStream objectOutputStream = null;
         try {
@@ -311,25 +394,29 @@ public final class Data {
                 objectOutputStream.writeObject(entry.getValue());
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error in Data#toByteArray: ", e);
+            return outputStream.toByteArray();
         } finally {
             if (objectOutputStream != null) {
                 try {
+                    // NOTE: this writes something to the output stream for bookkeeping purposes.
+                    // Don't get the byteArray before we do this!
                     objectOutputStream.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Error in Data#toByteArray: ", e);
                 }
             }
             try {
                 outputStream.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error in Data#toByteArray: ", e);
             }
         }
 
         if (outputStream.size() > MAX_DATA_BYTES) {
             throw new IllegalStateException(
-                    "Data cannot occupy more than " + MAX_DATA_BYTES + " bytes when serialized");
+                    "Data cannot occupy more than " + MAX_DATA_BYTES
+                            + " bytes when serialized");
         }
         return outputStream.toByteArray();
     }
@@ -340,11 +427,9 @@ public final class Data {
      * @param bytes The byte array representation to convert
      * @return An {@link Data} object built from the input
      * @throws IllegalStateException if bytes is bigger than {@link #MAX_DATA_BYTES}
-     * @hide
      */
-    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     @TypeConverter
-    public static @NonNull Data fromByteArray(@NonNull byte[] bytes) throws IllegalStateException {
+    public static @NonNull Data fromByteArray(@NonNull byte[] bytes) {
         if (bytes.length > MAX_DATA_BYTES) {
             throw new IllegalStateException(
                     "Data cannot occupy more than " + MAX_DATA_BYTES + " bytes when serialized");
@@ -359,19 +444,19 @@ public final class Data {
                 map.put(objectInputStream.readUTF(), objectInputStream.readObject());
             }
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error in Data#fromByteArray: ", e);
         } finally {
             if (objectInputStream != null) {
                 try {
                     objectInputStream.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Error in Data#fromByteArray: ", e);
                 }
             }
             try {
                 inputStream.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error in Data#fromByteArray: ", e);
             }
         }
         return new Data(map);
@@ -385,8 +470,30 @@ public final class Data {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
+
         Data other = (Data) o;
-        return mValues.equals(other.mValues);
+        Set<String> keys = mValues.keySet();
+        if (!keys.equals(other.mValues.keySet())) {
+            return false;
+        }
+
+        for (String key : keys) {
+            Object value = mValues.get(key);
+            Object otherValue = other.mValues.get(key);
+            boolean equal;
+            if (value == null || otherValue == null) {
+                equal = value == otherValue;
+            } else if (value instanceof Object[] && otherValue instanceof Object[]) {
+                equal = Arrays.deepEquals((Object[]) value, (Object[]) otherValue);
+            } else {
+                equal = value.equals(otherValue);
+            }
+
+            if (!equal) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -394,8 +501,28 @@ public final class Data {
         return 31 * mValues.hashCode();
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Data {");
+        if (!mValues.isEmpty()) {
+            for (String key : mValues.keySet()) {
+                sb.append(key).append(" : ");
+                Object value = mValues.get(key);
+                if (value instanceof Object[]) {
+                    sb.append(Arrays.toString((Object[]) value));
+                } else {
+                    sb.append(value);
+                }
+                sb.append(", ");
+            }
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
     @SuppressWarnings("WeakerAccess") /* synthetic access */
-    static Boolean[] convertPrimitiveBooleanArray(boolean[] value) {
+    static @NonNull Boolean[] convertPrimitiveBooleanArray(@NonNull boolean[] value) {
         Boolean[] returnValue = new Boolean[value.length];
         for (int i = 0; i < value.length; ++i) {
             returnValue[i] = value[i];
@@ -404,7 +531,16 @@ public final class Data {
     }
 
     @SuppressWarnings("WeakerAccess") /* synthetic access */
-    static Integer[] convertPrimitiveIntArray(int[] value) {
+    static @NonNull Byte[] convertPrimitiveByteArray(@NonNull byte[] value) {
+        Byte[] returnValue = new Byte[value.length];
+        for (int i = 0; i < value.length; ++i) {
+            returnValue[i] = value[i];
+        }
+        return returnValue;
+    }
+
+    @SuppressWarnings("WeakerAccess") /* synthetic access */
+    static @NonNull Integer[] convertPrimitiveIntArray(@NonNull int[] value) {
         Integer[] returnValue = new Integer[value.length];
         for (int i = 0; i < value.length; ++i) {
             returnValue[i] = value[i];
@@ -413,7 +549,7 @@ public final class Data {
     }
 
     @SuppressWarnings("WeakerAccess") /* synthetic access */
-    static Long[] convertPrimitiveLongArray(long[] value) {
+    static @NonNull Long[] convertPrimitiveLongArray(@NonNull long[] value) {
         Long[] returnValue = new Long[value.length];
         for (int i = 0; i < value.length; ++i) {
             returnValue[i] = value[i];
@@ -422,7 +558,7 @@ public final class Data {
     }
 
     @SuppressWarnings("WeakerAccess") /* synthetic access */
-    static Float[] convertPrimitiveFloatArray(float[] value) {
+    static @NonNull Float[] convertPrimitiveFloatArray(@NonNull float[] value) {
         Float[] returnValue = new Float[value.length];
         for (int i = 0; i < value.length; ++i) {
             returnValue[i] = value[i];
@@ -431,7 +567,7 @@ public final class Data {
     }
 
     @SuppressWarnings("WeakerAccess") /* synthetic access */
-    static Double[] convertPrimitiveDoubleArray(double[] value) {
+    static @NonNull Double[] convertPrimitiveDoubleArray(@NonNull double[] value) {
         Double[] returnValue = new Double[value.length];
         for (int i = 0; i < value.length; ++i) {
             returnValue[i] = value[i];
@@ -440,7 +576,7 @@ public final class Data {
     }
 
     /**
-     * A builder for {@link Data}.
+     * A builder for {@link Data} objects.
      */
     public static final class Builder {
 
@@ -465,8 +601,32 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putBooleanArray(@NonNull String key, boolean[] value) {
+        public @NonNull Builder putBooleanArray(@NonNull String key, @NonNull boolean[] value) {
             mValues.put(key, convertPrimitiveBooleanArray(value));
+            return this;
+        }
+
+        /**
+         * Puts an byte into the arguments.
+         *
+         * @param key The key for this argument
+         * @param value The value for this argument
+         * @return The {@link Builder}
+         */
+        public @NonNull Builder putByte(@NonNull String key, byte value) {
+            mValues.put(key, value);
+            return this;
+        }
+
+        /**
+         * Puts an integer array into the arguments.
+         *
+         * @param key The key for this argument
+         * @param value The value for this argument
+         * @return The {@link Builder}
+         */
+        public @NonNull Builder putByteArray(@NonNull String key, @NonNull byte[] value) {
+            mValues.put(key, convertPrimitiveByteArray(value));
             return this;
         }
 
@@ -489,7 +649,7 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putIntArray(@NonNull String key, int[] value) {
+        public @NonNull Builder putIntArray(@NonNull String key, @NonNull int[] value) {
             mValues.put(key, convertPrimitiveIntArray(value));
             return this;
         }
@@ -513,7 +673,7 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putLongArray(@NonNull String key, long[] value) {
+        public @NonNull Builder putLongArray(@NonNull String key, @NonNull long[] value) {
             mValues.put(key, convertPrimitiveLongArray(value));
             return this;
         }
@@ -537,7 +697,7 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putFloatArray(String key, float[] value) {
+        public @NonNull Builder putFloatArray(@NonNull String key, @NonNull float[] value) {
             mValues.put(key, convertPrimitiveFloatArray(value));
             return this;
         }
@@ -561,7 +721,7 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putDoubleArray(@NonNull String key, double[] value) {
+        public @NonNull Builder putDoubleArray(@NonNull String key, @NonNull double[] value) {
             mValues.put(key, convertPrimitiveDoubleArray(value));
             return this;
         }
@@ -573,7 +733,7 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putString(@NonNull String key, String value) {
+        public @NonNull Builder putString(@NonNull String key, @Nullable String value) {
             mValues.put(key, value);
             return this;
         }
@@ -585,16 +745,16 @@ public final class Data {
          * @param value The value for this argument
          * @return The {@link Builder}
          */
-        public @NonNull Builder putStringArray(@NonNull String key, String[] value) {
+        public @NonNull Builder putStringArray(@NonNull String key, @NonNull String[] value) {
             mValues.put(key, value);
             return this;
         }
 
         /**
-         * Puts all input key-value pairs from the {@link Data} into the Builder.
-         * Any non-valid types will be logged and ignored.  Valid types are: Boolean, Integer,
-         * Long, Double, String, and array versions of each of those types.
-         * Any {@code null} values will also be ignored.
+         * Puts all input key-value pairs from a {@link Data} into the Builder.
+         * <p>
+         * Valid value types are: Boolean, Integer, Long, Float, Double, String, and their array
+         * versions.  Invalid types will throw an {@link IllegalArgumentException}.
          *
          * @param data {@link Data} containing key-value pairs to add
          * @return The {@link Builder}
@@ -605,9 +765,10 @@ public final class Data {
         }
 
         /**
-         * Puts all input key-value pairs into the Builder. Valid types are: Boolean, Integer,
-         * Long, Float, Double, String, and array versions of each of those types.
-         * Invalid types throw an {@link IllegalArgumentException}.
+         * Puts all input key-value pairs from a {@link Map} into the Builder.
+         * <p>
+         * Valid value types are: Boolean, Integer, Long, Float, Double, String, and their array
+         * versions.  Invalid types will throw an {@link IllegalArgumentException}.
          *
          * @param values A {@link Map} of key-value pairs to add
          * @return The {@link Builder}
@@ -627,7 +788,7 @@ public final class Data {
          * Invalid types throw an {@link IllegalArgumentException}.
          *
          * @param key A {@link String} key to add
-         * @param value A Nullable {@link Object} value to add
+         * @param value A nullable {@link Object} value to add of the valid types
          * @return The {@link Builder}
          * @hide
          */
@@ -636,14 +797,16 @@ public final class Data {
             if (value == null) {
                 mValues.put(key, null);
             } else {
-                Class valueType = value.getClass();
+                Class<?> valueType = value.getClass();
                 if (valueType == Boolean.class
+                        || valueType == Byte.class
                         || valueType == Integer.class
                         || valueType == Long.class
                         || valueType == Float.class
                         || valueType == Double.class
                         || valueType == String.class
                         || valueType == Boolean[].class
+                        || valueType == Byte[].class
                         || valueType == Integer[].class
                         || valueType == Long[].class
                         || valueType == Float[].class
@@ -652,6 +815,8 @@ public final class Data {
                     mValues.put(key, value);
                 } else if (valueType == boolean[].class) {
                     mValues.put(key, convertPrimitiveBooleanArray((boolean[]) value));
+                } else if (valueType == byte[].class) {
+                    mValues.put(key, convertPrimitiveByteArray((byte[]) value));
                 } else if (valueType == int[].class) {
                     mValues.put(key, convertPrimitiveIntArray((int[]) value));
                 } else if (valueType == long[].class) {
@@ -669,13 +834,17 @@ public final class Data {
         }
 
         /**
-         * Builds an {@link Data} object.
+         * Builds a {@link Data} object.
          *
          * @return The {@link Data} object containing all key-value pairs specified by this
          *         {@link Builder}.
          */
         public @NonNull Data build() {
-            return new Data(mValues);
+            Data data = new Data(mValues);
+            // Make sure we catch Data objects that are too large at build() instead of later.  This
+            // method will throw an exception if data is too big.
+            Data.toByteArrayInternal(data);
+            return data;
         }
     }
 }

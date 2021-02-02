@@ -16,8 +16,8 @@
 
 package androidx.work
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import androidx.test.runner.AndroidJUnit4
 import androidx.work.workers.TestWorker
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -32,8 +32,10 @@ class OneTimeWorkRequestTest {
         builder.setInputMerger(ArrayCreatingInputMerger::class)
         val request = builder.build()
         assertEquals(request.workSpec.workerClassName, TestWorker::class.java.name)
-        assertEquals(request.workSpec.inputMergerClassName,
-                ArrayCreatingInputMerger::class.java.name)
+        assertEquals(
+            request.workSpec.inputMergerClassName,
+            ArrayCreatingInputMerger::class.java.name
+        )
     }
 
     @Test
@@ -41,7 +43,9 @@ class OneTimeWorkRequestTest {
         val builder = OneTimeWorkRequestBuilder<TestWorker>()
         val request = builder.build()
         assertEquals(request.workSpec.workerClassName, TestWorker::class.java.name)
-        assertEquals(request.workSpec.inputMergerClassName,
-                OverwritingInputMerger::class.java.name)
+        assertEquals(
+            request.workSpec.inputMergerClassName,
+            OverwritingInputMerger::class.java.name
+        )
     }
 }

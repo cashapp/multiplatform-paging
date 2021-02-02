@@ -15,13 +15,16 @@
  */
 package androidx.room.processor
 
-import androidx.room.ext.toAnnotationBox
+import androidx.room.ext.isEntityElement
+import androidx.room.compiler.processing.XAnnotationBox
+import androidx.room.compiler.processing.XMethodElement
+import androidx.room.compiler.processing.XType
+import androidx.room.compiler.processing.XTypeElement
 import androidx.room.vo.Entity
+import androidx.room.vo.Pojo
+import androidx.room.vo.ShortcutEntity
 import androidx.room.vo.ShortcutQueryParameter
-import com.google.auto.common.MoreTypes
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeMirror
+import androidx.room.vo.findFieldByColumnName
 import kotlin.reflect.KClass
 
 /**
@@ -29,39 +32,165 @@ import kotlin.reflect.KClass
  */
 class ShortcutMethodProcessor(
     baseContext: Context,
-    val containing: DeclaredType,
-    val executableElement: ExecutableElement
+    val containing: XType,
+    val executableElement: XMethodElement
 ) {
     val context = baseContext.fork(executableElement)
-    private val asMember = context.processingEnv.typeUtils.asMemberOf(containing, executableElement)
-    private val executableType = MoreTypes.asExecutable(asMember)
+    private val delegate = MethodProcessorDelegate.createFor(context, containing, executableElement)
 
-    fun <T : Annotation> extractAnnotation(klass: KClass<T>, errorMsg: String): T? {
+    fun <T : Annotation> extractAnnotation(klass: KClass<T>, errorMsg: String): XAnnotationBox<T>? {
         val annotation = executableElement.toAnnotationBox(klass)
         context.checker.check(annotation != null, executableElement, errorMsg)
-        return annotation?.value
+        return annotation
     }
 
-    fun extractReturnType(): TypeMirror {
-        return executableType.returnType
-    }
+    fun extractReturnType() = delegate.extractReturnType()
 
     fun extractParams(
-        missingParamError: String
-    ): Pair<Map<String, Entity>, List<ShortcutQueryParameter>> {
-        val params = executableElement.parameters
-                .map { ShortcutParameterProcessor(
-                        baseContext = context,
-                        containing = containing,
-                        element = it).process() }
+        targetEntityType: XType?,
+        missingParamError: String,
+        onValidatePartialEntity: (Entity, Pojo) -> Unit
+    ): Pair<Map<String, ShortcutEntity>, List<ShortcutQueryParameter>> {
+        val params = delegate.extractParams().map {
+            ShortcutParameterProcessor(
+                baseContext = context,
+                containing = containing,
+                element = it
+            ).process()
+        }
         context.checker.check(params.isNotEmpty(), executableElement, missingParamError)
-        val entities = params
-                .filter { it.entityType != null }
-                .associateBy({ it.name }, {
-                    EntityProcessor(
-                            context = context,
-                            element = MoreTypes.asTypeElement(it.entityType)).process()
-                })
+
+        val targetEntity = if (targetEntityType != null &&
+            !targetEntityType.isTypeOf(Any::class)
+        ) {
+            val targetTypeElement = targetEntityType.typeElement
+            if (targetTypeElement == null) {
+                context.logger.e(
+                    executableElement,
+                    ProcessorErrors.INVALID_TARGET_ENTITY_IN_SHORTCUT_METHOD
+                )
+                null
+            } else {
+                processEntity(
+                    element = targetTypeElement,
+                    onInvalid = {
+                        context.logger.e(
+                            executableElement,
+                            ProcessorErrors.INVALID_TARGET_ENTITY_IN_SHORTCUT_METHOD
+                        )
+                        return emptyMap<String, ShortcutEntity>() to emptyList()
+                    }
+                )
+            }
+        } else {
+            null
+        }
+
+        val entities = params.filter { it.pojoType != null }.let {
+            if (targetEntity != null) {
+                extractPartialEntities(targetEntity, it, onValidatePartialEntity)
+            } else {
+                extractEntities(it)
+            }
+        }
+
         return Pair(entities, params)
     }
+
+    private fun extractPartialEntities(
+        targetEntity: Entity,
+        params: List<ShortcutQueryParameter>,
+        onValidatePartialEntity: (Entity, Pojo) -> Unit
+    ) = params.associateBy(
+        { it.name },
+        { param ->
+            if (targetEntity.type.isSameType(param.pojoType!!)) {
+                ShortcutEntity(entity = targetEntity, partialEntity = null)
+            } else {
+                // Target entity and pojo param are not the same, process and validate partial entity.
+                val pojoTypeElement = param.pojoType.typeElement
+                val pojo = if (pojoTypeElement == null) {
+                    context.logger.e(
+                        targetEntity.element,
+                        ProcessorErrors.shortcutMethodArgumentMustBeAClass(
+                            typeName = param.pojoType.typeName
+                        )
+                    )
+                    null
+                } else {
+                    PojoProcessor.createFor(
+                        context = context,
+                        element = pojoTypeElement,
+                        bindingScope = FieldProcessor.BindingScope.BIND_TO_STMT,
+                        parent = null
+                    ).process().also { pojo ->
+                        pojo.fields
+                            .filter { targetEntity.findFieldByColumnName(it.columnName) == null }
+                            .forEach {
+                                context.logger.e(
+                                    it.element,
+                                    ProcessorErrors.cannotFindAsEntityField(
+                                        targetEntity.typeName.toString()
+                                    )
+
+                                )
+                            }
+
+                        if (pojo.relations.isNotEmpty()) {
+                            // TODO: Support Pojos with relations.
+                            context.logger.e(
+                                pojo.element,
+                                ProcessorErrors.INVALID_RELATION_IN_PARTIAL_ENTITY
+                            )
+                        }
+                        onValidatePartialEntity(targetEntity, pojo)
+                    }
+                }
+                ShortcutEntity(entity = targetEntity, partialEntity = pojo)
+            }
+        }
+    )
+
+    private fun extractEntities(params: List<ShortcutQueryParameter>) =
+        params.mapNotNull {
+            val entitiyTypeElement = it.pojoType?.typeElement
+            if (entitiyTypeElement == null) {
+                context.logger.e(
+                    it.element,
+                    ProcessorErrors.CANNOT_FIND_ENTITY_FOR_SHORTCUT_QUERY_PARAMETER
+                )
+                null
+            } else {
+                val entity = processEntity(
+                    element = entitiyTypeElement,
+                    onInvalid = {
+                        context.logger.e(
+                            it.element,
+                            ProcessorErrors.CANNOT_FIND_ENTITY_FOR_SHORTCUT_QUERY_PARAMETER
+                        )
+                        return@mapNotNull null
+                    }
+                )
+                it.name to ShortcutEntity(entity = entity!!, partialEntity = null)
+            }
+        }.toMap()
+
+    private inline fun processEntity(element: XTypeElement, onInvalid: () -> Unit) =
+        if (element.isEntityElement()) {
+            EntityProcessor(
+                context = context,
+                element = element
+            ).process()
+        } else {
+            onInvalid()
+            null
+        }
+
+    fun findInsertMethodBinder(
+        returnType: XType,
+        params: List<ShortcutQueryParameter>
+    ) = delegate.findInsertMethodBinder(returnType, params)
+
+    fun findDeleteOrUpdateMethodBinder(returnType: XType) =
+        delegate.findDeleteOrUpdateMethodBinder(returnType)
 }

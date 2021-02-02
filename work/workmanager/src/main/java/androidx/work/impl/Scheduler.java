@@ -15,9 +15,8 @@
  */
 package androidx.work.impl;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.RestrictTo;
-
+import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
 import androidx.work.impl.model.WorkSpec;
 
 /**
@@ -34,12 +33,18 @@ public interface Scheduler {
     int MAX_SCHEDULER_LIMIT = 50;
 
     /**
+     * The maximum number of {@link WorkSpec}s that are considered for execution by the greedy
+     * scheduler.
+     */
+    int MAX_GREEDY_SCHEDULER_LIMIT = 200;
+
+    /**
      * Schedule the given {@link WorkSpec}s for background execution.  The Scheduler does NOT need
      * to check if there are any dependencies.
      *
      * @param workSpecs The array of {@link WorkSpec}s to schedule
      */
-    void schedule(WorkSpec... workSpecs);
+    void schedule(@NonNull WorkSpec... workSpecs);
 
     /**
      * Cancel the work identified by the given {@link WorkSpec} id.
@@ -47,4 +52,11 @@ public interface Scheduler {
      * @param workSpecId The id of the work to stopWork
      */
     void cancel(@NonNull String workSpecId);
+
+    /**
+     * This is <code>true</code> when a {@link Scheduler} has a fixed number of slots.
+     *
+     * @return <code>true</code> if a {@link Scheduler} has limited scheduling slots.
+     */
+    boolean hasLimitedSchedulingSlots();
 }

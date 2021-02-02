@@ -24,11 +24,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import android.support.annotation.NonNull;
-
+import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.work.Constraints;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManagerTest;
@@ -47,6 +46,7 @@ import java.util.List;
 @SdkSuppress(minSdkVersion = 23)
 public class ConstraintControllerTest extends WorkManagerTest {
     private TestDeviceIdleConstraintController mTestIdleController;
+    @SuppressWarnings("unchecked")
     private ConstraintTracker<Boolean> mMockTracker = mock(ConstraintTracker.class);
     private ConstraintController.OnConstraintUpdatedCallback mCallback =
             mock(ConstraintController.OnConstraintUpdatedCallback.class);

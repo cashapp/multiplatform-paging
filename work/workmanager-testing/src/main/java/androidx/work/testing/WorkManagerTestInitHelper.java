@@ -17,15 +17,12 @@
 package androidx.work.testing;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.work.Configuration;
-import androidx.work.impl.Scheduler;
 import androidx.work.impl.WorkManagerImpl;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Helps initialize {@link androidx.work.WorkManager} for testing.
@@ -40,6 +37,7 @@ public final class WorkManagerTestInitHelper {
         SynchronousExecutor synchronousExecutor = new SynchronousExecutor();
         Configuration configuration = new Configuration.Builder()
                 .setExecutor(synchronousExecutor)
+                .setTaskExecutor(synchronousExecutor)
                 .build();
         initializeTestWorkManager(context, configuration);
     }
@@ -55,43 +53,41 @@ public final class WorkManagerTestInitHelper {
             @NonNull Context context,
             @NonNull Configuration configuration) {
 
-        final TestScheduler scheduler = new TestScheduler();
-        WorkManagerImpl workManager = new TestWorkManagerImpl(context, configuration) {
-            @NonNull
-            @Override
-            public List<Scheduler> getSchedulers() {
-                return Collections.singletonList((Scheduler) scheduler);
-            }
+        // Check if the configuration being used has overridden the task executor. If not,
+        // swap to SynchronousExecutor. This is to preserve existing behavior.
+        if (configuration.isUsingDefaultTaskExecutor()) {
+            Configuration.Builder builder = new Configuration.Builder(configuration)
+                    .setTaskExecutor(new SynchronousExecutor());
+            configuration = builder.build();
+        }
 
-            @Override
-            public void setAllConstraintsMet(@NonNull UUID workSpecId) {
-                scheduler.setAllConstraintsMet(workSpecId);
-            }
+        WorkManagerImpl.setDelegate(new TestWorkManagerImpl(context, configuration));
+    }
 
-            @Override
-            public void setInitialDelayMet(@NonNull UUID workSpecId) {
-                scheduler.setInitialDelayMet(workSpecId);
-            }
-
-            @Override
-            public void setPeriodDelayMet(@NonNull UUID workSpecId) {
-                scheduler.setPeriodDelayMet(workSpecId);
-            }
-        };
-        workManager.getProcessor().addExecutionListener(scheduler);
-        WorkManagerImpl.setDelegate(workManager);
+    /**
+     * @return An instance of {@link TestDriver}. This exposes additional functionality that is
+     * useful in the context of testing when using WorkManager.
+     * @deprecated Call {@link WorkManagerTestInitHelper#getTestDriver(Context)} instead.
+     */
+    @Deprecated
+    public static @Nullable TestDriver getTestDriver() {
+        WorkManagerImpl workManager = WorkManagerImpl.getInstance();
+        if (workManager == null) {
+            return null;
+        } else {
+            return (TestWorkManagerImpl) workManager;
+        }
     }
 
     /**
      * @return An instance of {@link TestDriver}. This exposes additional functionality that is
      * useful in the context of testing when using WorkManager.
      */
-    public static TestDriver getTestDriver() {
-        WorkManagerImpl workManager = WorkManagerImpl.getInstance();
-        if (workManager == null) {
+    public static @Nullable TestDriver getTestDriver(@NonNull Context context) {
+        try {
+            return (TestWorkManagerImpl) WorkManagerImpl.getInstance(context);
+        } catch (IllegalStateException e) {
             return null;
-        } else {
-            return ((TestWorkManagerImpl) WorkManagerImpl.getInstance());
         }
     }
 

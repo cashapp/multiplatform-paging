@@ -16,18 +16,18 @@
 
 package androidx.work.impl.background.systemjob;
 
-import static android.support.annotation.VisibleForTesting.PACKAGE_PRIVATE;
+import static androidx.annotation.VisibleForTesting.PACKAGE_PRIVATE;
 
 import android.app.job.JobInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
 import android.os.PersistableBundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.RestrictTo;
-import android.support.annotation.VisibleForTesting;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.ContentUriTriggers;
@@ -44,7 +44,7 @@ import androidx.work.impl.model.WorkSpec;
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 @RequiresApi(api = WorkManagerImpl.MIN_JOB_SCHEDULER_API_LEVEL)
 class SystemJobInfoConverter {
-    private static final String TAG = "SystemJobInfoConverter";
+    private static final String TAG = Logger.tagWithPrefix("SystemJobInfoConverter");
 
     static final String EXTRA_WORK_SPEC_ID = "EXTRA_WORK_SPEC_ID";
     static final String EXTRA_IS_PERIODIC = "EXTRA_IS_PERIODIC";
@@ -68,7 +68,6 @@ class SystemJobInfoConverter {
      */
     JobInfo convert(WorkSpec workSpec, int jobId) {
         Constraints constraints = workSpec.constraints;
-        // TODO(janclarin): Support newer required network types if unsupported by API version.
         int jobInfoNetworkType = convertNetworkType(constraints.getRequiredNetworkType());
         PersistableBundle extras = new PersistableBundle();
         extras.putString(EXTRA_WORK_SPEC_ID, workSpec.id);
@@ -86,19 +85,22 @@ class SystemJobInfoConverter {
             builder.setBackoffCriteria(workSpec.backoffDelayDuration, backoffPolicy);
         }
 
-        if (workSpec.isPeriodic()) {
-            if (Build.VERSION.SDK_INT >= 24) {
-                builder.setPeriodic(workSpec.intervalDuration, workSpec.flexDuration);
+        long nextRunTime = workSpec.calculateNextRunTime();
+        long now = System.currentTimeMillis();
+        long offset = Math.max(nextRunTime - now, 0);
+
+        if (Build.VERSION.SDK_INT <= 28) {
+            // Before API 29, Jobs needed at least one constraint. Therefore before API 29 we
+            // always setMinimumLatency to make sure we have at least one constraint.
+            // See aosp/5434530 & b/6771687
+            builder.setMinimumLatency(offset);
+        } else  {
+            if (offset > 0) {
+                // Only set a minimum latency when applicable.
+                builder.setMinimumLatency(offset);
             } else {
-                Logger.debug(TAG,
-                        "Flex duration is currently not supported before API 24. Ignoring.");
-                builder.setPeriodic(workSpec.intervalDuration);
+                builder.setImportantWhileForeground(true);
             }
-        } else {
-            // Even if a WorkRequest has no constraints, setMinimumLatency(0) still needs to be
-            // called due to an issue in JobInfo.Builder#build and JobInfo with no constraints. See
-            // b/67716867.
-            builder.setMinimumLatency(workSpec.initialDelay);
         }
 
         if (Build.VERSION.SDK_INT >= 24 && constraints.hasContentUriTriggers()) {
@@ -106,6 +108,8 @@ class SystemJobInfoConverter {
             for (ContentUriTriggers.Trigger trigger : contentUriTriggers.getTriggers()) {
                 builder.addTriggerContentUri(convertContentUriTrigger(trigger));
             }
+            builder.setTriggerContentUpdateDelay(constraints.getTriggerContentUpdateDelay());
+            builder.setTriggerContentMaxDelay(constraints.getTriggerMaxContentDelay());
         }
 
         // We don't want to persist these jobs because we reschedule these jobs on BOOT_COMPLETED.
@@ -151,7 +155,7 @@ class SystemJobInfoConverter {
                 }
                 break;
         }
-        Logger.debug(TAG, String.format(
+        Logger.get().debug(TAG, String.format(
                 "API version too low. Cannot convert network type value %s", networkType));
         return JobInfo.NETWORK_TYPE_ANY;
     }

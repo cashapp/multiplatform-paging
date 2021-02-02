@@ -39,8 +39,8 @@ import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.test.R;
 import androidx.recyclerview.test.RecyclerViewTestActivity;
-import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import org.hamcrest.BaseMatcher;
@@ -124,9 +124,10 @@ public class FocusSearchNavigationTest {
             }
         });
         waitForIdleSync();
-        assertThat("test sanity", mRecyclerView.getLayoutManager().getLayoutDirection(),
+        assertThat("Assumption check", mRecyclerView.getLayoutManager().getLayoutDirection(),
                 is(mLayoutDir));
-        assertThat("test sanity", ViewCompat.getLayoutDirection(mRecyclerView), is(mLayoutDir));
+        assertThat("Assumption check", ViewCompat.getLayoutDirection(mRecyclerView),
+                is(mLayoutDir));
     }
 
     @Test
@@ -174,6 +175,22 @@ public class FocusSearchNavigationTest {
         focusSearchAndGive(focused, View.FOCUS_BACKWARD);
         assertThat(mBefore, hasFocus());
         focusSearchAndGive(mBefore, View.FOCUS_BACKWARD);
+        assertThat(mAfter, hasFocus());
+    }
+
+    @Test
+    public void focusSearchForwardWithSingleItem() throws Throwable {
+        setup(1);
+        requestFocus(mBefore);
+        assertThat(mBefore, hasFocus());
+
+        View focused = mBefore;
+        focusSearchAndGive(focused, View.FOCUS_FORWARD);
+        RecyclerView.ViewHolder viewHolder = mRecyclerView.findViewHolderForAdapterPosition(0);
+        assertThat("The first view holder ", viewHolder, hasFocus());
+
+        focused = viewHolder.itemView;
+        focusSearchAndGive(focused, View.FOCUS_FORWARD);
         assertThat(mAfter, hasFocus());
     }
 

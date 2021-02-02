@@ -29,9 +29,9 @@ import androidx.lifecycle.Lifecycle.Event;
 import androidx.lifecycle.Lifecycle.State;
 import androidx.lifecycle.testapp.SimpleAppLifecycleTestActivity;
 import androidx.lifecycle.testapp.SimpleAppLifecycleTestActivity.TestEventType;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,19 +72,22 @@ public class SimpleAppFullLifecycleTest {
             new ActivityTestRule<>(SimpleAppLifecycleTestActivity.class, false, false);
 
     @Before
-    public void setup() {
+    public void setup() throws Throwable {
         // cool down period, so application state will become DESTROYED
         try {
             Thread.sleep(ProcessLifecycleOwner.TIMEOUT_MS * 2);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        SimpleAppLifecycleTestActivity.startProcessObserver();
+        activityTestRule.runOnUiThread(
+                SimpleAppLifecycleTestActivity::startProcessObserver);
     }
 
     @After
-    public void tearDown() {
-        SimpleAppLifecycleTestActivity.stopProcessObserver();
+    public void tearDown() throws Throwable {
+        activityTestRule.runOnUiThread(
+                SimpleAppLifecycleTestActivity::stopProcessObserver
+        );
     }
 
     @Test

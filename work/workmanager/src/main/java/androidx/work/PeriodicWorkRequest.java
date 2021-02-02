@@ -15,15 +15,42 @@
  */
 package androidx.work;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A class that represents a request for repeating work.
+ * A {@link WorkRequest} for repeating work.  This work executes multiple times until it is
+ * cancelled, with the first execution happening immediately or as soon as the given
+ * {@link Constraints} are met.  The next execution will happen during the period interval; note
+ * that execution may be delayed because {@link WorkManager} is subject to OS battery optimizations,
+ * such as doze mode.
+ * <p>
+ * You can control when the work executes in the period interval more exactly - see
+ * {@link PeriodicWorkRequest.Builder} for documentation on {@code flexInterval}s.
+ * <p>
+ * Periodic work has a minimum interval of 15 minutes.
+ * <p>
+ * Periodic work is intended for use cases where you want a fairly consistent delay between
+ * consecutive runs, and you are willing to accept inexactness due to battery optimizations and doze
+ * mode.  Please note that if your periodic work has constraints, it will not execute until the
+ * constraints are met, even if the delay between periods has been met.
+ * <p>
+ * If you need to schedule work that happens exactly at a certain time or only during a certain time
+ * window, you should consider using {@link OneTimeWorkRequest}s.
+ * <p>
+ * The normal lifecycle of a PeriodicWorkRequest is {@code ENQUEUED -> RUNNING -> ENQUEUED}.  By
+ * definition, periodic work cannot terminate in a succeeded or failed state, since it must recur.
+ * It can only terminate if explicitly cancelled.  However, in the case of retries, periodic work
+ * will still back off according to
+ * {@link PeriodicWorkRequest.Builder#setBackoffCriteria(BackoffPolicy, long, TimeUnit)}.
+ * <p>
+ * Periodic work cannot be part of a chain or graph of work.
  */
 
 public final class PeriodicWorkRequest extends WorkRequest {
@@ -31,10 +58,12 @@ public final class PeriodicWorkRequest extends WorkRequest {
     /**
      * The minimum interval duration for {@link PeriodicWorkRequest} (in milliseconds).
      */
+    @SuppressLint("MinMaxConstant")
     public static final long MIN_PERIODIC_INTERVAL_MILLIS = 15 * 60 * 1000L; // 15 minutes.
     /**
      * The minimum flex duration for {@link PeriodicWorkRequest} (in milliseconds).
      */
+    @SuppressLint("MinMaxConstant")
     public static final long MIN_PERIODIC_FLEX_MILLIS = 5 * 60 * 1000L; // 5 minutes.
 
     PeriodicWorkRequest(Builder builder) {
@@ -42,20 +71,21 @@ public final class PeriodicWorkRequest extends WorkRequest {
     }
 
     /**
-     * Builder for {@link PeriodicWorkRequest} class.
+     * Builder for {@link PeriodicWorkRequest}s.
      */
     public static final class Builder extends WorkRequest.Builder<Builder, PeriodicWorkRequest> {
 
         /**
          * Creates a {@link PeriodicWorkRequest} to run periodically once every interval period. The
          * {@link PeriodicWorkRequest} is guaranteed to run exactly one time during this interval
-         * (subject to OS battery optimizations, such as doze mode). The {@code intervalMillis} must
+         * (subject to OS battery optimizations, such as doze mode). The repeat interval must
          * be greater than or equal to {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS}. It
          * may run immediately, at the end of the period, or any time in between so long as the
          * other conditions are satisfied at the time. The run time of the
-         * {@link PeriodicWorkRequest} can be restricted to a flex period within an interval.
+         * {@link PeriodicWorkRequest} can be restricted to a flex period within an interval (see
+         * {@code #Builder(Class, long, TimeUnit, long, TimeUnit)}).
          *
-         * @param workerClass The {@link ListenableWorker} class to run with this job
+         * @param workerClass The {@link ListenableWorker} class to run for this work
          * @param repeatInterval The repeat interval in {@code repeatIntervalTimeUnit} units
          * @param repeatIntervalTimeUnit The {@link TimeUnit} for {@code repeatInterval}
          */
@@ -70,13 +100,14 @@ public final class PeriodicWorkRequest extends WorkRequest {
         /**
          * Creates a {@link PeriodicWorkRequest} to run periodically once every interval period. The
          * {@link PeriodicWorkRequest} is guaranteed to run exactly one time during this interval
-         * (subject to OS battery optimizations, such as doze mode). The {@code intervalMillis} must
+         * (subject to OS battery optimizations, such as doze mode). The repeat interval must
          * be greater than or equal to {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS}. It
          * may run immediately, at the end of the period, or any time in between so long as the
          * other conditions are satisfied at the time. The run time of the
-         * {@link PeriodicWorkRequest} can be restricted to a flex period within an interval.
+         * {@link PeriodicWorkRequest} can be restricted to a flex period within an interval (see
+         * {@code #Builder(Class, Duration, Duration)}).
          *
-         * @param workerClass The {@link ListenableWorker} class to run with this job
+         * @param workerClass The {@link ListenableWorker} class to run for this work
          * @param repeatInterval The repeat interval
          */
         @RequiresApi(26)
@@ -89,10 +120,10 @@ public final class PeriodicWorkRequest extends WorkRequest {
 
         /**
          * Creates a {@link PeriodicWorkRequest} to run periodically once within the
-         * <strong>flex period</strong> of every interval period. See diagram below. The flex period
-         * begins at {@code intervalMillis - flexMillis} to the end of the interval.
-         * {@code intervalMillis} must be greater than or equal to
-         * {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS} and {@code flexMillis} must
+         * <strong>flex period</strong> of every interval period. See diagram below.  The flex
+         * period begins at {@code repeatInterval - flexInterval} to the end of the interval.
+         * The repeat interval must be greater than or equal to
+         * {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS} and the flex interval must
          * be greater than or equal to {@link PeriodicWorkRequest#MIN_PERIODIC_FLEX_MILLIS}.
          *
          * <p><pre>
@@ -102,7 +133,7 @@ public final class PeriodicWorkRequest extends WorkRequest {
          *                interval 1                            interval 2             ...(repeat)
          * </pre></p>
          *
-         * @param workerClass The {@link ListenableWorker} class to run with this job
+         * @param workerClass The {@link ListenableWorker} class to run for this work
          * @param repeatInterval The repeat interval in {@code repeatIntervalTimeUnit} units
          * @param repeatIntervalTimeUnit The {@link TimeUnit} for {@code repeatInterval}
          * @param flexInterval The duration in {@code flexIntervalTimeUnit} units for which this
@@ -123,10 +154,10 @@ public final class PeriodicWorkRequest extends WorkRequest {
 
         /**
          * Creates a {@link PeriodicWorkRequest} to run periodically once within the
-         * <strong>flex period</strong> of every interval period. See diagram below. The flex period
-         * begins at {@code intervalMillis - flexMillis} to the end of the interval.
-         * {@code intervalMillis} must be greater than or equal to
-         * {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS} and {@code flexMillis} must
+         * <strong>flex period</strong> of every interval period. See diagram below.  The flex
+         * period begins at {@code repeatInterval - flexInterval} to the end of the interval.
+         * The repeat interval must be greater than or equal to
+         * {@link PeriodicWorkRequest#MIN_PERIODIC_INTERVAL_MILLIS} and the flex interval must
          * be greater than or equal to {@link PeriodicWorkRequest#MIN_PERIODIC_FLEX_MILLIS}.
          *
          * <p><pre>
@@ -136,7 +167,7 @@ public final class PeriodicWorkRequest extends WorkRequest {
          *                interval 1                            interval 2             ...(repeat)
          * </pre></p>
          *
-         * @param workerClass The {@link ListenableWorker} class to run with this job
+         * @param workerClass The {@link ListenableWorker} class to run for this work
          * @param repeatInterval The repeat interval
          * @param flexInterval The duration in for which this work repeats from the end of the
          *                     {@code repeatInterval}
@@ -157,6 +188,12 @@ public final class PeriodicWorkRequest extends WorkRequest {
                     && mWorkSpec.constraints.requiresDeviceIdle()) {
                 throw new IllegalArgumentException(
                         "Cannot set backoff criteria on an idle mode job");
+            }
+            if (mWorkSpec.runInForeground
+                    && Build.VERSION.SDK_INT >= 23
+                    && mWorkSpec.constraints.requiresDeviceIdle()) {
+                throw new IllegalArgumentException(
+                        "Cannot run in foreground with an idle mode constraint");
             }
             return new PeriodicWorkRequest(this);
         }

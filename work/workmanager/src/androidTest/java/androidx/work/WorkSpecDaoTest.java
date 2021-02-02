@@ -16,9 +16,9 @@
 
 package androidx.work;
 
-import static androidx.work.State.BLOCKED;
-import static androidx.work.State.FAILED;
-import static androidx.work.State.SUCCEEDED;
+import static androidx.work.WorkInfo.State.BLOCKED;
+import static androidx.work.WorkInfo.State.FAILED;
+import static androidx.work.WorkInfo.State.SUCCEEDED;
 import static androidx.work.impl.Scheduler.MAX_SCHEDULER_LIMIT;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -27,8 +27,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.work.impl.model.WorkSpec;
 import androidx.work.impl.model.WorkSpecDao;
 import androidx.work.worker.TestWorker;
@@ -41,6 +41,43 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class WorkSpecDaoTest extends DatabaseTest {
+
+    @Test
+    @SmallTest
+    public void testWorkSpecsForInserting() {
+        long startTime = System.currentTimeMillis();
+        OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(TestWorker.class)
+                .setPeriodStartTime(
+                        startTime + TimeUnit.HOURS.toMillis(1),
+                        TimeUnit.MILLISECONDS)
+                .build();
+        OneTimeWorkRequest succeeded = new OneTimeWorkRequest.Builder(TestWorker.class)
+                .setPeriodStartTime(startTime, TimeUnit.MILLISECONDS)
+                .setInitialState(SUCCEEDED)
+                .build();
+        OneTimeWorkRequest scheduled = new OneTimeWorkRequest.Builder(TestWorker.class)
+                .setPeriodStartTime(startTime, TimeUnit.MILLISECONDS)
+                .build();
+        OneTimeWorkRequest enqueued = new OneTimeWorkRequest.Builder(TestWorker.class)
+                .setPeriodStartTime(startTime, TimeUnit.MILLISECONDS)
+                .build();
+
+        insertWork(work);
+        insertWork(succeeded);
+        insertWork(scheduled);
+        insertWork(enqueued);
+
+        WorkSpecDao workSpecDao = mDatabase.workSpecDao();
+        List<String> allWorkSpecIds =
+                workSpecDao.getAllWorkSpecIds();
+        assertThat(allWorkSpecIds.size(), equalTo(4));
+        assertThat(allWorkSpecIds, containsInAnyOrder(
+                work.getStringId(),
+                enqueued.getStringId(),
+                scheduled.getStringId(),
+                succeeded.getStringId()
+        ));
+    }
 
     @Test
     @SmallTest

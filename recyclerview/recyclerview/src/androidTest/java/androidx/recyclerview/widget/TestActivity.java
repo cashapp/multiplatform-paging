@@ -20,23 +20,26 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.WindowManager;
 
-import androidx.test.runner.MonitoringInstrumentation;
+import androidx.test.core.app.ActivityScenario;
+import androidx.testutils.ActivityScenarioResetRule;
+import androidx.testutils.Resettable;
 
-public class TestActivity extends Activity {
-    // This is not great but the only way to do this until test runner adds support to not kill
-    // activities after tests.
-    private static final String TEST_RUNNER =
-            MonitoringInstrumentation.class.getCanonicalName() + "$" + MonitoringInstrumentation
-                    .ActivityFinisher.class.getSimpleName();
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
+
+public class TestActivity extends Activity implements Resettable {
     private volatile TestedFrameLayout mContainer;
-    boolean mVisible;
-    boolean mAllowFinish;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        overridePendingTransition(0, 0);
+        reset();
 
+        // disable enter animation.
+        overridePendingTransition(0, 0);
+    }
+
+    public void reset() {
         mContainer = new TestedFrameLayout(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
@@ -49,30 +52,32 @@ public class TestActivity extends Activity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        mVisible = false;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mVisible = true;
-    }
-
-    @Override
     public void finish() {
-        if (!mAllowFinish) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // this is terrible but easy workaround for selective finishing
-            for (StackTraceElement element : stackTrace) {
-
-                if (TEST_RUNNER.equals(element.getClassName())) {
-                    // don't allow activity finisher to finish this.
-                    return;
-                }
-            }
+        if (!mFinishEnabled) {
+            return;
         }
         super.finish();
+
+        // disable exit animation.
+        overridePendingTransition(0, 0);
+    }
+
+    private boolean mFinishEnabled;
+
+    @Override
+    public void setFinishEnabled(boolean finishEnabled) {
+        mFinishEnabled = finishEnabled;
+    }
+
+    static class ResetRule extends ActivityScenarioResetRule<TestActivity> {
+        ResetRule(ActivityScenario<TestActivity> scenario) {
+            super(scenario, new Function1<TestActivity, Unit>() {
+                @Override
+                public Unit invoke(TestActivity activity) {
+                    activity.reset();
+                    return null;
+                }
+            });
+        }
     }
 }

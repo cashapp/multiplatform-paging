@@ -17,6 +17,7 @@ package androidx.slice;
 
 
 import static android.app.slice.SliceItem.FORMAT_ACTION;
+import static android.app.slice.SliceItem.FORMAT_BUNDLE;
 import static android.app.slice.SliceItem.FORMAT_IMAGE;
 import static android.app.slice.SliceItem.FORMAT_INT;
 import static android.app.slice.SliceItem.FORMAT_LONG;
@@ -26,6 +27,7 @@ import static android.app.slice.SliceItem.FORMAT_TEXT;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
@@ -53,7 +55,7 @@ public class SliceConvert {
         android.app.slice.Slice.Builder builder = new android.app.slice.Slice.Builder(
                 slice.getUri(), unwrap(slice.getSpec()));
         builder.addHints(slice.getHints());
-        for (androidx.slice.SliceItem item : slice.getItems()) {
+        for (androidx.slice.SliceItem item : slice.getItemArray()) {
             switch (item.getFormat()) {
                 case FORMAT_SLICE:
                     builder.addSubSlice(unwrap(item.getSlice()), item.getSubType());
@@ -76,6 +78,9 @@ public class SliceConvert {
                     break;
                 case FORMAT_LONG:
                     builder.addLong(item.getLong(), item.getSubType(), item.getHints());
+                    break;
+                case FORMAT_BUNDLE:
+                    builder.addBundle((Bundle) item.mObj, item.getSubType(), item.getHints());
                     break;
             }
         }
@@ -139,6 +144,10 @@ public class SliceConvert {
                     break;
                 case FORMAT_LONG:
                     builder.addLong(item.getLong(), item.getSubType(), item.getHints());
+                    break;
+                case FORMAT_BUNDLE:
+                    builder.addItem(new SliceItem(item.getBundle(), item.getFormat(),
+                            item.getSubType(), item.getHints()));
                     break;
             }
         }

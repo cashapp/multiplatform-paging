@@ -17,13 +17,13 @@
 package androidx.room.processor
 
 import COMMON
+import androidx.room.compiler.processing.isTypeElement
 import androidx.room.ext.RoomTypeNames
 import androidx.room.testing.TestInvocation
 import androidx.room.testing.TestProcessor
 import androidx.room.vo.Dao
+import androidx.room.vo.ReadQueryMethod
 import androidx.room.vo.Warning
-import com.google.auto.common.MoreElements
-import com.google.auto.common.MoreTypes
 import com.google.common.truth.Truth
 import com.google.testing.compile.CompileTester
 import com.google.testing.compile.JavaFileObjects
@@ -35,9 +35,11 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.io.File
 
 @RunWith(Parameterized::class)
 class DaoProcessorTest(val enableVerification: Boolean) {
+
     companion object {
         const val DAO_PREFIX = """
             package foo.bar;
@@ -49,61 +51,90 @@ class DaoProcessorTest(val enableVerification: Boolean) {
     }
 
     @Test
+    fun testUnusedEnumCompilesWithoutError() {
+        singleDao(
+            """
+                @Dao abstract class MyDao {
+                    @Query("SELECT uid FROM User")
+                    abstract int[] getIds();
+                    enum Fruit {
+                        APPLE,
+                        BANANA,
+                        STRAWBERRY
+                    }
+                }
+                """
+        ) { _, _ ->
+        }.compilesWithoutError()
+    }
+
+    @Test
     fun testNonAbstract() {
         singleDao("@Dao public class MyDao {}") { _, _ -> }
-                .failsToCompile()
-                .withErrorContaining(ProcessorErrors.DAO_MUST_BE_AN_ABSTRACT_CLASS_OR_AN_INTERFACE)
+            .failsToCompile()
+            .withErrorContaining(ProcessorErrors.DAO_MUST_BE_AN_ABSTRACT_CLASS_OR_AN_INTERFACE)
     }
 
     @Test
     fun testAbstractMethodWithoutQuery() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao public interface MyDao {
                     int getFoo();
                 }
-        """) { _, _ ->
+        """
+        ) { _, _ ->
         }.failsToCompile()
-                .withErrorContaining(ProcessorErrors.ABSTRACT_METHOD_IN_DAO_MISSING_ANY_ANNOTATION)
+            .withErrorContaining(ProcessorErrors.INVALID_ANNOTATION_COUNT_IN_DAO_METHOD)
     }
 
     @Test
     fun testAbstractMethodWithoutQueryInLibraryClass() {
-        val libraryClassLoader = compileLibrarySource(
-                "test.library.MissingAnnotationsBaseDao",
-                """
+        val libraryClasspath = compileLibrarySource(
+            "test.library.MissingAnnotationsBaseDao",
+            """
                 public interface MissingAnnotationsBaseDao {
                     int getFoo();
                 }
-                """)
+                """
+        )
         singleDao(
-                "@Dao public interface MyDao extends test.library.MissingAnnotationsBaseDao {}",
-                classLoader = libraryClassLoader) { _, _ -> }
-                .failsToCompile()
-                .withErrorContaining(ProcessorErrors.INVALID_ANNOTATION_COUNT_IN_DAO_METHOD +
-                        " - getFoo() in test.library.MissingAnnotationsBaseDao")
+            "@Dao public interface MyDao extends test.library.MissingAnnotationsBaseDao {}",
+            classpathFiles = libraryClasspath
+        ) { _, _ -> }
+            .failsToCompile()
+            .withErrorContaining(
+                ProcessorErrors.INVALID_ANNOTATION_COUNT_IN_DAO_METHOD +
+                    " - test.library.MissingAnnotationsBaseDao.getFoo()"
+            )
     }
 
     @Test
     fun testBothAnnotations() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao public interface MyDao {
                     @Query("select 1")
                     @Insert
                     int getFoo(int x);
                 }
-        """) { _, _ ->
+        """
+        ) { _, _ ->
         }.failsToCompile().withErrorContaining(
-                ProcessorErrors.INVALID_ANNOTATION_COUNT_IN_DAO_METHOD)
+            ProcessorErrors.INVALID_ANNOTATION_COUNT_IN_DAO_METHOD
+        )
     }
 
     @Test
     fun testAbstractClass() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao abstract class MyDao {
                     @Query("SELECT uid FROM User")
                     abstract int[] getIds();
                 }
-                """) { dao, _ ->
+                """
+        ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
             val method = dao.queryMethods.first()
             assertThat(method.name, `is`("getIds"))
@@ -112,12 +143,14 @@ class DaoProcessorTest(val enableVerification: Boolean) {
 
     @Test
     fun testInterface() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao interface MyDao {
                     @Query("SELECT uid FROM User")
                     abstract int[] getIds();
                 }
-                """) { dao, _ ->
+                """
+        ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
             val method = dao.queryMethods.first()
             assertThat(method.name, `is`("getIds"))
@@ -126,14 +159,16 @@ class DaoProcessorTest(val enableVerification: Boolean) {
 
     @Test
     fun testWithInsertAndQuery() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao abstract class MyDao {
                     @Query("SELECT uid FROM User")
                     abstract int[] getIds();
                     @Insert
                     abstract void insert(User user);
                 }
-                """) { dao, _ ->
+                """
+        ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
             val method = dao.queryMethods.first()
             assertThat(method.name, `is`("getIds"))
@@ -145,12 +180,14 @@ class DaoProcessorTest(val enableVerification: Boolean) {
 
     @Test
     fun skipQueryVerification() {
-        singleDao("""
+        singleDao(
+            """
                 @Dao @SkipQueryVerification interface MyDao {
                     @Query("SELECT nonExistingField FROM User")
                     abstract int[] getIds();
                 }
-                """) { dao, _ ->
+                """
+        ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
             val method = dao.queryMethods.first()
             assertThat(method.name, `is`("getIds"))
@@ -159,53 +196,72 @@ class DaoProcessorTest(val enableVerification: Boolean) {
 
     @Test
     fun suppressedWarnings() {
-        singleDao("""
+        singleDao(
+            """
             @SuppressWarnings({"ALL", RoomWarnings.CURSOR_MISMATCH})
             @Dao interface MyDao {
                 @Query("SELECT * from user")
                 abstract User users();
             }
-            """) { dao, invocation ->
-            val dbType = MoreTypes.asDeclared(invocation.context.processingEnv.elementUtils
-                    .getTypeElement(RoomTypeNames.ROOM_DB.toString()).asType())
-            val daoProcessor = DaoProcessor(invocation.context, dao.element, dbType, null)
-            assertThat(daoProcessor.context.logger
-                    .suppressedWarnings, `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH)))
+            """
+        ) { dao, invocation ->
+            val dbType = invocation.context.processingEnv
+                .requireType(RoomTypeNames.ROOM_DB)
+            val daoProcessor =
+                DaoProcessor(invocation.context, dao.element, dbType, null)
+
+            assertThat(
+                daoProcessor.context.logger
+                    .suppressedWarnings,
+                `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH))
+            )
 
             dao.queryMethods.forEach {
-                assertThat(QueryMethodProcessor(
+                assertThat(
+                    QueryMethodProcessor(
                         baseContext = daoProcessor.context,
-                        containing = MoreTypes.asDeclared(dao.element.asType()),
+                        containing = dao.element.type,
                         executableElement = it.element,
-                        dbVerifier = null).context.logger.suppressedWarnings,
-                        `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH)))
+                        dbVerifier = null
+                    ).context.logger.suppressedWarnings,
+                    `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH))
+                )
             }
         }.compilesWithoutError()
     }
 
     @Test
     fun suppressedWarningsInheritance() {
-        singleDao("""
+        singleDao(
+            """
             @SuppressWarnings(RoomWarnings.CURSOR_MISMATCH)
             @Dao interface MyDao {
                 @SuppressWarnings("ALL")
                 @Query("SELECT * from user")
                 abstract User users();
             }
-            """) { dao, invocation ->
-            val dbType = MoreTypes.asDeclared(invocation.context.processingEnv.elementUtils
-                    .getTypeElement(RoomTypeNames.ROOM_DB.toString()).asType())
-            val daoProcessor = DaoProcessor(invocation.context, dao.element, dbType, null)
-            assertThat(daoProcessor.context.logger
-                    .suppressedWarnings, `is`(setOf(Warning.CURSOR_MISMATCH)))
+            """
+        ) { dao, invocation ->
+            val dbType = invocation.context.processingEnv
+                .requireType(RoomTypeNames.ROOM_DB)
+            val daoProcessor =
+                DaoProcessor(invocation.context, dao.element, dbType, null)
+            assertThat(
+                daoProcessor.context.logger
+                    .suppressedWarnings,
+                `is`(setOf(Warning.CURSOR_MISMATCH))
+            )
 
             dao.queryMethods.forEach {
-                assertThat(QueryMethodProcessor(
+                assertThat(
+                    QueryMethodProcessor(
                         baseContext = daoProcessor.context,
-                        containing = MoreTypes.asDeclared(dao.element.asType()),
+                        containing = dao.element.type,
                         executableElement = it.element,
-                        dbVerifier = null).context.logger.suppressedWarnings,
-                        `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH)))
+                        dbVerifier = null
+                    ).context.logger.suppressedWarnings,
+                    `is`(setOf(Warning.ALL, Warning.CURSOR_MISMATCH))
+                )
             }
         }.compilesWithoutError()
     }
@@ -216,7 +272,7 @@ class DaoProcessorTest(val enableVerification: Boolean) {
             return
         }
         singleDao(
-                """
+            """
                 @Dao interface MyDao {
                     static class Merged extends User {
                        @Relation(parentColumn = "name", entityColumn = "lastName",
@@ -229,9 +285,12 @@ class DaoProcessorTest(val enableVerification: Boolean) {
                 """
         ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
-            assertThat(dao.queryMethods.first().inTransaction, `is`(false))
+            assertThat(
+                dao.queryMethods.filterIsInstance<ReadQueryMethod>().first().inTransaction,
+                `is`(false)
+            )
         }.compilesWithoutError()
-                .withWarningContaining(ProcessorErrors.TRANSACTION_MISSING_ON_RELATION)
+            .withWarningContaining(ProcessorErrors.TRANSACTION_MISSING_ON_RELATION)
     }
 
     @Test
@@ -240,7 +299,7 @@ class DaoProcessorTest(val enableVerification: Boolean) {
             return
         }
         singleDao(
-                """
+            """
                 @Dao interface MyDao {
                     static class Merged extends User {
                        @Relation(parentColumn = "name", entityColumn = "lastName",
@@ -254,9 +313,12 @@ class DaoProcessorTest(val enableVerification: Boolean) {
                 """
         ) { dao, _ ->
             assertThat(dao.queryMethods.size, `is`(1))
-            assertThat(dao.queryMethods.first().inTransaction, `is`(false))
+            assertThat(
+                dao.queryMethods.filterIsInstance<ReadQueryMethod>().first().inTransaction,
+                `is`(false)
+            )
         }.compilesWithoutError()
-                .withWarningCount(0)
+            .withWarningCount(0)
     }
 
     @Test
@@ -265,7 +327,7 @@ class DaoProcessorTest(val enableVerification: Boolean) {
             return
         }
         singleDao(
-                """
+            """
                 @Dao interface MyDao {
                     static class Merged extends User {
                        @Relation(parentColumn = "name", entityColumn = "lastName",
@@ -280,51 +342,104 @@ class DaoProcessorTest(val enableVerification: Boolean) {
         ) { dao, _ ->
             // test sanity
             assertThat(dao.queryMethods.size, `is`(1))
-            assertThat(dao.queryMethods.first().inTransaction, `is`(true))
+            assertThat(
+                dao.queryMethods.filterIsInstance<ReadQueryMethod>().first().inTransaction,
+                `is`(true)
+            )
         }.compilesWithoutError()
-                .withWarningCount(0)
+            .withWarningCount(0)
+    }
+
+    @Test
+    fun testDeleteQueryWithVoidReturn() {
+        singleDao(
+            """
+                @Dao interface MyDao {
+                    @Query("DELETE FROM User")
+                    abstract void deleteAllIds();
+                }
+                """
+        ) { dao, _ ->
+            assertThat(dao.queryMethods.size, `is`(1))
+            val method = dao.queryMethods.first()
+            assertThat(method.name, `is`("deleteAllIds"))
+        }.compilesWithoutError()
+    }
+
+    @Test
+    fun testSelectQueryWithVoidReturn() {
+        singleDao(
+            """
+                @Dao interface MyDao {
+                    @Query("SELECT * FROM User")
+                    abstract void getAllIds();
+                }
+                """
+        ) { dao, _ ->
+            assertThat(dao.queryMethods.size, `is`(1))
+            val method = dao.queryMethods.first()
+            assertThat(method.name, `is`("getAllIds"))
+        }.failsToCompile().withErrorContaining(
+            "Not sure how to convert a Cursor to this method's return type (void)"
+        )
     }
 
     fun singleDao(
         vararg inputs: String,
-        classLoader: ClassLoader = javaClass.classLoader,
+        classpathFiles: Set<File> = emptySet(),
         handler: (Dao, TestInvocation) -> Unit
-    ):
-            CompileTester {
+    ): CompileTester {
         return Truth.assertAbout(JavaSourcesSubjectFactory.javaSources())
-                .that(listOf(JavaFileObjects.forSourceString("foo.bar.MyDao",
+            .that(
+                listOf(
+                    JavaFileObjects.forSourceString(
+                        "foo.bar.MyDao",
                         DAO_PREFIX + inputs.joinToString("\n")
-                ), COMMON.USER))
-                .withClasspathFrom(classLoader)
-                .processedWith(TestProcessor.builder()
-                        .forAnnotations(androidx.room.Dao::class,
-                                androidx.room.Entity::class,
-                                androidx.room.Relation::class,
-                                androidx.room.Transaction::class,
-                                androidx.room.ColumnInfo::class,
-                                androidx.room.PrimaryKey::class,
-                                androidx.room.Query::class)
-                        .nextRunHandler { invocation ->
-                            val dao = invocation.roundEnv
-                                    .getElementsAnnotatedWith(
-                                            androidx.room.Dao::class.java)
-                                    .first()
-                            val dbVerifier = if (enableVerification) {
-                                createVerifierFromEntitiesAndViews(invocation)
-                            } else {
-                                null
-                            }
-                            val dbType = MoreTypes.asDeclared(
-                                    invocation.context.processingEnv.elementUtils
-                                            .getTypeElement(RoomTypeNames.ROOM_DB.toString())
-                                            .asType())
-                            val parser = DaoProcessor(invocation.context,
-                                    MoreElements.asType(dao), dbType, dbVerifier)
-
-                            val parsedDao = parser.process()
-                            handler(parsedDao, invocation)
-                            true
+                    ),
+                    COMMON.USER
+                )
+            )
+            .apply {
+                if (classpathFiles.isNotEmpty()) {
+                    withClasspath(classpathFiles)
+                }
+            }
+            .processedWith(
+                TestProcessor.builder()
+                    .forAnnotations(
+                        java.lang.SuppressWarnings::class,
+                        androidx.room.Dao::class,
+                        androidx.room.Entity::class,
+                        androidx.room.Relation::class,
+                        androidx.room.Transaction::class,
+                        androidx.room.ColumnInfo::class,
+                        androidx.room.PrimaryKey::class,
+                        androidx.room.Query::class
+                    )
+                    .nextRunHandler { invocation ->
+                        val dao = invocation.roundEnv
+                            .getTypeElementsAnnotatedWith(
+                                androidx.room.Dao::class.java
+                            )
+                            .first()
+                        check(dao.isTypeElement())
+                        val dbVerifier = if (enableVerification) {
+                            createVerifierFromEntitiesAndViews(invocation)
+                        } else {
+                            null
                         }
-                        .build())
+                        val dbType = invocation.context.processingEnv
+                            .requireType(RoomTypeNames.ROOM_DB)
+                        val parser = DaoProcessor(
+                            invocation.context,
+                            dao, dbType, dbVerifier
+                        )
+
+                        val parsedDao = parser.process()
+                        handler(parsedDao, invocation)
+                        true
+                    }
+                    .build()
+            )
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Please copy any lint rules added here to all other modules local lint.xml files -->
+<lint>
+    <issue id="LintBaseline" severity="ignore">
+        <ignore regexp=".* filtered out because .* listed in the baseline file.*"/>
+    </issue>
+</lint>

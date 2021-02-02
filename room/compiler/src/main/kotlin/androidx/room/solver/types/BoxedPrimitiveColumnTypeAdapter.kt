@@ -17,36 +17,36 @@
 package androidx.room.solver.types
 
 import androidx.room.ext.L
+import androidx.room.compiler.processing.XType
 import androidx.room.solver.CodeGenScope
-import com.google.auto.common.MoreTypes
-import javax.annotation.processing.ProcessingEnvironment
-import javax.lang.model.type.TypeMirror
 
 /**
  * Adapters for all boxed primitives that has direct cursor mappings.
  */
 open class BoxedPrimitiveColumnTypeAdapter(
-        boxed: TypeMirror,
-        val primitiveAdapter: PrimitiveColumnTypeAdapter
+    boxed: XType,
+    val primitiveAdapter: PrimitiveColumnTypeAdapter
 ) : ColumnTypeAdapter(boxed, primitiveAdapter.typeAffinity) {
     companion object {
         fun createBoxedPrimitiveAdapters(
-                processingEnvironment: ProcessingEnvironment,
-                primitiveAdapters: List<PrimitiveColumnTypeAdapter>
+            primitiveAdapters: List<PrimitiveColumnTypeAdapter>
         ): List<ColumnTypeAdapter> {
 
             return primitiveAdapters.map {
                 BoxedPrimitiveColumnTypeAdapter(
-                        processingEnvironment.typeUtils
-                                .boxedClass(MoreTypes.asPrimitiveType(it.out)).asType(),
-                        it
+                    it.out.boxed().makeNullable(),
+                    it
                 )
             }
         }
     }
 
-    override fun bindToStmt(stmtName: String, indexVarName: String, valueVarName: String,
-                            scope: CodeGenScope) {
+    override fun bindToStmt(
+        stmtName: String,
+        indexVarName: String,
+        valueVarName: String,
+        scope: CodeGenScope
+    ) {
         scope.builder().apply {
             beginControlFlow("if ($L == null)", valueVarName).apply {
                 addStatement("$L.bindNull($L)", stmtName, indexVarName)
@@ -58,8 +58,12 @@ open class BoxedPrimitiveColumnTypeAdapter(
         }
     }
 
-    override fun readFromCursor(outVarName: String, cursorVarName: String, indexVarName: String,
-                                scope: CodeGenScope) {
+    override fun readFromCursor(
+        outVarName: String,
+        cursorVarName: String,
+        indexVarName: String,
+        scope: CodeGenScope
+    ) {
         scope.builder().apply {
             beginControlFlow("if ($L.isNull($L))", cursorVarName, indexVarName).apply {
                 addStatement("$L = null", outVarName)

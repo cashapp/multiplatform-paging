@@ -17,27 +17,42 @@
 package androidx.work;
 
 /**
- * An enum that determines what to do with existing {@link OneTimeWorkRequest}s with the same unique
- * name in case of a collision.
+ * An enumeration of the conflict resolution policies available to unique
+ * {@link OneTimeWorkRequest}s in case of a collision.
  */
+
 public enum ExistingWorkPolicy {
 
     /**
-     * If there is existing pending work with the same unique name, cancel and delete it.  Then,
-     * insert the newly-specified work.
+     * If there is existing pending (uncompleted) work with the same unique name, cancel and delete
+     * it.  Then, insert the newly-specified work.
      */
     REPLACE,
 
     /**
-     * If there is existing pending work with the same unique name, do nothing.  Otherwise, insert
-     * the newly-specified work.
+     * If there is existing pending (uncompleted) work with the same unique name, do nothing.
+     * Otherwise, insert the newly-specified work.
      */
     KEEP,
 
     /**
-     * If there is existing pending work with the same unique name, append the newly-specified work
-     * as a child of all the leaves of that work sequence.  Otherwise, insert the newly-specified
-     * work as the start of a new sequence.
+     * If there is existing pending (uncompleted) work with the same unique name, append the
+     * newly-specified work as a child of all the leaves of that work sequence.  Otherwise, insert
+     * the newly-specified work as the start of a new sequence.
+     * <br/>
+     * <b>Note:</b> When using APPEND with failed or cancelled prerequisites, newly enqueued work
+     * will also be marked as failed or cancelled respectively. Use
+     * {@link ExistingWorkPolicy#APPEND_OR_REPLACE} to create a new chain of work.
      */
-    APPEND
+    APPEND,
+
+    /**
+     * If there is existing pending (uncompleted) work with the same unique name, append the
+     * newly-specified work as the child of all the leaves of that work sequence. Otherwise, insert
+     * the newly-specified work as the start of a new sequence.
+     * <br/>
+     * <b>Note:</b> If there are failed or cancelled prerequisites, these prerequisites are
+     * <i>dropped</i> and the newly-specified work is the start of a new sequence.
+     */
+    APPEND_OR_REPLACE,
 }

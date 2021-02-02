@@ -16,26 +16,26 @@
 
 package androidx.room.vo
 
-import androidx.room.ext.toAnnotationBox
-import androidx.room.ext.typeName
+import androidx.room.compiler.processing.XType
+import androidx.room.compiler.processing.XTypeElement
 import androidx.room.processor.DatabaseViewProcessor
 import androidx.room.processor.EntityProcessor
 import com.squareup.javapoet.TypeName
-import javax.lang.model.element.TypeElement
-import javax.lang.model.type.DeclaredType
 
 /**
  * A class is turned into a Pojo if it is used in a query response.
  */
 open class Pojo(
-    val element: TypeElement,
-    val type: DeclaredType,
-    val fields: List<Field>,
+    val element: XTypeElement,
+    val type: XType,
+    fields: List<Field>,
     val embeddedFields: List<EmbeddedField>,
     val relations: List<Relation>,
     val constructor: Constructor? = null
-) {
-    val typeName: TypeName by lazy { type.typeName() }
+) : HasFields {
+    val typeName: TypeName by lazy { type.typeName }
+
+    override val fields = Fields(fields)
 
     /**
      * All table or view names that are somehow accessed by this Pojo.

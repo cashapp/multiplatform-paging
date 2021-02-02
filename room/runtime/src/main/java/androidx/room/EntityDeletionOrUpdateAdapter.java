@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteStatement;
  * @param <T> The type parameter of the entity to be deleted
  * @hide
  */
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)
 @SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class EntityDeletionOrUpdateAdapter<T> extends SharedSQLiteStatement {
     /**
@@ -79,7 +79,7 @@ public abstract class EntityDeletionOrUpdateAdapter<T> extends SharedSQLiteState
      * @param entities Entities to delete or update
      * @return The number of affected rows
      */
-    public final int handleMultiple(Iterable<T> entities) {
+    public final int handleMultiple(Iterable<? extends T> entities) {
         final SupportSQLiteStatement stmt = acquire();
         try {
             int total = 0;

@@ -17,7 +17,6 @@
 package com.example.android.supportv7.graphics;
 
 import android.graphics.Bitmap;
-import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.widget.ImageView;
 
@@ -32,8 +31,9 @@ class ImageLoader {
     /**
      * A LruCache used to store images which has a maximum size of 10% of the maximum heap size.
      */
+    private static final long CACHE_SIZE = Runtime.getRuntime().maxMemory() / 10;
     private static final BitmapCache CACHE = new BitmapCache(
-            Math.round(Runtime.getRuntime().maxMemory() / 10));
+            CACHE_SIZE > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) CACHE_SIZE);
 
     private ImageLoader() {
     }
@@ -42,6 +42,7 @@ class ImageLoader {
         void onImageLoaded(Bitmap bitmap);
     }
 
+    @SuppressWarnings("deprecation") /* AsyncTask */
     static void loadMediaStoreThumbnail(final ImageView imageView,
             final long id,
             final Listener listener) {
@@ -57,7 +58,7 @@ class ImageLoader {
             return;
         }
 
-        new AsyncTask<Void, Void, Bitmap>() {
+        new android.os.AsyncTask<Void, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(Void... params) {
                 return MediaStore.Images.Thumbnails.getThumbnail(
@@ -80,7 +81,7 @@ class ImageLoader {
                     }
                 }
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(android.os.AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**

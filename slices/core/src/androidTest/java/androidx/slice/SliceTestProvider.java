@@ -29,6 +29,8 @@ import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.style.AbsoluteSizeSpan;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.slice.Slice.Builder;
 import androidx.slice.core.test.R;
@@ -44,7 +46,7 @@ public class SliceTestProvider extends androidx.slice.SliceProvider {
     }
 
     @Override
-    public Slice onBindSlice(Uri sliceUri) {
+    public Slice onBindSlice(@NonNull Uri sliceUri) {
         switch (sliceUri.getPath()) {
             case "/set_flag":
                 SliceTest.sFlag = true;
@@ -96,8 +98,20 @@ public class SliceTestProvider extends androidx.slice.SliceProvider {
                         .addIcon(IconCompat.createWithResource(getContext(), R.drawable.size_48x48),
                                 null, HINT_NO_TINT, HINT_LARGE)
                         .build();
+            case "/permission":
+                return createPermissionSlice(sliceUri, getContext().getPackageName());
         }
         return new Slice.Builder(sliceUri).build();
     }
 
+    @Nullable
+    @Override
+    public PendingIntent onCreatePermissionRequest(@NonNull Uri sliceUri,
+            @NonNull String callingPackage) {
+        if (getContext().getPackageName().equals(callingPackage)) {
+            return PendingIntent.getBroadcast(getContext(), 0,
+                    new Intent(getContext().getPackageName() + ".permission"), 0);
+        }
+        return super.onCreatePermissionRequest(sliceUri, callingPackage);
+    }
 }

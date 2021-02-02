@@ -20,15 +20,19 @@ import androidx.room.integration.kotlintestapp.dao.DependencyDao
 import androidx.room.integration.kotlintestapp.vo.DataClassFromDependency
 import androidx.room.integration.kotlintestapp.vo.EmbeddedFromDependency
 import androidx.room.integration.kotlintestapp.vo.PojoFromDependency
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
-import androidx.test.runner.AndroidJUnit4
-import org.hamcrest.CoreMatchers.*
+import androidx.test.filters.SmallTest
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.notNullValue
+import org.hamcrest.CoreMatchers.nullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@SmallTest
 class DependencyDaoTest : TestDatabaseTest() {
     lateinit var dao: DependencyDao
     @Before
@@ -59,9 +63,15 @@ class DependencyDaoTest : TestDatabaseTest() {
     @Test
     fun insertAndGetByQuery_pojo() {
         val data = insertSample(3)
-        assertThat(dao.findPojo(3), `is`(PojoFromDependency(
-                id = data.id,
-                name = data.name)))
+        assertThat(
+            dao.findPojo(3),
+            `is`(
+                PojoFromDependency(
+                    id = data.id,
+                    name = data.name
+                )
+            )
+        )
         assertThat(dao.findPojo(5), `is`(nullValue()))
     }
 
@@ -69,16 +79,16 @@ class DependencyDaoTest : TestDatabaseTest() {
     @Test
     fun getRelation() {
         val foo1 = DataClassFromDependency(
-                id = 3,
-                name = "foo"
+            id = 3,
+            name = "foo"
         )
         val foo2 = DataClassFromDependency(
-                id = 4,
-                name = "foo"
+            id = 4,
+            name = "foo"
         )
         val bar = DataClassFromDependency(
-                id = 5,
-                name = "bar"
+            id = 5,
+            name = "bar"
         )
         dao.insert(foo1, foo2, bar)
         val fooList = dao.relation("foo")
@@ -99,8 +109,8 @@ class DependencyDaoTest : TestDatabaseTest() {
 
     private fun insertSample(id: Int): DataClassFromDependency {
         val data = DataClassFromDependency(
-                id = id,
-                name = "foo"
+            id = id,
+            name = "foo"
         )
         dao.insert(data)
         return data

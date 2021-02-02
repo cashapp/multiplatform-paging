@@ -23,8 +23,8 @@ import static org.junit.Assert.assertEquals;
 
 import android.os.Build;
 
-import androidx.test.filters.MediumTest;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,7 +66,7 @@ public class LinearLayoutManagerCacheTest extends BaseLinearLayoutManagerTest {
         return mRecyclerView.mRecycler.mCachedViews;
     }
 
-    @MediumTest
+    @SmallTest
     @Test
     public void cacheAndPrefetch() throws Throwable {
         final Config config = (Config) mConfig.clone();
@@ -80,25 +80,22 @@ public class LinearLayoutManagerCacheTest extends BaseLinearLayoutManagerTest {
                 ((WrappedRecyclerView)mRecyclerView).setDrawingTimeOffset(5000);
 
                 mRecyclerView.scrollToPosition(100);
+                mRecyclerView.setItemViewCacheSize(0);
             }
         });
 
-        mRecyclerView.setItemViewCacheSize(0);
-        {
-            mLayoutManager.expectPrefetch(1);
-            mActivityRule.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mRecyclerView.mRecycler.recycleAndClearCachedViews();
-                    mRecyclerView.mGapWorker.postFromTraversal(mRecyclerView, mDx, mDy);
+        mLayoutManager.expectPrefetch(1);
+        mActivityRule.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mRecyclerView.mRecycler.recycleAndClearCachedViews();
+                mRecyclerView.mGapWorker.postFromTraversal(mRecyclerView, mDx, mDy);
 
-                    // Lie about post time, so prefetch executes even if it is delayed
-                    mRecyclerView.mGapWorker.mPostTimeNs += TimeUnit.SECONDS.toNanos(5);
-                }
-            });
-            mLayoutManager.waitForPrefetch(1);
-        }
-
+                // Lie about post time, so prefetch executes even if it is delayed
+                mRecyclerView.mGapWorker.mPostTimeNs += TimeUnit.SECONDS.toNanos(5);
+            }
+        });
+        mLayoutManager.waitForPrefetch(1);
 
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
@@ -112,12 +109,14 @@ public class LinearLayoutManagerCacheTest extends BaseLinearLayoutManagerTest {
                     int lastVisibleItemPosition = mLayoutManager.findLastVisibleItemPosition();
                     int firstVisibleItemPosition = mLayoutManager.findFirstVisibleItemPosition();
                     assertEquals(1, cachedViews().size());
-                    int prefetchedPosition = cachedViews().get(0).getAdapterPosition();
+                    int prefetchedPosition = cachedViews().get(0).getAbsoluteAdapterPosition();
                     if (mConfig.mReverseLayout == reverseScroll) {
-                        // Pos scroll on pos layout, or reverse scroll on reverse layout = toward last
+                        // Pos scroll on pos layout, or reverse scroll on reverse layout = toward
+                        // last
                         assertEquals(lastVisibleItemPosition + 1, prefetchedPosition);
                     } else {
-                        // Pos scroll on reverse layout, or reverse scroll on pos layout = toward first
+                        // Pos scroll on reverse layout, or reverse scroll on pos layout = toward
+                        // first
                         assertEquals(firstVisibleItemPosition - 1, prefetchedPosition);
                     }
                 }

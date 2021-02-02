@@ -27,9 +27,9 @@ import androidx.arch.core.executor.ArchTaskExecutor;
 import androidx.arch.core.executor.testing.CountingTaskExecutorRule;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
-import androidx.lifecycle.LifecycleRegistry;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.testing.TestLifecycleOwner;
 import androidx.paging.DataSource;
 import androidx.paging.LivePagedListBuilder;
 import androidx.paging.PagedList;
@@ -39,8 +39,8 @@ import androidx.room.integration.testapp.vo.Pet;
 import androidx.room.integration.testapp.vo.User;
 import androidx.room.integration.testapp.vo.UserAndAllPets;
 import androidx.sqlite.db.SimpleSQLiteQuery;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +53,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@SuppressWarnings("deprecation")
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class DataSourceFactoryTest extends TestDatabaseTest {
@@ -90,6 +91,7 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
                 .build());
     }
 
+    @SuppressWarnings("deprecation")
     private void validateUsersAsPagedList(
             LivePagedListFactory factory)
             throws InterruptedException, ExecutionException, TimeoutException {
@@ -108,8 +110,7 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
 
         final LiveData<PagedList<User>> livePagedUsers = factory.create();
 
-        final TestLifecycleOwner testOwner = new TestLifecycleOwner();
-        testOwner.handleEvent(Lifecycle.Event.ON_CREATE);
+        final TestLifecycleOwner testOwner = new TestLifecycleOwner(Lifecycle.State.CREATED);
         drain();
         PagedListObserver<User> observer = new PagedListObserver<>();
 
@@ -117,7 +118,7 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
         assertThat(observer.get(), nullValue());
         observer.reset();
 
-        testOwner.handleEvent(Lifecycle.Event.ON_START);
+        testOwner.handleLifecycleEvent(Lifecycle.Event.ON_START);
         drain();
 
         final PagedList<User> pagedList1 = observer.get();
@@ -157,10 +158,10 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
         mExecutorRule.drainTasks(60, TimeUnit.SECONDS);
     }
 
+    @SuppressWarnings("unchecked")
     private void observe(final LiveData liveData, final LifecycleOwner provider,
             final Observer observer) throws ExecutionException, InterruptedException {
         FutureTask<Void> futureTask = new FutureTask<>(() -> {
-            //noinspection unchecked
             liveData.observe(provider, observer);
             return null;
         });
@@ -179,7 +180,6 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
 
         PagedListObserver<UserAndAllPets> observer = new PagedListObserver<>();
         final TestLifecycleOwner lifecycleOwner = new TestLifecycleOwner();
-        lifecycleOwner.handleEvent(Lifecycle.Event.ON_START);
         observe(liveData, lifecycleOwner, observer);
         drain();
         assertThat(observer.get(), is(Collections.emptyList()));
@@ -199,24 +199,6 @@ public class DataSourceFactoryTest extends TestDatabaseTest {
         final UserAndAllPets withPets = observer.get().get(0);
         assertThat(withPets.user, is(user));
         assertThat(withPets.pets, is(Arrays.asList(pets)));
-    }
-
-    static class TestLifecycleOwner implements LifecycleOwner {
-
-        private LifecycleRegistry mLifecycle;
-
-        TestLifecycleOwner() {
-            mLifecycle = new LifecycleRegistry(this);
-        }
-
-        @Override
-        public Lifecycle getLifecycle() {
-            return mLifecycle;
-        }
-
-        void handleEvent(Lifecycle.Event event) {
-            mLifecycle.handleLifecycleEvent(event);
-        }
     }
 
     private static class PagedListObserver<T> implements Observer<PagedList<T>> {

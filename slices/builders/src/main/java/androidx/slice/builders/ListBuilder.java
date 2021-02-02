@@ -17,12 +17,14 @@
 package androidx.slice.builders;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY;
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP_PREFIX;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
+import android.os.PersistableBundle;
 import android.view.View;
 
 import androidx.annotation.ColorInt;
@@ -33,10 +35,11 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.util.Pair;
+import androidx.remotecallback.RemoteCallback;
 import androidx.slice.Slice;
 import androidx.slice.SliceSpecs;
 import androidx.slice.builders.impl.ListBuilderBasicImpl;
-import androidx.slice.builders.impl.ListBuilderV1Impl;
+import androidx.slice.builders.impl.ListBuilderImpl;
 import androidx.slice.builders.impl.TemplateBuilderImpl;
 import androidx.slice.core.SliceHints;
 
@@ -74,6 +77,9 @@ import java.util.Set;
  *     </li>
  *     <li>{@link InputRangeBuilder} - An input range row supports displaying a horizontal slider
  *     allowing slider input (e.g. brightness or volume slider).
+ *     </li>
+ *     <li>{@link RatingBuilder} - An star rating row supports displaying a horizontal star
+ *     rating input (e.g. rating 4/5 stars)
  *     </li>
  * </ul>
  * </p>
@@ -129,6 +135,7 @@ import java.util.Set;
  * @see GridRowBuilder
  * @see RangeBuilder
  * @see InputRangeBuilder
+ * @see RatingBuilder
  * @see SliceAction
  * @see androidx.slice.SliceProvider
  * @see androidx.slice.SliceProvider#onBindSlice(Uri)
@@ -141,14 +148,9 @@ public class ListBuilder extends TemplateSliceBuilder {
     private androidx.slice.builders.impl.ListBuilder mImpl;
 
     /**
-     * @hide
+     * Indicates that an button should be presented with text.
      */
-    @RestrictTo(RestrictTo.Scope.LIBRARY)
-    @IntDef({
-            LARGE_IMAGE, SMALL_IMAGE, ICON_IMAGE, UNKNOWN_IMAGE
-    })
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface ImageMode{}
+    public static final int ACTION_WITH_LABEL = SliceHints.ACTION_WITH_LABEL;
 
     /**
      * Indicates that an image should be presented as an icon and it can be tinted.</p>
@@ -163,9 +165,31 @@ public class ListBuilder extends TemplateSliceBuilder {
      */
     public static final int LARGE_IMAGE = SliceHints.LARGE_IMAGE;
     /**
+     * Indicates that an image should be presented in its intrinsic size and shouldn't be tinted.
+     * If SliceView in the call-site doesn't support RAW_IMAGE, fallback to SMALL_IMAGE instead.
+     */
+    public static final int RAW_IMAGE_SMALL = SliceHints.RAW_IMAGE_SMALL;
+    /**
+     * Indicates that an image should be presented in its intrinsic size and shouldn't be tinted.
+     * If SliceView in the call-site doesn't support RAW_IMAGE, fallback to LARGE_IMAGE instead.
+     */
+    public static final int RAW_IMAGE_LARGE = SliceHints.RAW_IMAGE_LARGE;
+    /**
      * Indicates that an image mode is unknown.
      */
     public static final int UNKNOWN_IMAGE = SliceHints.UNKNOWN_IMAGE;
+
+    /**
+     * @hide
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    @IntDef({
+            LARGE_IMAGE, SMALL_IMAGE, ICON_IMAGE, RAW_IMAGE_SMALL, RAW_IMAGE_LARGE, UNKNOWN_IMAGE,
+            ACTION_WITH_LABEL
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface ImageMode {
+    }
 
     /**
      * Constant representing infinity.
@@ -181,7 +205,34 @@ public class ListBuilder extends TemplateSliceBuilder {
             View.LAYOUT_DIRECTION_LOCALE
     })
     @Retention(RetentionPolicy.SOURCE)
-    public @interface LayoutDirection{}
+    public @interface LayoutDirection {}
+
+    /**
+     * Indicates that the progress bar should be presented as a star rating.
+     */
+    public static final int RANGE_MODE_STAR_RATING = SliceHints.STAR_RATING;
+
+    /**
+     * Indicates that the progress bar should be presented in determinate mode.
+     */
+    public static final int RANGE_MODE_DETERMINATE = SliceHints.DETERMINATE_RANGE;
+    /**
+     * Indicates that the progress bar should be presented in indeterminate mode.
+     */
+    public static final int RANGE_MODE_INDETERMINATE = SliceHints.INDETERMINATE_RANGE;
+
+    /**
+     * Add an star rating row to the list builder.
+     * <p>
+     * If {@link RatingBuilder#setValue(float)} is not between
+     * {@link RatingBuilder#setMin(int)} and {@link RatingBuilder#setMax(int)}, this
+     * will show all stars as unselected.
+     */
+    @NonNull
+    public ListBuilder addRating(@NonNull RatingBuilder b) {
+        mImpl.addRating(b);
+        return this;
+    }
 
     /**
      * Create a ListBuilder for constructing slice content.
@@ -335,7 +386,7 @@ public class ListBuilder extends TemplateSliceBuilder {
      * Sets keywords to associate with this slice.
      */
     @NonNull
-    public ListBuilder setKeywords(Set<String> keywords) {
+    public ListBuilder setKeywords(@NonNull final Set<String> keywords) {
         mImpl.setKeywords(keywords);
         return this;
     }
@@ -348,6 +399,19 @@ public class ListBuilder extends TemplateSliceBuilder {
     @NonNull
     public ListBuilder setLayoutDirection(@LayoutDirection int layoutDirection) {
         mImpl.setLayoutDirection(layoutDirection);
+        return this;
+    }
+
+
+    /**
+     * Sets additional information to be passed to the host of the slice.
+     *
+     * @param extras The Bundle of extras to add to this slice.
+     */
+    @NonNull
+    @RequiresApi(21)
+    public ListBuilder setHostExtras(@NonNull PersistableBundle extras) {
+        mImpl.setHostExtras(extras);
         return this;
     }
 
@@ -400,6 +464,26 @@ public class ListBuilder extends TemplateSliceBuilder {
     }
 
     /**
+     * If all content in a slice cannot be shown, a "see more" affordance may be displayed where
+     * the content is cut off. The action added here should take the user to an activity to see
+     * all of the content, and will be invoked when the "see more" affordance is tapped.
+     * <p>
+     * Only one see more affordance can be added, this throws {@link IllegalStateException} if
+     * a row or action has been previously added.
+     * </p>
+     */
+    @NonNull
+    public ListBuilder setSeeMoreAction(@NonNull RemoteCallback callback) {
+        if (mHasSeeMore) {
+            throw new IllegalArgumentException("Trying to add see more action when one has "
+                    + "already been added");
+        }
+        mImpl.setSeeMoreAction(callback.toPendingIntent());
+        mHasSeeMore = true;
+        return this;
+    }
+
+    /**
      * Sets whether this slice indicates an error, i.e. the normal contents of this slice are
      * unavailable and instead the slice contains a message indicating an error.
      */
@@ -414,10 +498,13 @@ public class ListBuilder extends TemplateSliceBuilder {
      */
     @RestrictTo(LIBRARY)
     @Override
-    protected TemplateBuilderImpl selectImpl(Uri uri) {
-        if (checkCompatible(SliceSpecs.LIST, uri)) {
-            return new ListBuilderV1Impl(getBuilder(), SliceSpecs.LIST, getClock());
-        } else if (checkCompatible(SliceSpecs.BASIC, uri)) {
+    @Nullable
+    protected TemplateBuilderImpl selectImpl() {
+        if (checkCompatible(SliceSpecs.LIST_V2)) {
+            return new ListBuilderImpl(getBuilder(), SliceSpecs.LIST_V2, getClock());
+        } else if (checkCompatible(SliceSpecs.LIST)) {
+            return new ListBuilderImpl(getBuilder(), SliceSpecs.LIST, getClock());
+        } else if (checkCompatible(SliceSpecs.BASIC)) {
             return new ListBuilderBasicImpl(getBuilder(), SliceSpecs.BASIC);
         }
         return null;
@@ -427,8 +514,20 @@ public class ListBuilder extends TemplateSliceBuilder {
      * @hide
      */
     @RestrictTo(LIBRARY)
+    @NonNull
     public androidx.slice.builders.impl.ListBuilder getImpl() {
         return mImpl;
+    }
+
+    /**
+     * @hide
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    @IntDef({
+            RANGE_MODE_DETERMINATE, RANGE_MODE_INDETERMINATE, RANGE_MODE_STAR_RATING
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface RangeMode {
     }
 
     /**
@@ -457,6 +556,15 @@ public class ListBuilder extends TemplateSliceBuilder {
     }
 
     /**
+     * Add a selection row to the list builder.
+     */
+    @NonNull
+    public ListBuilder addSelection(@NonNull SelectionBuilder selectionBuilder) {
+        mImpl.addSelection(selectionBuilder);
+        return this;
+    }
+
+    /**
      * Builder to construct a range row which can be added to a {@link ListBuilder}.
      * <p>
      * A range row supports displaying a horizontal progress indicator.
@@ -473,15 +581,64 @@ public class ListBuilder extends TemplateSliceBuilder {
         private SliceAction mPrimaryAction;
         private CharSequence mContentDescription;
         private int mLayoutDirection = -1;
+        private int mMode = RANGE_MODE_DETERMINATE;
+        private IconCompat mTitleIcon;
+        private int mTitleImageMode;
+        private boolean mTitleItemLoading;
 
         /**
          * Builder to construct a range row which can be added to a {@link ListBuilder}.
          * <p>
-         * A range row supports displaying a horizontal progress indicator.
+         * A range row supports displaying a horizontal progress indicator. It supports two modes
+         * to represent progress: determinate and indeterminate, see {@link #setMode(int)}.
+         * Determinate mode is the default for progress indicator.
          *
          * @see ListBuilder#addRange(RangeBuilder)
          */
         public RangeBuilder() {
+        }
+
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set using this method or its
+         * overload {@link #setTitleItem(IconCompat, int, boolean)}.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public RangeBuilder setTitleItem(@NonNull IconCompat icon, @ImageMode int imageMode) {
+            return setTitleItem(icon, imageMode, false /* isLoading */);
+        }
+
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set using this method or its
+         * overload {@link #setTitleItem(IconCompat, int)}.
+         * <p>
+         * When set to true, the parameter {@code isLoading} indicates that the app is doing work
+         * to load this content in the background, in this case the template displays a placeholder
+         * until updated.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         * @param isLoading whether this content is being loaded in the background.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public RangeBuilder setTitleItem(@NonNull IconCompat icon, @ImageMode int imageMode,
+                boolean isLoading) {
+            mTitleIcon = icon;
+            mTitleImageMode = imageMode;
+            mTitleItemLoading = isLoading;
+            return this;
         }
 
         /**
@@ -557,6 +714,44 @@ public class ListBuilder extends TemplateSliceBuilder {
         }
 
         /**
+         * Sets the progress bar mode, it could be the determinate or indeterminate mode.
+         *
+         * @param mode the mode that progress bar should represent progress.
+         * @see #RANGE_MODE_DETERMINATE
+         * @see #RANGE_MODE_INDETERMINATE
+         */
+        @NonNull
+        public RangeBuilder setMode(@RangeMode int mode) {
+            mMode = mode;
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public boolean isTitleItemLoading() {
+            return mTitleItemLoading;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getTitleImageMode() {
+            return mTitleImageMode;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public IconCompat getTitleIcon() {
+            return mTitleIcon;
+        }
+
+        /**
          * @hide
          */
         @RestrictTo(LIBRARY)
@@ -584,6 +779,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getTitle() {
             return mTitle;
         }
@@ -592,6 +788,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getSubtitle() {
             return mSubtitle;
         }
@@ -600,6 +797,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public SliceAction getPrimaryAction() {
             return mPrimaryAction;
         }
@@ -608,6 +806,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getContentDescription() {
             return mContentDescription;
         }
@@ -618,6 +817,296 @@ public class ListBuilder extends TemplateSliceBuilder {
         @RestrictTo(LIBRARY)
         public int getLayoutDirection() {
             return mLayoutDirection;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getMode() {
+            return mMode;
+        }
+    }
+
+    /**
+     * Builder to construct a input star rating.
+     * <p>
+     * An star rating row supports displaying a horizontal tappable stars allowing rating input.
+     *
+     * @see ListBuilder#addRating(RatingBuilder)
+     */
+    @SuppressLint("MissingBuildMethod")
+    public static final class RatingBuilder {
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public static final int TYPE_ACTION = 2;
+        private int mMin = 0;
+        private int mMax = 5;
+        private int mValue = 0;
+        private boolean mValueSet = false;
+        private CharSequence mContentDescription;
+        private PendingIntent mAction;
+        private PendingIntent mInputAction;
+        private CharSequence mTitle;
+        private CharSequence mSubtitle;
+        private SliceAction mPrimaryAction;
+        private IconCompat mTitleIcon;
+        private int mTitleImageMode;
+        private boolean mTitleItemLoading;
+
+        /**
+         * Builder to construct a star rating row.
+         * <p>
+         * An star rating row supports displaying a horizontal slider allowing slider input.
+         *
+         * @see ListBuilder#addRating(RatingBuilder)
+         */
+        public RatingBuilder() {
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getMin() {
+            return mMin;
+        }
+
+        /**
+         * Set the lower limit of the range. The default is 0.
+         */
+        @NonNull
+        public RatingBuilder setMin(int min) {
+            mMin = min;
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getMax() {
+            return mMax;
+        }
+
+        /**
+         * Set the upper limit of the range. The default is 100.
+         */
+        @NonNull
+        public RatingBuilder setMax(int max) {
+            mMax = max;
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public float getValue() {
+            return mValue;
+        }
+
+        /**
+         * Set the current value of the range.
+         *
+         * @param value the value of the range, between {@link #setMin(int)}
+         *              and {@link #setMax(int)}. Will be rounded to the nearest integer.
+         */
+        @NonNull
+        public RatingBuilder setValue(float value) {
+            mValueSet = true;
+            mValue = Math.round(value);
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public boolean isValueSet() {
+            return mValueSet;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public PendingIntent getAction() {
+            return mAction;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public CharSequence getContentDescription() {
+            return mContentDescription;
+        }
+
+        /**
+         * Set the title.
+         */
+        @NonNull
+        public RatingBuilder setTitle(@NonNull CharSequence title) {
+            mTitle = title;
+            return this;
+        }
+
+        /**
+         * Set the subtitle.
+         */
+        @NonNull
+        public RatingBuilder setSubtitle(@NonNull CharSequence title) {
+            mSubtitle = title;
+            return this;
+        }
+
+        /**
+         * Set the primary action for this row.
+         * <p>
+         * The action specified here will be sent when the whole row is clicked. If this
+         * is the first row in a {@link ListBuilder} this action will also be used to define
+         * the {@link androidx.slice.widget.SliceView#MODE_SHORTCUT} representation of the slice.
+         */
+        @NonNull
+        public RatingBuilder setPrimaryAction(@NonNull SliceAction action) {
+            mPrimaryAction = action;
+            return this;
+        }
+
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public RatingBuilder setTitleItem(@NonNull IconCompat icon,
+                @ImageMode int imageMode) {
+            return setTitleItem(icon, imageMode, false /* isLoading */);
+        }
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set.
+         * <p>
+         * When set to true, the parameter {@code isLoading} indicates that the app is doing work
+         * to load this content in the background, in this case the template displays a placeholder
+         * until updated.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         * @param isLoading whether this content is being loaded in the background.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public RatingBuilder setTitleItem(@NonNull IconCompat icon, @ImageMode int imageMode,
+                boolean isLoading) {
+            mTitleIcon = icon;
+            mTitleImageMode = imageMode;
+            mTitleItemLoading = isLoading;
+            return this;
+        }
+
+        /**
+         * Sets the content description.
+         */
+        @NonNull
+        public RatingBuilder setContentDescription(@NonNull CharSequence description) {
+            mContentDescription = description;
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public PendingIntent getInputAction() {
+            return mInputAction;
+        }
+
+        /**
+         * Set the {@link PendingIntent} to send when the current value is updated.
+         */
+        @SuppressLint("ExecutorRegistration")
+        @NonNull
+        public RatingBuilder setInputAction(@NonNull PendingIntent action) {
+            mInputAction = action;
+            return this;
+        }
+
+        /**
+         * Set the {@link PendingIntent} to send when the current value is updated.
+         */
+        @SuppressLint("ExecutorRegistration")
+        @NonNull
+        public RatingBuilder setInputAction(@NonNull RemoteCallback callback) {
+            mInputAction = callback.toPendingIntent();
+            return this;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public CharSequence getTitle() {
+            return mTitle;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public CharSequence getSubtitle() {
+            return mSubtitle;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public SliceAction getPrimaryAction() {
+            return mPrimaryAction;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public boolean isTitleItemLoading() {
+            return mTitleItemLoading;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getTitleImageMode() {
+            return mTitleImageMode;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public IconCompat getTitleIcon() {
+            return mTitleIcon;
         }
     }
 
@@ -642,6 +1131,13 @@ public class ListBuilder extends TemplateSliceBuilder {
         private SliceAction mPrimaryAction;
         private CharSequence mContentDescription;
         private int mLayoutDirection = -1;
+        private IconCompat mTitleIcon;
+        private int mTitleImageMode;
+        private boolean mTitleItemLoading;
+        private boolean mHasDefaultToggle;
+        private final List<Object> mEndItems = new ArrayList<>();
+        private final List<Integer> mEndTypes = new ArrayList<>();
+        private final List<Boolean> mEndLoads = new ArrayList<>();
 
         /**
          * Builder to construct a input range row.
@@ -651,6 +1147,83 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @see ListBuilder#addInputRange(InputRangeBuilder)
          */
         public InputRangeBuilder() {
+        }
+
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public InputRangeBuilder setTitleItem(@NonNull IconCompat icon,
+                @ImageMode int imageMode) {
+            return setTitleItem(icon, imageMode, false /* isLoading */);
+        }
+
+        /**
+         * Adds an action to the end items of the input range builder. Only one non-custom toggle
+         * can be added. If a non-custom toggle has already been added, this will throw
+         * {@link IllegalStateException}.
+         */
+        @NonNull
+        public InputRangeBuilder addEndItem(@NonNull SliceAction action) {
+            return addEndItem(action, false /* isLoading */);
+        }
+
+        /**
+         * Adds an action to the end items of the input range builder. Only one non-custom toggle
+         * can be added. If a non-custom toggle has already been added, this will throw
+         * {@link IllegalStateException}.
+         * <p>
+         * Use this method to specify content that will appear in the template once it's been
+         * loaded.
+         * </p>
+         * @param isLoading indicates whether the app is doing work to load the added content in the
+         *                  background or not.
+         */
+        @NonNull
+        public InputRangeBuilder addEndItem(@NonNull SliceAction action, boolean isLoading) {
+            if (mHasDefaultToggle) {
+                throw new IllegalStateException("Only one non-custom toggle can be added "
+                        + "in a single row. If you would like to include multiple toggles "
+                        + "in a row, set a custom icon for each toggle.");
+            }
+            mEndItems.add(action);
+            mEndTypes.add(TYPE_ACTION);
+            mEndLoads.add(isLoading);
+            mHasDefaultToggle = action.getImpl().isDefaultToggle();
+            return this;
+        }
+
+        /**
+         * Sets the title item to be the provided icon. There can only be one title item, this
+         * will replace any other title items that may have been set.
+         * <p>
+         * When set to true, the parameter {@code isLoading} indicates that the app is doing work
+         * to load this content in the background, in this case the template displays a placeholder
+         * until updated.
+         *
+         * @param icon the image to display.
+         * @param imageMode the mode that image should be displayed in.
+         * @param isLoading whether this content is being loaded in the background.
+         *
+         * @see #ICON_IMAGE
+         * @see #SMALL_IMAGE
+         * @see #LARGE_IMAGE
+         */
+        @NonNull
+        public InputRangeBuilder setTitleItem(@NonNull IconCompat icon, @ImageMode int imageMode,
+                boolean isLoading) {
+            mTitleIcon = icon;
+            mTitleImageMode = imageMode;
+            mTitleItemLoading = isLoading;
+            return this;
         }
 
         /**
@@ -712,6 +1285,15 @@ public class ListBuilder extends TemplateSliceBuilder {
         }
 
         /**
+         * Set the {@link PendingIntent} to send when the current value is updated.
+         */
+        @NonNull
+        public InputRangeBuilder setInputAction(@NonNull RemoteCallback callback) {
+            mInputAction = callback.toPendingIntent();
+            return this;
+        }
+
+        /**
          * Set the {@link Icon} to be displayed as the thumb on the input range.
          */
         @NonNull
@@ -759,6 +1341,64 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        public boolean isTitleItemLoading() {
+            return mTitleItemLoading;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public int getTitleImageMode() {
+            return mTitleImageMode;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public IconCompat getTitleIcon() {
+            return mTitleIcon;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public static final int TYPE_ACTION = 2;
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @NonNull
+        public List<Object> getEndItems() {
+            return mEndItems;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @NonNull
+        public List<Integer> getEndTypes() {
+            return mEndTypes;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @NonNull
+        public List<Boolean> getEndLoads() {
+            return mEndLoads;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
         public int getMin() {
             return mMin;
         }
@@ -791,6 +1431,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getTitle() {
             return mTitle;
         }
@@ -799,6 +1440,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getSubtitle() {
             return mSubtitle;
         }
@@ -807,6 +1449,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public PendingIntent getAction() {
             return mAction;
         }
@@ -815,6 +1458,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public PendingIntent getInputAction() {
             return mInputAction;
         }
@@ -823,6 +1467,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public IconCompat getThumb() {
             return mThumb;
         }
@@ -831,6 +1476,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public SliceAction getPrimaryAction() {
             return mPrimaryAction;
         }
@@ -839,6 +1485,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getContentDescription() {
             return mContentDescription;
         }
@@ -888,6 +1535,7 @@ public class ListBuilder extends TemplateSliceBuilder {
     public static class RowBuilder {
 
         private final Uri mUri;
+        private boolean mIsEndOfSection;
         private boolean mHasEndActionOrToggle;
         private boolean mHasEndImage;
         private boolean mHasDefaultToggle;
@@ -904,9 +1552,9 @@ public class ListBuilder extends TemplateSliceBuilder {
         private boolean mSubtitleLoading;
         private CharSequence mContentDescription;
         private int mLayoutDirection = -1;
-        private List<Object> mEndItems = new ArrayList<>();
-        private List<Integer> mEndTypes = new ArrayList<>();
-        private List<Boolean> mEndLoads = new ArrayList<>();
+        private final List<Object> mEndItems = new ArrayList<>();
+        private final List<Integer> mEndTypes = new ArrayList<>();
+        private final List<Boolean> mEndLoads = new ArrayList<>();
         private boolean mTitleActionLoading;
 
         /**
@@ -936,8 +1584,17 @@ public class ListBuilder extends TemplateSliceBuilder {
          * Builder to construct a normal row.
          * @param uri Uri to tag for this slice.
          */
-        public RowBuilder(Uri uri) {
+        public RowBuilder(@NonNull final Uri uri) {
             mUri = uri;
+        }
+
+        /**
+         * Indicate that this row is an end for a section.
+         */
+        @NonNull
+        public RowBuilder setEndOfSection(boolean isEndOfSection) {
+            mIsEndOfSection = isEndOfSection;
+            return this;
         }
 
         /**
@@ -969,6 +1626,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @see #SMALL_IMAGE
          * @see #LARGE_IMAGE
          */
+        @NonNull
         public RowBuilder setTitleItem(@NonNull IconCompat icon, @ImageMode int imageMode) {
             return setTitleItem(icon, imageMode, false /* isLoading */);
         }
@@ -1111,7 +1769,7 @@ public class ListBuilder extends TemplateSliceBuilder {
         /**
          * Adds an icon to the end items of the row builder.
          *
-         * @param icon the image to display.
+         * @param icon  the image to display.
          * @param imageMode the mode that image should be displayed in.
          *
          * @see #ICON_IMAGE
@@ -1218,8 +1876,17 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public Uri getUri() {
             return mUri;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public boolean isEndOfSection() {
+            return mIsEndOfSection;
         }
 
         /**
@@ -1282,6 +1949,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public IconCompat getTitleIcon() {
             return mTitleIcon;
         }
@@ -1290,6 +1958,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public SliceAction getTitleAction() {
             return mTitleAction;
         }
@@ -1298,6 +1967,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public SliceAction getPrimaryAction() {
             return mPrimaryAction;
         }
@@ -1306,6 +1976,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getTitle() {
             return mTitle;
         }
@@ -1322,6 +1993,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getSubtitle() {
             return mSubtitle;
         }
@@ -1338,6 +2010,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getContentDescription() {
             return mContentDescription;
         }
@@ -1354,6 +2027,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @NonNull
         public List<Object> getEndItems() {
             return mEndItems;
         }
@@ -1362,6 +2036,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @NonNull
         public List<Integer> getEndTypes() {
             return mEndTypes;
         }
@@ -1370,6 +2045,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @NonNull
         public List<Boolean> getEndLoads() {
             return mEndLoads;
         }
@@ -1429,8 +2105,8 @@ public class ListBuilder extends TemplateSliceBuilder {
         /**
          * @hide
          */
-        @RestrictTo(LIBRARY_GROUP)
-        public HeaderBuilder(Uri uri) {
+        @RestrictTo(LIBRARY_GROUP_PREFIX)
+        public HeaderBuilder(@NonNull final Uri uri) {
             mUri = uri;
         }
 
@@ -1554,6 +2230,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public Uri getUri() {
             return mUri;
         }
@@ -1562,6 +2239,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getTitle() {
             return mTitle;
         }
@@ -1578,6 +2256,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getSubtitle() {
             return mSubtitle;
         }
@@ -1594,6 +2273,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getSummary() {
             return mSummary;
         }
@@ -1610,6 +2290,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public SliceAction getPrimaryAction() {
             return mPrimaryAction;
         }
@@ -1618,6 +2299,7 @@ public class ListBuilder extends TemplateSliceBuilder {
          * @hide
          */
         @RestrictTo(LIBRARY)
+        @Nullable
         public CharSequence getContentDescription() {
             return mContentDescription;
         }

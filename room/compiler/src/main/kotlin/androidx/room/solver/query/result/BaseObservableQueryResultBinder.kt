@@ -22,7 +22,6 @@ import androidx.room.ext.N
 import androidx.room.ext.RoomTypeNames
 import androidx.room.ext.T
 import androidx.room.solver.CodeGenScope
-import androidx.room.writer.DaoWriter
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.MethodSpec
 import javax.lang.model.element.Modifier
@@ -31,8 +30,8 @@ import javax.lang.model.element.Modifier
  * Base class for query result binders that observe the database. It includes common functionality
  * like creating a finalizer to release the query or creating the actual adapter call code.
  */
-abstract class BaseObservableQueryResultBinder(adapter: QueryResultAdapter?)
-    : QueryResultBinder(adapter) {
+abstract class BaseObservableQueryResultBinder(adapter: QueryResultAdapter?) :
+    QueryResultBinder(adapter) {
 
     protected fun createFinalizeMethod(roomSQLiteQueryVar: String): MethodSpec {
         return MethodSpec.methodBuilder("finalize").apply {
@@ -47,7 +46,8 @@ abstract class BaseObservableQueryResultBinder(adapter: QueryResultAdapter?)
         roomSQLiteQueryVar: String,
         dbField: FieldSpec,
         inTransaction: Boolean,
-        scope: CodeGenScope
+        scope: CodeGenScope,
+        cancellationSignalVar: String
     ) {
         val transactionWrapper = if (inTransaction) {
             builder.transactionWrapper(dbField)
@@ -59,13 +59,16 @@ abstract class BaseObservableQueryResultBinder(adapter: QueryResultAdapter?)
         val cursorVar = scope.getTmpVar("_cursor")
         transactionWrapper?.beginTransactionWithControlFlow()
         builder.apply {
-            addStatement("final $T $L = $T.query($N, $L, $L)",
-                    AndroidTypeNames.CURSOR,
-                    cursorVar,
-                    RoomTypeNames.DB_UTIL,
-                    DaoWriter.dbField,
-                    roomSQLiteQueryVar,
-                    if (shouldCopyCursor) "true" else "false")
+            addStatement(
+                "final $T $L = $T.query($N, $L, $L, $L)",
+                AndroidTypeNames.CURSOR,
+                cursorVar,
+                RoomTypeNames.DB_UTIL,
+                dbField,
+                roomSQLiteQueryVar,
+                if (shouldCopyCursor) "true" else "false",
+                cancellationSignalVar
+            )
             beginControlFlow("try").apply {
                 val adapterScope = scope.fork()
                 adapter?.convert(outVar, cursorVar, adapterScope)

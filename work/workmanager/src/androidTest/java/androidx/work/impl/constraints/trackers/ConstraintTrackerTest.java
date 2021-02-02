@@ -24,15 +24,18 @@ import static org.mockito.Mockito.when;
 
 import android.content.Context;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.work.impl.constraints.ConstraintListener;
+import androidx.work.impl.utils.taskexecutor.InstantWorkTaskExecutor;
+import androidx.work.impl.utils.taskexecutor.TaskExecutor;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@SuppressWarnings("unchecked")
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class ConstraintTrackerTest {
@@ -43,8 +46,9 @@ public class ConstraintTrackerTest {
     @Before
     public void setUp() {
         mMockContext = mock(Context.class);
+        TaskExecutor taskExecutor = new InstantWorkTaskExecutor();
         when(mMockContext.getApplicationContext()).thenReturn(mMockContext);
-        mTracker = new TestConstraintTracker(mMockContext);
+        mTracker = new TestConstraintTracker(mMockContext, taskExecutor);
     }
 
     @After
@@ -76,6 +80,7 @@ public class ConstraintTrackerTest {
         assertThat(mTracker.mGetInitialStateCount, is(1));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testAddListener_sameListener_doesNotCallGetInitialStateAndStartTrackingTwice() {
         ConstraintListener<Boolean> constraintListener = mock(ConstraintListener.class);
@@ -178,8 +183,8 @@ public class ConstraintTrackerTest {
         int mStopTrackingCount;
         Boolean mInitialState = null;
 
-        TestConstraintTracker(Context context) {
-            super(context);
+        TestConstraintTracker(Context context, TaskExecutor taskExecutor) {
+            super(context, taskExecutor);
         }
 
         @Override

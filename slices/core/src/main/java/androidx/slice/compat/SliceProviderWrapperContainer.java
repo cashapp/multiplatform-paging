@@ -86,6 +86,11 @@ public class SliceProviderWrapperContainer {
             if (mAutoGrantPermissions != null) {
                 checkPermissions(sliceUri);
             }
+            PendingIntent action = mSliceProvider.onCreatePermissionRequest(
+                    sliceUri, getCallingPackage());
+            if (action != null) {
+                return action;
+            }
             return super.onCreatePermissionRequest(sliceUri);
         }
 
@@ -107,6 +112,12 @@ public class SliceProviderWrapperContainer {
                         checkPermissions(uri);
                     }
                 }
+            }
+            // Since calls get routed through here on API 28+, need to delegate to
+            // SliceProviderWithCallback if the method is remote callback.
+            // Note that we use string instead of constant to prevent unnecessary dependency.
+            if ("androidx.remotecallback.method.PROVIDER_CALLBACK".equals(method)) {
+                return mSliceProvider.call(method, arg, extras);
             }
             return super.call(method, arg, extras);
         }

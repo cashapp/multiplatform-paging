@@ -36,24 +36,17 @@ class MetaInfTransformer internal constructor(
         const val META_INF_DIR = "meta-inf"
 
         const val VERSION_FILE_SUFFIX = ".version"
-
-        val FILES_TO_IGNORE = setOf(
-            "androidx.car_car-cluster.version",
-            "androidx.car_car-moderator.version"
-        )
     }
 
+    // Does not support single proguard file transformation, file has to be within archive.
     override fun canTransform(file: ArchiveFile): Boolean {
         return context.rewritingSupportLib &&
             file.relativePath.toString().contains(META_INF_DIR, ignoreCase = true) &&
-            file.fileName.endsWith(VERSION_FILE_SUFFIX, ignoreCase = true)
+            file.fileName.endsWith(VERSION_FILE_SUFFIX, ignoreCase = true) &&
+            !file.isSingleFile
     }
 
     override fun runTransform(file: ArchiveFile) {
-        if (FILES_TO_IGNORE.contains(file.fileName)) {
-            return
-        }
-
         val tokens = file.fileName.removeSuffix(VERSION_FILE_SUFFIX).split("_")
         if (tokens.size != 2 || tokens.any { it.isNullOrEmpty() }) {
             return
@@ -62,8 +55,9 @@ class MetaInfTransformer internal constructor(
         val dependency = PomDependency(groupId = tokens[0], artifactId = tokens[1])
         val rule = context.config.pomRewriteRules.firstOrNull { it.matches(dependency) }
         if (rule == null) {
-            // This class runs only during de-jetification so we can be strict here
-            throw IllegalArgumentException("Unsupported version file '${file.relativePath}'")
+            // MetaInfTransformer is only used during dejetification of support lib, so we can
+            // ignore this and keep identity.
+            return
         }
 
         // Replace with new dependencies

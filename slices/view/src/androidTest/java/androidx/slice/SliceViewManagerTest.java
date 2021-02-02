@@ -40,10 +40,10 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.slice.render.SliceRenderActivity;
 import androidx.slice.widget.SliceLiveData;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,11 +55,11 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@LargeTest
 @SdkSuppress(minSdkVersion = 19)
 public class SliceViewManagerTest {
 
-    private final Context mContext = InstrumentationRegistry.getContext();
+    private final Context mContext = ApplicationProvider.getApplicationContext();
     private SliceProvider mSliceProvider;
     private SliceViewManager mViewManager;
     private SliceManager mManager;
@@ -252,7 +252,7 @@ public class SliceViewManagerTest {
         }
 
         @Override
-        public Slice onBindSlice(Uri sliceUri) {
+        public Slice onBindSlice(@NonNull Uri sliceUri) {
             if (sSliceProviderReceiver != null) {
                 return sSliceProviderReceiver.onBindSlice(sliceUri);
             }
@@ -261,7 +261,7 @@ public class SliceViewManagerTest {
 
         @NonNull
         @Override
-        public Uri onMapIntentToUri(Intent intent) {
+        public Uri onMapIntentToUri(@NonNull Intent intent) {
             if (sSliceProviderReceiver != null) {
                 return sSliceProviderReceiver.onMapIntentToUri(intent);
             }
@@ -269,21 +269,22 @@ public class SliceViewManagerTest {
         }
 
         @Override
-        public void onSlicePinned(Uri sliceUri) {
+        public void onSlicePinned(@NonNull Uri sliceUri) {
             if (sSliceProviderReceiver != null) {
                 sSliceProviderReceiver.onSlicePinned(sliceUri);
             }
         }
 
         @Override
-        public void onSliceUnpinned(Uri sliceUri) {
+        public void onSliceUnpinned(@NonNull Uri sliceUri) {
             if (sSliceProviderReceiver != null) {
                 sSliceProviderReceiver.onSliceUnpinned(sliceUri);
             }
         }
 
+        @NonNull
         @Override
-        public Collection<Uri> onGetSliceDescendants(Uri uri) {
+        public Collection<Uri> onGetSliceDescendants(@NonNull Uri uri) {
             if (sSliceProviderReceiver != null) {
                 return sSliceProviderReceiver.onGetSliceDescendants(uri);
             }

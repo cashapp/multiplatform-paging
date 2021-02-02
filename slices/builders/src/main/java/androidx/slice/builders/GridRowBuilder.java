@@ -26,6 +26,7 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.util.Pair;
+import androidx.remotecallback.RemoteCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,6 +122,26 @@ public class GridRowBuilder {
                     + "already been added");
         }
         mSeeMoreIntent = intent;
+        mHasSeeMore = true;
+        return this;
+    }
+
+    /**
+     * If all content in a slice cannot be shown, a "see more" affordance may be displayed where
+     * the content is cut off. The action added here should take the user to an activity to see
+     * all of the content, and will be invoked when the "see more" affordance is tapped.
+     * <p>
+     * Only one see more affordance can be added, this throws {@link IllegalStateException} if
+     * a row or action has been previously added.
+     * </p>
+     */
+    @NonNull
+    public GridRowBuilder setSeeMoreAction(@NonNull RemoteCallback callback) {
+        if (mHasSeeMore) {
+            throw new IllegalStateException("Trying to add see more action when one has "
+                    + "already been added");
+        }
+        mSeeMoreIntent = callback.toPendingIntent();
         mHasSeeMore = true;
         return this;
     }
@@ -258,12 +279,18 @@ public class GridRowBuilder {
          */
         @RestrictTo(LIBRARY)
         public static final int TYPE_IMAGE = 2;
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public static final int TYPE_OVERLAY = 3;
 
-        private List<Object> mObjects = new ArrayList<>();
-        private List<Integer> mTypes = new ArrayList<>();
-        private List<Boolean> mLoadings = new ArrayList<>();
+        private final List<Object> mObjects = new ArrayList<>();
+        private final List<Integer> mTypes = new ArrayList<>();
+        private final List<Boolean> mLoadings = new ArrayList<>();
         private CharSequence mCellDescription;
         private PendingIntent mContentIntent;
+        private SliceAction mSliceAction;
 
         /**
          * Create a builder which will construct a slice displayed as a cell in a grid.
@@ -370,6 +397,36 @@ public class GridRowBuilder {
         }
 
         /**
+         * Adds text to the cell. Text added with this method will be overlaid in the image in
+         * the cell. There can be only one overlay text, the first added will be used, others
+         * will be ignored.
+         */
+        @NonNull
+        public CellBuilder addOverlayText(@NonNull CharSequence text) {
+            return addOverlayText(text, false /* isLoading */);
+        }
+
+        /**
+         * Adds text to the cell. Text added with this method will be overlaid in the image in
+         * the cell. There can be only one overlay text, the first added will be used, others
+         * will be ignored.
+         * <p>
+         * Use this method to specify content that will appear in the template once it's been
+         * loaded.
+         * </p>
+         *
+         * @param isLoading indicates whether the app is doing work to load the added content in the
+         *                  background or not.
+         */
+        @NonNull
+        public CellBuilder addOverlayText(@Nullable CharSequence text, boolean isLoading) {
+            mObjects.add(text);
+            mTypes.add(TYPE_OVERLAY);
+            mLoadings.add(isLoading);
+            return this;
+        }
+
+        /**
          * Sets the action to be invoked if the user taps on this cell in the row.
          */
         @NonNull
@@ -379,11 +436,31 @@ public class GridRowBuilder {
         }
 
         /**
+         * Sets the action to be invoked if the user taps on this cell in the row.
+         */
+        @NonNull
+        public CellBuilder setContentIntent(@NonNull RemoteCallback callback) {
+            mContentIntent = callback.toPendingIntent();
+            return this;
+        }
+
+        /**
          * Sets the content description for this cell.
          */
         @NonNull
         public CellBuilder setContentDescription(@NonNull CharSequence description) {
             mCellDescription = description;
+            return this;
+        }
+
+        /**
+         * Sets the SliceAction for the cell. It could be an action or a toggle button or a
+         * date/time picker. The actionTitle and icon image of the SliceAction will only be used
+         * when there is no other text or image in the cell.
+         */
+        @NonNull
+        public CellBuilder setSliceAction(@NonNull SliceAction action) {
+            mSliceAction = action;
             return this;
         }
 
@@ -453,6 +530,15 @@ public class GridRowBuilder {
                 }
             }
             return null;
+        }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        @Nullable
+        public SliceAction getSliceAction() {
+            return mSliceAction;
         }
     }
 }

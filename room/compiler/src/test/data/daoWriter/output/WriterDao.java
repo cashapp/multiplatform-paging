@@ -19,31 +19,31 @@ package foo.bar;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteStatement;
-
+import java.lang.Class;
 import java.lang.Override;
 import java.lang.String;
 import java.lang.SuppressWarnings;
+import java.util.Collections;
 import java.util.List;
-import javax.annotation.Generated;
+import javax.annotation.processing.Generated;
 
 @Generated("androidx.room.RoomProcessor")
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "deprecation"})
 public final class WriterDao_Impl implements WriterDao {
     private final RoomDatabase __db;
 
-    private final EntityInsertionAdapter __insertionAdapterOfUser;
+    private final EntityInsertionAdapter<User> __insertionAdapterOfUser;
 
-    private final EntityInsertionAdapter __insertionAdapterOfUser_1;
+    private final EntityInsertionAdapter<User> __insertionAdapterOfUser_1;
 
-    private final EntityInsertionAdapter __insertionAdapterOfBook;
+    private final EntityInsertionAdapter<Book> __insertionAdapterOfBook;
 
     public WriterDao_Impl(RoomDatabase __db) {
         this.__db = __db;
         this.__insertionAdapterOfUser = new EntityInsertionAdapter<User>(__db) {
             @Override
             public String createQuery() {
-                return "INSERT OR ABORT INTO `User`(`uid`,`name`,`lastName`,`ageColumn`) VALUES"
-                        + " (?,?,?,?)";
+                return "INSERT OR ABORT INTO `User` (`uid`,`name`,`lastName`,`ageColumn`) VALUES (?,?,?,?)";
             }
 
             @Override
@@ -65,8 +65,7 @@ public final class WriterDao_Impl implements WriterDao {
         this.__insertionAdapterOfUser_1 = new EntityInsertionAdapter<User>(__db) {
             @Override
             public String createQuery() {
-                return "INSERT OR REPLACE INTO `User`(`uid`,`name`,`lastName`,`ageColumn`) VALUES"
-                        + " (?,?,?,?)";
+                return "INSERT OR REPLACE INTO `User` (`uid`,`name`,`lastName`,`ageColumn`) VALUES (?,?,?,?)";
             }
 
             @Override
@@ -88,7 +87,7 @@ public final class WriterDao_Impl implements WriterDao {
         this.__insertionAdapterOfBook = new EntityInsertionAdapter<Book>(__db) {
             @Override
             public String createQuery() {
-                return "INSERT OR ABORT INTO `Book`(`bookId`,`uid`) VALUES (?,?)";
+                return "INSERT OR ABORT INTO `Book` (`bookId`,`uid`) VALUES (?,?)";
             }
 
             @Override
@@ -100,7 +99,8 @@ public final class WriterDao_Impl implements WriterDao {
     }
 
     @Override
-    public void insertUser(User user) {
+    public void insertUser(final User user) {
+        __db.assertNotSuspendingTransaction();
         __db.beginTransaction();
         try {
             __insertionAdapterOfUser.insert(user);
@@ -111,7 +111,8 @@ public final class WriterDao_Impl implements WriterDao {
     }
 
     @Override
-    public void insertUsers(User user1, List<User> others) {
+    public void insertUsers(final User user1, final List<User> others) {
+        __db.assertNotSuspendingTransaction();
         __db.beginTransaction();
         try {
             __insertionAdapterOfUser.insert(user1);
@@ -123,7 +124,8 @@ public final class WriterDao_Impl implements WriterDao {
     }
 
     @Override
-    public void insertUsers(User[] users) {
+    public void insertUsers(final User[] users) {
+        __db.assertNotSuspendingTransaction();
         __db.beginTransaction();
         try {
             __insertionAdapterOfUser_1.insert(users);
@@ -134,7 +136,8 @@ public final class WriterDao_Impl implements WriterDao {
     }
 
     @Override
-    public void insertUserAndBook(User user, Book book) {
+    public void insertUserAndBook(final User user, final Book book) {
+        __db.assertNotSuspendingTransaction();
         __db.beginTransaction();
         try {
             __insertionAdapterOfUser.insert(user);
@@ -143,5 +146,9 @@ public final class WriterDao_Impl implements WriterDao {
         } finally {
             __db.endTransaction();
         }
+    }
+
+    public static List<Class<?>> getRequiredConverters() {
+        return Collections.emptyList();
     }
 }
