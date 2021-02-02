@@ -17,6 +17,7 @@
 package androidx.slice;
 
 import static android.app.slice.SliceItem.FORMAT_ACTION;
+import static android.app.slice.SliceItem.FORMAT_BUNDLE;
 import static android.app.slice.SliceItem.FORMAT_IMAGE;
 import static android.app.slice.SliceItem.FORMAT_INT;
 import static android.app.slice.SliceItem.FORMAT_LONG;
@@ -25,6 +26,7 @@ import static android.app.slice.SliceItem.FORMAT_SLICE;
 import static android.app.slice.SliceItem.FORMAT_TEXT;
 
 import android.app.PendingIntent;
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.text.Spanned;
 
@@ -64,6 +66,8 @@ public class SliceItemHolder implements VersionedParcelable {
     int mInt = 0;
     @ParcelField(value = 5, defaultValue = "0")
     long mLong = 0;
+    @ParcelField(value = 6, defaultValue = "null")
+    Bundle mBundle = null;
 
     @NonParcelField
     private SliceItemPool mPool;
@@ -81,6 +85,7 @@ public class SliceItemHolder implements VersionedParcelable {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public SliceItemHolder(String format, Object mObj, boolean isStream) {
         switch (format) {
             case FORMAT_ACTION:
@@ -108,6 +113,9 @@ public class SliceItemHolder implements VersionedParcelable {
             case FORMAT_LONG:
                 mLong = (Long) mObj;
                 break;
+            case FORMAT_BUNDLE:
+                mBundle = (Bundle) mObj;
+
         }
         if (SliceItemHolder.sHandler != null) {
             SliceItemHolder.sHandler.handle(this, format);
@@ -140,6 +148,8 @@ public class SliceItemHolder implements VersionedParcelable {
                 return mInt;
             case FORMAT_LONG:
                 return mLong;
+            case FORMAT_BUNDLE:
+                return mBundle;
             default:
                 throw new IllegalArgumentException("Unrecognized format " + format);
         }

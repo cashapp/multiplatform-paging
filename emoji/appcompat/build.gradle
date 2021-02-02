@@ -16,20 +16,22 @@
 
 import androidx.build.LibraryGroups
 import androidx.build.LibraryVersions
+import androidx.build.Publish
 
 plugins {
-    id("SupportAndroidLibraryPlugin")
+    id("AndroidXPlugin")
+    id("com.android.library")
 }
 
 dependencies {
     api(project(":emoji"))
-    api(project(":appcompat"))
+    api("androidx.appcompat:appcompat:1.1.0")
 }
 
-supportLibrary {
+androidx {
     name = "Android Emoji AppCompat"
-    publish = true
-    mavenVersion = LibraryVersions.SUPPORT_LIBRARY
+    publish = Publish.SNAPSHOT_AND_RELEASE
+    mavenVersion = LibraryVersions.EMOJI
     mavenGroup = LibraryGroups.EMOJI
     inceptionYear = "2017"
     description = "EmojiCompat Widgets for AppCompat integration"

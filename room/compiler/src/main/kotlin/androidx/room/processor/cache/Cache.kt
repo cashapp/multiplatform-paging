@@ -18,14 +18,14 @@
 
 package androidx.room.processor.cache
 
+import androidx.room.compiler.processing.XElement
+import androidx.room.compiler.processing.XType
 import androidx.room.processor.FieldProcessor
 import androidx.room.vo.EmbeddedField
 import androidx.room.vo.Entity
 import androidx.room.vo.Pojo
 import androidx.room.vo.Warning
 import java.util.LinkedHashSet
-import javax.lang.model.element.Element
-import javax.lang.model.type.TypeMirror
 
 /**
  * A cache key can be used to avoid re-processing elements.
@@ -33,8 +33,11 @@ import javax.lang.model.type.TypeMirror
  * Each context has a cache variable that uses the same backing storage as the Root Context but
  * adds current adapters and warning suppression list to the key.
  */
-class Cache(val parent: Cache?, val converters: LinkedHashSet<TypeMirror>,
-            val suppressedWarnings: Set<Warning>) {
+class Cache(
+    val parent: Cache?,
+    val converters: LinkedHashSet<XType>,
+    val suppressedWarnings: Set<Warning>
+) {
     val entities: Bucket<EntityKey, Entity> = Bucket(parent?.entities)
     val pojos: Bucket<PojoKey, Pojo> = Bucket(parent?.pojos)
 
@@ -42,24 +45,28 @@ class Cache(val parent: Cache?, val converters: LinkedHashSet<TypeMirror>,
         private val entries: MutableMap<FullKey<K>, T> = source?.entries ?: mutableMapOf()
         fun get(key: K, calculate: () -> T): T {
             val fullKey = FullKey(converters, suppressedWarnings, key)
-            return entries.getOrPut(fullKey, {
-                calculate()
-            })
+            return entries.getOrPut(
+                fullKey,
+                {
+                    calculate()
+                }
+            )
         }
     }
 
     /**
      * Key for Entity cache
      */
-    data class EntityKey(val element: Element)
+    data class EntityKey(val element: XElement)
 
     /**
      * Key for Pojo cache
      */
     data class PojoKey(
-            val element: Element,
-            val scope: FieldProcessor.BindingScope,
-            val parent: EmbeddedField?)
+        val element: XElement,
+        val scope: FieldProcessor.BindingScope,
+        val parent: EmbeddedField?
+    )
 
     /**
      * Internal key representation with adapters & warnings included.
@@ -67,7 +74,8 @@ class Cache(val parent: Cache?, val converters: LinkedHashSet<TypeMirror>,
      * Converters are kept in a linked set since the order is important for the TypeAdapterStore.
      */
     private data class FullKey<T>(
-            val converters: LinkedHashSet<TypeMirror>,
-            val suppressedWarnings: Set<Warning>,
-            val key: T)
+        val converters: LinkedHashSet<XType>,
+        val suppressedWarnings: Set<Warning>,
+        val key: T
+    )
 }

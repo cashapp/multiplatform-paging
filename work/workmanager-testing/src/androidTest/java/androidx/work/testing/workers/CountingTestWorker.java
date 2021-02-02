@@ -17,8 +17,8 @@
 package androidx.work.testing.workers;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 
+import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -39,6 +39,6 @@ public class CountingTestWorker extends Worker {
     @Override
     public Result doWork() {
         COUNT.incrementAndGet();
-        return Result.SUCCESS;
+        return Result.success();
     }
 }

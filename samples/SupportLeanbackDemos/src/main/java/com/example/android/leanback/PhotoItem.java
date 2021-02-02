@@ -13,10 +13,15 @@
  */
 package com.example.android.leanback;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class PhotoItem implements Parcelable {
+/**
+ * PhotoItem.
+ */
+@SuppressLint("BanParcelableUsage")
+public final class PhotoItem implements Parcelable {
     private int mId;
     private String mTitle;
     private String mContent;
@@ -97,7 +102,7 @@ public class PhotoItem implements Parcelable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof PhotoItem)) return false;
         PhotoItem photoItem = (PhotoItem) o;
         if (mId != photoItem.mId) return false;
         if (mImageResourceId != photoItem.mImageResourceId) return false;

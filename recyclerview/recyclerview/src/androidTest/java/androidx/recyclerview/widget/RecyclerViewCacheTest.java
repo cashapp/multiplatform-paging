@@ -25,9 +25,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -44,10 +44,10 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
@@ -61,7 +61,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@SmallTest
+@SuppressWarnings("unchecked")
+@MediumTest
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.LOLLIPOP)
 @RunWith(AndroidJUnit4.class)
 public class RecyclerViewCacheTest {
@@ -110,7 +111,7 @@ public class RecyclerViewCacheTest {
     }
 
     private Context getContext() {
-        return InstrumentationRegistry.getContext();
+        return ApplicationProvider.getApplicationContext();
     }
 
     private void layout(int width, int height) {
@@ -494,7 +495,7 @@ public class RecyclerViewCacheTest {
             @Override
             public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
                 // verify unbound view doesn't get
-                assertNotEquals(RecyclerView.NO_POSITION, holder.getAdapterPosition());
+                assertNotEquals(RecyclerView.NO_POSITION, holder.getAbsoluteAdapterPosition());
             }
         };
         mRecyclerView.setAdapter(adapter);
@@ -519,7 +520,7 @@ public class RecyclerViewCacheTest {
         assertTrue(mRecyclerView.getRecycledViewPool().getRecycledViewCount(0) == 1);
         RecyclerView.ViewHolder pooledHolder = mRecyclerView.getRecycledViewPool()
                 .mScrap.get(0).mScrapHeap.get(0);
-        assertEquals(RecyclerView.NO_POSITION, pooledHolder.getAdapterPosition());
+        assertEquals(RecyclerView.NO_POSITION, pooledHolder.getAbsoluteAdapterPosition());
     }
 
     @Test
@@ -853,7 +854,7 @@ public class RecyclerViewCacheTest {
 
         @Override
         public void onViewRecycled(@NonNull ViewHolder holder) {
-            mSavedStates.set(holder.getAdapterPosition(),
+            mSavedStates.set(holder.getAbsoluteAdapterPosition(),
                     holder.mRecyclerView.getLayoutManager().onSaveInstanceState());
         }
 
@@ -1194,8 +1195,8 @@ public class RecyclerViewCacheTest {
 
         @Override
         public void onViewRecycled(@NonNull ViewHolder holder) {
-            if (holder.getAdapterPosition() >= 0) {
-                mSavedStates.set(holder.getAdapterPosition(),
+            if (holder.getAbsoluteAdapterPosition() >= 0) {
+                mSavedStates.set(holder.getAbsoluteAdapterPosition(),
                         holder.mRecyclerView.getLayoutManager().onSaveInstanceState());
             }
         }

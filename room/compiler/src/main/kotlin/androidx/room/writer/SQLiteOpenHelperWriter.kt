@@ -50,24 +50,29 @@ class SQLiteOpenHelperWriter(val database: Database) {
         scope.builder().apply {
             val sqliteConfigVar = scope.getTmpVar("_sqliteConfig")
             val callbackVar = scope.getTmpVar("_openCallback")
-            addStatement("final $T $L = new $T($N, $L, $S, $S)",
-                    SupportDbTypeNames.SQLITE_OPEN_HELPER_CALLBACK,
-                    callbackVar, RoomTypeNames.OPEN_HELPER, configuration,
-                    createOpenCallback(scope), database.identityHash, database.legacyIdentityHash)
+            addStatement(
+                "final $T $L = new $T($N, $L, $S, $S)",
+                SupportDbTypeNames.SQLITE_OPEN_HELPER_CALLBACK,
+                callbackVar, RoomTypeNames.OPEN_HELPER, configuration,
+                createOpenCallback(scope), database.identityHash, database.legacyIdentityHash
+            )
             // build configuration
             addStatement(
-                    """
+                """
                     final $T $L = $T.builder($N.context)
                     .name($N.name)
                     .callback($L)
                     .build()
-                    """.trimIndent(),
-                    SupportDbTypeNames.SQLITE_OPEN_HELPER_CONFIG, sqliteConfigVar,
-                    SupportDbTypeNames.SQLITE_OPEN_HELPER_CONFIG,
-                    configuration, configuration, callbackVar)
-            addStatement("final $T $N = $N.sqliteOpenHelperFactory.create($L)",
-                    SupportDbTypeNames.SQLITE_OPEN_HELPER, outVar,
-                    configuration, sqliteConfigVar)
+                """.trimIndent(),
+                SupportDbTypeNames.SQLITE_OPEN_HELPER_CONFIG, sqliteConfigVar,
+                SupportDbTypeNames.SQLITE_OPEN_HELPER_CONFIG,
+                configuration, configuration, callbackVar
+            )
+            addStatement(
+                "final $T $N = $N.sqliteOpenHelperFactory.create($L)",
+                SupportDbTypeNames.SQLITE_OPEN_HELPER, outVar,
+                configuration, sqliteConfigVar
+            )
         }
     }
 
@@ -75,7 +80,7 @@ class SQLiteOpenHelperWriter(val database: Database) {
         return TypeSpec.anonymousClassBuilder(L, database.version).apply {
             superclass(RoomTypeNames.OPEN_HELPER_DELEGATE)
             addMethod(createCreateAllTables())
-            addMethod(createDropAllTables())
+            addMethod(createDropAllTables(scope.fork()))
             addMethod(createOnCreate(scope.fork()))
             addMethod(createOnOpen(scope.fork()))
             addMethod(createOnPreMigrate())
@@ -92,48 +97,73 @@ class SQLiteOpenHelperWriter(val database: Database) {
         while (!entities.isEmpty() || !views.isEmpty()) {
             val isPrimaryMethod = methodSpecs.isEmpty()
             val methodName = if (isPrimaryMethod) {
-                "validateMigration"
+                "onValidateSchema"
             } else {
-                "validateMigration${methodSpecs.size + 1}"
+                "onValidateSchema${methodSpecs.size + 1}"
             }
-            methodSpecs.add(MethodSpec.methodBuilder(methodName).apply {
-                if (isPrimaryMethod) {
-                    addModifiers(PROTECTED)
-                    addAnnotation(Override::class.java)
-                } else {
-                    addModifiers(PRIVATE)
-                }
-                addParameter(dbParam)
-                var statementCount = 0
-                while (!entities.isEmpty() && statementCount < VALIDATE_CHUNK_SIZE) {
-                    val methodScope = scope.fork()
-                    val entity = entities.poll()
-                    val validationWriter = when (entity) {
-                        is FtsEntity -> FtsTableInfoValidationWriter(entity)
-                        else -> TableInfoValidationWriter(entity)
+            methodSpecs.add(
+                MethodSpec.methodBuilder(methodName).apply {
+                    if (isPrimaryMethod) {
+                        addModifiers(PROTECTED)
+                        addAnnotation(Override::class.java)
+                    } else {
+                        addModifiers(PRIVATE)
                     }
-                    validationWriter.write(dbParam, methodScope)
-                    addCode(methodScope.builder().build())
-                    statementCount += validationWriter.statementCount()
-                }
-                while (!views.isEmpty() && statementCount < VALIDATE_CHUNK_SIZE) {
-                    val methodScope = scope.fork()
-                    val view = views.poll()
-                    val validationWriter = ViewInfoValidationWriter(view)
-                    validationWriter.write(dbParam, methodScope)
-                    addCode(methodScope.builder().build())
-                    statementCount += validationWriter.statementCount()
-                }
-            }.build())
+                    returns(RoomTypeNames.OPEN_HELPER_VALIDATION_RESULT)
+                    addParameter(dbParam)
+                    var statementCount = 0
+                    while (!entities.isEmpty() && statementCount < VALIDATE_CHUNK_SIZE) {
+                        val methodScope = scope.fork()
+                        val entity = entities.poll()
+                        val validationWriter = when (entity) {
+                            is FtsEntity -> FtsTableInfoValidationWriter(entity)
+                            else -> TableInfoValidationWriter(entity)
+                        }
+                        validationWriter.write(dbParam, methodScope)
+                        addCode(methodScope.builder().build())
+                        statementCount += validationWriter.statementCount()
+                    }
+                    while (!views.isEmpty() && statementCount < VALIDATE_CHUNK_SIZE) {
+                        val methodScope = scope.fork()
+                        val view = views.poll()
+                        val validationWriter = ViewInfoValidationWriter(view)
+                        validationWriter.write(dbParam, methodScope)
+                        addCode(methodScope.builder().build())
+                        statementCount += validationWriter.statementCount()
+                    }
+                    if (!isPrimaryMethod) {
+                        addStatement(
+                            "return new $T(true, null)",
+                            RoomTypeNames.OPEN_HELPER_VALIDATION_RESULT
+                        )
+                    }
+                }.build()
+            )
         }
 
         // If there are secondary validate methods then add invocation statements to all of them
         // from the primary method.
         if (methodSpecs.size > 1) {
             methodSpecs[0] = methodSpecs[0].toBuilder().apply {
+                val resultVar = scope.getTmpVar("_result")
+                addStatement("$T $L", RoomTypeNames.OPEN_HELPER_VALIDATION_RESULT, resultVar)
                 methodSpecs.drop(1).forEach {
-                    addStatement("${it.name}($N)", dbParam)
+                    addStatement("$L = ${it.name}($N)", resultVar, dbParam)
+                    beginControlFlow("if (!$L.isValid)", resultVar)
+                    addStatement("return $L", resultVar)
+                    endControlFlow()
                 }
+                addStatement(
+                    "return new $T(true, null)",
+                    RoomTypeNames.OPEN_HELPER_VALIDATION_RESULT
+                )
+            }.build()
+        } else if (methodSpecs.size == 1) {
+            methodSpecs[0] = methodSpecs[0].toBuilder().apply {
+                addStatement(
+                    "return new $T(true, null)",
+                    RoomTypeNames.OPEN_HELPER_VALIDATION_RESULT
+                )
             }.build()
         }
 
@@ -174,7 +204,7 @@ class SQLiteOpenHelperWriter(val database: Database) {
         }.build()
     }
 
-    private fun createDropAllTables(): MethodSpec {
+    private fun createDropAllTables(scope: CodeGenScope): MethodSpec {
         return MethodSpec.methodBuilder("dropAllTables").apply {
             addModifiers(PUBLIC)
             addAnnotation(Override::class.java)
@@ -185,6 +215,7 @@ class SQLiteOpenHelperWriter(val database: Database) {
             database.views.forEach {
                 addStatement("_db.execSQL($S)", createDropViewQuery(it))
             }
+            invokeCallbacks(scope, "onDestructiveMigration")
         }.build()
     }
 
@@ -203,11 +234,11 @@ class SQLiteOpenHelperWriter(val database: Database) {
             addAnnotation(Override::class.java)
             addParameter(SupportDbTypeNames.DB, "_db")
             database.entities.filterIsInstance(FtsEntity::class.java)
-                    .filter { it.ftsOptions.contentEntity != null }
-                    .flatMap { it.contentSyncTriggerCreateQueries }
-                    .forEach { syncTriggerQuery ->
-                        addStatement("_db.execSQL($S)", syncTriggerQuery)
-                    }
+                .filter { it.ftsOptions.contentEntity != null }
+                .flatMap { it.contentSyncTriggerCreateQueries }
+                .forEach { syncTriggerQuery ->
+                    addStatement("_db.execSQL($S)", syncTriggerQuery)
+                }
         }.build()
     }
 
@@ -215,8 +246,10 @@ class SQLiteOpenHelperWriter(val database: Database) {
         val iVar = scope.getTmpVar("_i")
         val sizeVar = scope.getTmpVar("_size")
         beginControlFlow("if (mCallbacks != null)").apply {
-            beginControlFlow("for (int $N = 0, $N = mCallbacks.size(); $N < $N; $N++)",
-                    iVar, sizeVar, iVar, sizeVar, iVar).apply {
+            beginControlFlow(
+                "for (int $N = 0, $N = mCallbacks.size(); $N < $N; $N++)",
+                iVar, sizeVar, iVar, sizeVar, iVar
+            ).apply {
                 addStatement("mCallbacks.get($N).$N(_db)", iVar, methodName)
             }
             endControlFlow()

@@ -19,6 +19,7 @@ package androidx.slice.widget;
 import static android.app.slice.Slice.EXTRA_TOGGLE_STATE;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.slice.core.SliceHints.ACTION_WITH_LABEL;
 import static androidx.slice.core.SliceHints.ICON_IMAGE;
 
 import android.app.PendingIntent;
@@ -31,6 +32,7 @@ import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Checkable;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
@@ -42,6 +44,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.slice.SliceItem;
 import androidx.slice.core.SliceActionImpl;
@@ -56,6 +59,8 @@ import androidx.slice.view.R;
 public class SliceActionView extends FrameLayout implements View.OnClickListener,
         CompoundButton.OnCheckedChangeListener {
     private static final String TAG = "SliceActionView";
+
+    private static final int HEIGHT_UNBOUND = -1;
 
     static final int[] CHECKED_STATE_SET = {
             android.R.attr.state_checked
@@ -75,12 +80,19 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
 
     private int mIconSize;
     private int mImageSize;
+    private int mTextActionPadding;
 
-    public SliceActionView(Context context) {
+    public SliceActionView(Context context, SliceStyle style, RowStyle rowStyle) {
         super(context);
         Resources res = getContext().getResources();
         mIconSize = res.getDimensionPixelSize(R.dimen.abc_slice_icon_size);
         mImageSize = res.getDimensionPixelSize(R.dimen.abc_slice_small_image_size);
+        mTextActionPadding = 0;
+        if (rowStyle != null) {
+            mIconSize = rowStyle.getIconSize();
+            mImageSize = rowStyle.getImageSize();
+            mTextActionPadding = rowStyle.getTextActionPadding();
+        }
     }
 
     /**
@@ -106,11 +118,11 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
         if (action.isDefaultToggle()) {
             Switch switchView = (Switch) LayoutInflater.from(getContext()).inflate(
                     R.layout.abc_slice_switch, this, false);
-            addView(switchView);
             switchView.setChecked(action.isChecked());
             switchView.setOnCheckedChangeListener(this);
             switchView.setMinimumHeight(mImageSize);
             switchView.setMinimumWidth(mImageSize);
+            addView(switchView);
             if (color != -1) {
                 // See frameworks/base/core/res/res/color/switch_track_material.xml.
                 final int uncheckedTrackColor = SliceViewUtil.getColorAttr(getContext(),
@@ -125,8 +137,13 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
                 switchView.setTrackDrawable(trackDrawable);
 
                 // See frameworks/base/core/res/res/drawable/switch_thumb_material_anim.xml.
-                final int uncheckedThumbColor = SliceViewUtil.getColorAttr(getContext(),
+                int uncheckedThumbColor = SliceViewUtil.getColorAttr(getContext(),
                         androidx.appcompat.R.attr.colorSwitchThumbNormal);
+                if (uncheckedThumbColor == 0) {
+                    // We aren't in an appcompat theme, pull the default light switch color.
+                    uncheckedThumbColor = ContextCompat.getColor(getContext(),
+                            androidx.appcompat.R.color.switch_thumb_normal_material_light);
+                }
 
                 ColorStateList thumbTintList = new ColorStateList(
                         new int[][]{ CHECKED_STATE_SET, EMPTY_STATE_SET },
@@ -138,6 +155,20 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
             }
             mActionView = switchView;
 
+        } else if (action.getImageMode() == ACTION_WITH_LABEL) {
+            Button textButton = new Button(getContext());
+            mActionView = textButton;
+            ((Button) mActionView).setText(action.getTitle());
+            addView(mActionView);
+
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mActionView.getLayoutParams();
+            lp.width = LayoutParams.WRAP_CONTENT;
+            lp.height = LayoutParams.WRAP_CONTENT;
+            mActionView.setLayoutParams(lp);
+            int p = mTextActionPadding;
+
+            mActionView.setPadding(p, p, p, p);
+            mActionView.setOnClickListener(this);
         } else if (action.getIcon() != null) {
             if (action.isToggle()) {
                 ImageToggle imageToggle = new ImageToggle(getContext());
@@ -158,7 +189,11 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
             lp.width = mImageSize;
             lp.height = mImageSize;
             mActionView.setLayoutParams(lp);
-            int p = action.getImageMode() == ICON_IMAGE ? mIconSize / 2 : 0;
+            int p = 0;
+            if (action.getImageMode() == ICON_IMAGE) {
+                p = mImageSize == HEIGHT_UNBOUND
+                    ? mIconSize / 2 : (mImageSize - mIconSize) / 2;
+            }
             mActionView.setPadding(p, p, p, p);
             int touchFeedbackAttr = android.R.attr.selectableItemBackground;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -210,7 +245,7 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
     }
 
     @Override
-    public void onClick(View v) {
+    public void onClick(@NonNull View v) {
         if (mSliceAction == null || mActionView == null) {
             return;
         }
@@ -218,7 +253,7 @@ public class SliceActionView extends FrameLayout implements View.OnClickListener
     }
 
     @Override
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+    public void onCheckedChanged(@Nullable CompoundButton buttonView, boolean isChecked) {
         if (mSliceAction == null || mActionView == null) {
             return;
         }

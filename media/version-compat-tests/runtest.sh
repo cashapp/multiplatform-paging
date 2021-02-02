@@ -13,23 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# A script that runs media-compat-test between different versions.
-#
-# Preconditions:
-#  - Exactly one test device should be connected.
-#
-# TODO:
-#  - Support simultaneous multiple device connection
+# A script that runs media tests between different versions.
 
 # Usage './runtest.sh <version_combination_number> [option]'
 
-CLIENT_MODULE_NAME_BASE="support-media-compat-test-client"
-SERVICE_MODULE_NAME_BASE="support-media-compat-test-service"
-MEDIA_COMPAT_CLIENT_TEST_JAVA_PACKAGE="android.support.mediacompat.client"
-MEDIA_COMPAT_SERVICE_TEST_JAVA_PACKAGE="android.support.mediacompat.service"
+CLIENT_MODULE_NAME_BASE="media:version-compat-tests:client"
+SERVICE_MODULE_NAME_BASE="media:version-compat-tests:service"
 CLIENT_VERSION=""
 SERVICE_VERSION=""
-OPTION_TEST_TARGET=""
+CLIENT_TEST_TARGET=""
+SERVICE_TEST_TARGET=""
+VERSION_COMBINATION=""
+ERROR_CODE=0
 
 function printRunTestUsage() {
   echo "Usage: ./runtest.sh <version_combination_number> [option]"
@@ -45,40 +40,28 @@ function printRunTestUsage() {
 }
 
 function runTest() {
-  echo "Running test: Client-$CLIENT_VERSION / Service-$SERVICE_VERSION"
+  echo ">>>>>>>>>>>>>>>>>>>>>>>> Test Started: Client-$CLIENT_VERSION & Service-$SERVICE_VERSION <<<<<<<<<<<<<<<<<<<<<<<<"
+
+  local CUSTOM_OPTIONS="-Pandroid.testInstrumentationRunnerArguments.client_version=$CLIENT_VERSION"
+  CUSTOM_OPTIONS="$CUSTOM_OPTIONS -Pandroid.testInstrumentationRunnerArguments.service_version=$SERVICE_VERSION"
 
   local CLIENT_MODULE_NAME="$CLIENT_MODULE_NAME_BASE$([ "$CLIENT_VERSION" = "tot" ] || echo "-previous")"
   local SERVICE_MODULE_NAME="$SERVICE_MODULE_NAME_BASE$([ "$SERVICE_VERSION" = "tot" ] || echo "-previous")"
 
-  # Build test apks
-  ./gradlew $CLIENT_MODULE_NAME:assembleDebugAndroidTest || { echo "Build failed. Aborting."; exit 1; }
-  ./gradlew $SERVICE_MODULE_NAME:assembleDebugAndroidTest || { echo "Build failed. Aborting."; exit 1; }
+  echo "Building modules"
+  ./gradlew $CLIENT_MODULE_NAME:assembleAndroidTest || { echo "Client build failed. Aborting."; exit 1; }
+  ./gradlew $SERVICE_MODULE_NAME:assembleAndroidTest || { echo "Service build failed. Aborting."; exit 1; }
 
-  # Install the apks
-  adb install -r "../../out/dist/$CLIENT_MODULE_NAME.apk" || { echo "Apk installation failed. Aborting."; exit 1; }
-  adb install -r "../../out/dist/$SERVICE_MODULE_NAME.apk" || { echo "Apk installation failed. Aborting."; exit 1; }
+  if [[ -z "$SERVICE_TEST_TARGET" ]]; then
+    echo "Running client tests"
+    ./gradlew $SERVICE_MODULE_NAME:installDebugAndroidTest || { echo "Service install failed. Aborting."; exit 1; }
+    ./gradlew $CLIENT_MODULE_NAME:connectedAndroidTest $CLIENT_TEST_TARGET $CUSTOM_OPTIONS || ERROR_CODE=1
+  fi
 
-  # Run the tests
-  local test_command="adb shell am instrument -w -e debug false -e client_version $CLIENT_VERSION -e service_version $SERVICE_VERSION"
-  local client_test_runner="android.support.mediacompat.client.test/androidx.test.runner.AndroidJUnitRunner"
-  local service_test_runner="android.support.mediacompat.service.test/androidx.test.runner.AndroidJUnitRunner"
-
-  echo ">>>>>>>>>>>>>>>>>>>>>>>> Test Started: Client-$CLIENT_VERSION & Service-$SERVICE_VERSION <<<<<<<<<<<<<<<<<<<<<<<<"
-
-  if [[ $OPTION_TEST_TARGET == *"client"* ]]; then
-    ${test_command} $OPTION_TEST_TARGET ${client_test_runner}
-  elif [[ $OPTION_TEST_TARGET == *"service"* ]]; then
-    ${test_command} $OPTION_TEST_TARGET ${service_test_runner}
-  else
-    # Since there is no MediaSession2 APIs in previous support library, don't run the test.
-    # Instead, only run mediacompat tests.
-    if [[ $CLIENT_VERSION != "tot" || $SERVICE_VERSION != "tot" ]]; then
-      ${test_command} "-e package $MEDIA_COMPAT_CLIENT_TEST_JAVA_PACKAGE" ${client_test_runner}
-      ${test_command} "-e package $MEDIA_COMPAT_SERVICE_TEST_JAVA_PACKAGE" ${service_test_runner}
-    else
-      ${test_command} ${client_test_runner}
-      ${test_command} ${service_test_runner}
-    fi
+  if [[ -z "$CLIENT_TEST_TARGET" ]]; then
+    echo "Running service tests"
+    ./gradlew $CLIENT_MODULE_NAME:installDebugAndroidTest || { echo "Client install failed. Aborting."; exit 1; }
+    ./gradlew $SERVICE_MODULE_NAME:connectedAndroidTest $SERVICE_TEST_TARGET $CUSTOM_OPTIONS || ERROR_CODE=1
   fi
 
   echo ">>>>>>>>>>>>>>>>>>>>>>>> Test Ended: Client-$CLIENT_VERSION & Service-$SERVICE_VERSION <<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -94,23 +77,37 @@ then
   exit 1;
 fi
 
-if [[ $# -eq 0 || $1 -le 0 || $1 -gt 4 ]]
-then
-  printRunTestUsage
-  exit 1;
-fi
-
-if [[ ${2} == "-t" ]]; then
-  if [[ ${3} == *"client"* || ${3} == *"service"* ]]; then
-    OPTION_TEST_TARGET="-e class ${3}"
-  else
-    echo "Wrong test class/method name. Aborting."
-    echo "It should be in the form of \"<FULL_CLASS_NAME>[#METHOD_NAME]\"."
-    exit 1;
-  fi
-fi
-
 case ${1} in
+  1|2|3|4)
+    VERSION_COMBINATION=${1}
+    shift
+    ;;
+  *)
+    printRunTestUsage
+    exit 1;
+esac
+
+while (( "$#" )); do
+  case ${1} in
+    -t)
+      if [[ ${2} == *"client"* ]]; then
+        CLIENT_TEST_TARGET="-Pandroid.testInstrumentationRunnerArguments.class=${2}"
+      elif [[ ${2} == *"service"* ]]; then
+        SERVICE_TEST_TARGET="-Pandroid.testInstrumentationRunnerArguments.class=${2}"
+      else
+        echo "Wrong test class/method name. Aborting."
+        echo "It should be in the form of \"<FULL_CLASS_NAME>[#METHOD_NAME]\"."
+        exit 1;
+      fi
+      shift 2
+      ;;
+    *)
+      printRunTestUsage
+      exit 1;
+  esac
+done
+
+case ${VERSION_COMBINATION} in
   1)
      CLIENT_VERSION="tot"
      SERVICE_VERSION="tot"
@@ -140,3 +137,14 @@ case ${1} in
      runTest
      ;;
 esac
+
+echo
+case ${ERROR_CODE} in
+  0)
+    echo -e "\033[1;32mTEST SUCCESSFUL\033[0m: All of tests passed."
+    ;;
+  1)
+    echo -e "\033[1;31mTEST FAILED\033[0m: Some of tests failed."
+    ;;
+esac
+exit $ERROR_CODE

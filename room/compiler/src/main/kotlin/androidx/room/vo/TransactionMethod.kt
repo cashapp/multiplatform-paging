@@ -16,9 +16,17 @@
 
 package androidx.room.vo
 
-import javax.lang.model.element.ExecutableElement
+import androidx.room.compiler.processing.XMethodElement
+import androidx.room.compiler.processing.XType
+import androidx.room.solver.transaction.binder.TransactionMethodBinder
 
-class TransactionMethod(val element: ExecutableElement, val name: String, val callType: CallType) {
+class TransactionMethod(
+    val element: XMethodElement,
+    val returnType: XType,
+    val parameterNames: List<String>,
+    val callType: CallType,
+    val methodBinder: TransactionMethodBinder
+) {
     enum class CallType {
         CONCRETE, DEFAULT_JAVA8, DEFAULT_KOTLIN
     }

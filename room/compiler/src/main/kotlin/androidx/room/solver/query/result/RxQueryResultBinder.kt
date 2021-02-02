@@ -16,29 +16,22 @@
 
 package androidx.room.solver.query.result
 
+import androidx.room.ext.CallableTypeSpecBuilder
 import androidx.room.ext.L
 import androidx.room.ext.N
-import androidx.room.ext.RoomRxJava2TypeNames
-import androidx.room.ext.RxJava2TypeNames
 import androidx.room.ext.T
 import androidx.room.ext.arrayTypeName
-import androidx.room.ext.typeName
+import androidx.room.compiler.processing.XType
 import androidx.room.solver.CodeGenScope
-import androidx.room.writer.DaoWriter
-import com.squareup.javapoet.ClassName
+import androidx.room.solver.RxType
 import com.squareup.javapoet.FieldSpec
-import com.squareup.javapoet.MethodSpec
-import com.squareup.javapoet.ParameterizedTypeName
-import com.squareup.javapoet.TypeSpec
-import javax.lang.model.element.Modifier
-import javax.lang.model.type.TypeMirror
 
 /**
  * Binds the result as an RxJava2 Flowable, Publisher and Observable.
  */
-class RxQueryResultBinder(
+internal class RxQueryResultBinder(
     private val rxType: RxType,
-    val typeArg: TypeMirror,
+    val typeArg: XType,
     val queryTableNames: Set<String>,
     adapter: QueryResultAdapter?
 ) : BaseObservableQueryResultBinder(adapter) {
@@ -49,35 +42,32 @@ class RxQueryResultBinder(
         inTransaction: Boolean,
         scope: CodeGenScope
     ) {
-        val callableImpl = TypeSpec.anonymousClassBuilder("").apply {
-            val typeName = typeArg.typeName()
-            superclass(ParameterizedTypeName.get(java.util.concurrent.Callable::class.typeName(),
-                    typeName))
-            addMethod(MethodSpec.methodBuilder("call").apply {
-                returns(typeName)
-                addException(Exception::class.typeName())
-                addModifiers(Modifier.PUBLIC)
-                addAnnotation(Override::class.java)
-                createRunQueryAndReturnStatements(builder = this,
-                        roomSQLiteQueryVar = roomSQLiteQueryVar,
-                        inTransaction = inTransaction,
-                        dbField = dbField,
-                        scope = scope)
-            }.build())
+        val callableImpl = CallableTypeSpecBuilder(typeArg.typeName) {
+            createRunQueryAndReturnStatements(
+                builder = this,
+                roomSQLiteQueryVar = roomSQLiteQueryVar,
+                inTransaction = inTransaction,
+                dbField = dbField,
+                scope = scope,
+                cancellationSignalVar = "null"
+            )
+        }.apply {
             if (canReleaseQuery) {
                 addMethod(createFinalizeMethod(roomSQLiteQueryVar))
             }
         }.build()
         scope.builder().apply {
             val tableNamesList = queryTableNames.joinToString(",") { "\"$it\"" }
-            addStatement("return $T.$N($N, new $T{$L}, $L)",
-                    RoomRxJava2TypeNames.RX_ROOM, rxType.methodName, DaoWriter.dbField,
-                    String::class.arrayTypeName(), tableNamesList, callableImpl)
+            addStatement(
+                "return $T.$N($N, $L, new $T{$L}, $L)",
+                rxType.version.rxRoomClassName,
+                rxType.factoryMethodName,
+                dbField,
+                if (inTransaction) "true" else "false",
+                String::class.arrayTypeName,
+                tableNamesList,
+                callableImpl
+            )
         }
-    }
-
-    enum class RxType(val className: ClassName, val methodName: String) {
-        FLOWABLE(RxJava2TypeNames.FLOWABLE, RoomRxJava2TypeNames.RX_ROOM_CREATE_FLOWABLE),
-        OBSERVABLE(RxJava2TypeNames.OBSERVABLE, RoomRxJava2TypeNames.RX_ROOM_CREATE_OBSERVABLE)
     }
 }

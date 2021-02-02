@@ -20,6 +20,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -50,8 +51,11 @@ import java.util.logging.Logger;
  *
  * @author Sven Mawson
  * @author Luke Sandberg
+ * @hide
  */
+// TODO(b/119308748): Implement InternalFutureFailureAccess
 @SuppressWarnings("ShortCircuitBoolean") // we use non-short circuiting comparisons intentionally
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)
 public abstract class AbstractResolvableFuture<V> implements ListenableFuture<V> {
 
     // NOTE: Whenever both tests are cheap and functional, it's faster to use &, | instead of &&, ||
@@ -840,8 +844,11 @@ public abstract class AbstractResolvableFuture<V> implements ListenableFuture<V>
 
     /**
      * internal dependency on other /util/concurrent classes.
+     *
+     * @hide
      */
-    private static <V> V getUninterruptibly(Future<V> future) throws ExecutionException {
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    static <V> V getUninterruptibly(Future<V> future) throws ExecutionException {
         boolean interrupted = false;
         try {
             while (true) {

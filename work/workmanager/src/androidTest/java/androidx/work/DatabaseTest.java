@@ -16,11 +16,15 @@
 
 package androidx.work;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.work.impl.WorkDatabase;
+import androidx.work.impl.model.WorkName;
+import androidx.work.impl.model.WorkTag;
 
 import org.junit.After;
 import org.junit.Before;
+
+import java.util.concurrent.Executors;
 
 /**
  * An abstract class for getting an in-memory instance of the {@link WorkDatabase}.
@@ -30,7 +34,10 @@ public abstract class DatabaseTest extends WorkManagerTest {
 
     @Before
     public void initializeDb() {
-        mDatabase = WorkDatabase.create(InstrumentationRegistry.getTargetContext(), true);
+        mDatabase = WorkDatabase.create(
+                ApplicationProvider.getApplicationContext(),
+                Executors.newCachedThreadPool(),
+                true);
     }
 
     @After
@@ -40,6 +47,18 @@ public abstract class DatabaseTest extends WorkManagerTest {
 
     protected void insertWork(OneTimeWorkRequest work) {
         mDatabase.workSpecDao().insertWorkSpec(getWorkSpec(work));
+    }
+
+    protected void insertTags(OneTimeWorkRequest work) {
+        for (String tag : work.getTags()) {
+            WorkTag workTag = new WorkTag(tag, work.getStringId());
+            mDatabase.workTagDao().insert(workTag);
+        }
+    }
+
+    protected void insertName(String name, OneTimeWorkRequest work) {
+        WorkName workName = new WorkName(name, work.getStringId());
+        mDatabase.workNameDao().insert(workName);
     }
 
     protected void insertWork(PeriodicWorkRequest periodicWork) {

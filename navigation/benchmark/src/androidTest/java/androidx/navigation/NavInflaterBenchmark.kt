@@ -16,41 +16,37 @@
 
 package androidx.navigation
 
-import androidx.benchmark.BenchmarkRule
-import androidx.navigation.testing.TestNavigator
-import androidx.test.InstrumentationRegistry
-import androidx.test.filters.MediumTest
-import androidx.test.runner.AndroidJUnit4
+import androidx.benchmark.junit4.BenchmarkRule
+import androidx.benchmark.junit4.measureRepeated
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
+import androidx.testutils.TestNavigatorProvider
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@MediumTest
+@LargeTest
 class NavInflaterBenchmark {
 
     @get:Rule
     val benchmarkRule = BenchmarkRule()
 
-    private val context = InstrumentationRegistry.getContext()
+    private val context = ApplicationProvider.getApplicationContext() as android.content.Context
 
-    private var navInflater: NavInflater = NavInflater(context, SimpleNavigatorProvider().apply {
-        addNavigator(NavGraphNavigator(context))
-        addNavigator(TestNavigator())
-    })
+    private var navInflater: NavInflater = NavInflater(context, TestNavigatorProvider())
 
     @Test
     fun inflateSimple() {
-        val state = benchmarkRule.state
-        while (state.keepRunning()) {
+        benchmarkRule.measureRepeated {
             navInflater.inflate(androidx.navigation.benchmark.test.R.navigation.nav_simple)
         }
     }
 
     @Test
     fun inflateDeepLink() {
-        val state = benchmarkRule.state
-        while (state.keepRunning()) {
+        benchmarkRule.measureRepeated {
             navInflater.inflate(androidx.navigation.benchmark.test.R.navigation.nav_deep_link)
         }
     }

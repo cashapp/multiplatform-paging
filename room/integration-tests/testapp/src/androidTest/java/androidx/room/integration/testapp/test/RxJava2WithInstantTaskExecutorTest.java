@@ -20,9 +20,9 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.room.Room;
 import androidx.room.integration.testapp.TestDatabase;
 import androidx.room.integration.testapp.vo.User;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,17 +43,18 @@ public class RxJava2WithInstantTaskExecutorTest {
     public void initDb() throws Exception {
         // using an in-memory database because the information stored here disappears when the
         // process is killed
-        mDatabase = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getContext(),
+        mDatabase = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(),
                 TestDatabase.class)
                 // allowing main thread queries, just for testing
                 .allowMainThreadQueries()
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testFlowableInTransaction() {
         // When subscribing to the emissions of the user
-        TestSubscriber<User> subscriber = mDatabase.getUserDao().flowableUserById(3).test();
+        TestSubscriber<User> subscriber = mDatabase.getUserDao().rx2_flowableUserById(3).test();
         subscriber.assertValueCount(0);
 
         // When inserting a new user in the data source

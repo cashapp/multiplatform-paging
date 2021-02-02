@@ -17,77 +17,87 @@
 package androidx.room.processor.autovalue
 
 import androidx.room.Ignore
-import androidx.room.ext.getAllAbstractMethodsIncludingSupers
-import androidx.room.ext.hasAnnotation
-import androidx.room.ext.hasAnyOf
-import androidx.room.ext.typeName
+import androidx.room.compiler.processing.XExecutableElement
+import androidx.room.compiler.processing.XType
+import androidx.room.compiler.processing.XTypeElement
 import androidx.room.processor.Context
 import androidx.room.processor.PojoProcessor
+import androidx.room.processor.PojoProcessor.Companion.TARGET_METHOD_ANNOTATIONS
 import androidx.room.processor.ProcessorErrors
 import androidx.room.vo.Constructor
 import androidx.room.vo.EmbeddedField
 import androidx.room.vo.Field
 import androidx.room.vo.Pojo
 import androidx.room.vo.Warning
-import com.google.auto.common.MoreElements
-import com.google.auto.common.MoreTypes
 import com.google.auto.value.AutoValue.CopyAnnotations
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.TypeElement
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.util.ElementFilter
 
 /**
  * Delegate to process generated AutoValue class as a Pojo.
  */
 class AutoValuePojoProcessorDelegate(
     private val context: Context,
-    private val autoValueElement: TypeElement
+    private val autoValueElement: XTypeElement
 ) : PojoProcessor.Delegate {
 
-    private val autoValueDeclaredType: DeclaredType by lazy {
-        MoreTypes.asDeclared(autoValueElement.asType())
+    private val autoValueDeclaredType: XType by lazy {
+        autoValueElement.type
     }
 
-    override fun onPreProcess() {
+    override fun onPreProcess(element: XTypeElement) {
+        val allMethods = autoValueElement.getAllMethods()
+        val autoValueAbstractGetters = allMethods
+            .filter { it.isAbstract() && it.parameters.size == 0 }
+
         // Warn about missing @AutoValue.CopyAnnotations in the property getters.
-        autoValueElement.getAllAbstractMethodsIncludingSupers()
-                .filter { it.parameters.size == 0 }
-                .forEach {
-                    val hasRoomAnnotation = it.annotationMirrors.map {
-                        it.annotationType.typeName().toString()
-                    }.any { it.contains("androidx.room") }
-                    if (hasRoomAnnotation && !it.hasAnnotation(CopyAnnotations::class)) {
-                        context.logger.w(Warning.MISSING_COPY_ANNOTATIONS, it,
-                                ProcessorErrors.MISSING_COPY_ANNOTATIONS)
-                    }
-                }
+        autoValueAbstractGetters.forEach {
+            val hasRoomAnnotation = it.hasAnnotationWithPackage("androidx.room")
+            if (hasRoomAnnotation && !it.hasAnnotation(CopyAnnotations::class)) {
+                context.logger.w(
+                    Warning.MISSING_COPY_ANNOTATIONS, it,
+                    ProcessorErrors.MISSING_COPY_ANNOTATIONS
+                )
+            }
+        }
+
+        // Check that certain Room annotations with @Target(METHOD) are not used in methods other
+        // than the auto value abstract getters.
+        (allMethods - autoValueAbstractGetters)
+            .filter { it.hasAnyOf(*TARGET_METHOD_ANNOTATIONS) }
+            .forEach { method ->
+                val annotationName = TARGET_METHOD_ANNOTATIONS.first { method.hasAnnotation(it) }
+                    .java.simpleName
+                context.logger.e(
+                    method,
+                    ProcessorErrors.invalidAnnotationTarget(annotationName, method.kindName())
+                )
+            }
     }
 
-    override fun findConstructors(element: TypeElement): List<ExecutableElement> {
-        return ElementFilter.methodsIn(autoValueElement.enclosedElements).filter {
-            it.hasAnyOf(Modifier.STATIC) &&
-                    !it.hasAnnotation(Ignore::class) &&
-                    !it.hasAnyOf(Modifier.PRIVATE) &&
-                    it.returnType == autoValueElement.asType()
+    override fun findConstructors(element: XTypeElement): List<XExecutableElement> {
+        return autoValueElement.getDeclaredMethods().filter {
+            it.isStatic() &&
+                !it.hasAnnotation(Ignore::class) &&
+                !it.isPrivate() &&
+                it.returnType.isSameType(autoValueElement.type)
         }
     }
 
     override fun createPojo(
-        element: TypeElement,
-        declaredType: DeclaredType,
+        element: XTypeElement,
+        declaredType: XType,
         fields: List<Field>,
         embeddedFields: List<EmbeddedField>,
         relations: List<androidx.room.vo.Relation>,
         constructor: Constructor?
     ): Pojo {
-        return Pojo(element = element,
-                type = autoValueDeclaredType,
-                fields = fields,
-                embeddedFields = embeddedFields,
-                relations = relations,
-                constructor = constructor)
+        return Pojo(
+            element = element,
+            type = autoValueDeclaredType,
+            fields = fields,
+            embeddedFields = embeddedFields,
+            relations = relations,
+            constructor = constructor
+        )
     }
 
     companion object {
@@ -96,14 +106,14 @@ class AutoValuePojoProcessorDelegate(
          *
          * This is the same naming strategy used by AutoValue's processor.
          */
-        fun getGeneratedClassName(element: TypeElement): String {
+        fun getGeneratedClassName(element: XTypeElement): String {
             var type = element
-            var name = type.simpleName.toString()
-            while (type.enclosingElement is TypeElement) {
-                type = type.enclosingElement as TypeElement
-                name = "${type.simpleName}_$name"
+            var name = type.name
+            while (type.enclosingTypeElement != null) {
+                type = type.enclosingTypeElement!!
+                name = "${type.name}_$name"
             }
-            val pkg = MoreElements.getPackage(type).qualifiedName.toString()
+            val pkg = type.packageName
             return "$pkg${if (pkg.isEmpty()) "" else "."}AutoValue_$name"
         }
     }

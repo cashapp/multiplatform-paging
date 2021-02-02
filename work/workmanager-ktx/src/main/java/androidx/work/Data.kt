@@ -27,10 +27,17 @@ package androidx.work
  *
  * Entries of the map are iterated in the order they were specified.
  */
-inline fun workDataOf(vararg pairs: Pair<String, Any?>): Data {
+public inline fun workDataOf(vararg pairs: Pair<String, Any?>): Data {
     val dataBuilder = Data.Builder()
     for (pair in pairs) {
         dataBuilder.put(pair.first, pair.second)
     }
     return dataBuilder.build()
 }
+
+/**
+ * Returns true if the instance of [Data] has a value corresponding to the given [key] with an
+ * expected type [T].
+ */
+public inline fun <reified T : Any> Data.hasKeyWithValueOfType(key: String): Boolean =
+    hasKeyWithValueOfType(key, T::class.java)

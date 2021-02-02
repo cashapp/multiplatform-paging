@@ -16,7 +16,6 @@
 
 package androidx.recyclerview.widget;
 
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -66,8 +65,9 @@ class MessageThreadUtil<T> implements ThreadUtil<T> {
                                 callback.updateItemCount(msg.arg1, msg.arg2);
                                 break;
                             case ADD_TILE:
-                                //noinspection unchecked
-                                callback.addTile(msg.arg1, (TileList.Tile<T>) msg.data);
+                                @SuppressWarnings("unchecked")
+                                TileList.Tile<T> tile = (TileList.Tile<T>) msg.data;
+                                callback.addTile(msg.arg1, tile);
                                 break;
                             case REMOVE_TILE:
                                 callback.removeTile(msg.arg1, msg.arg2);
@@ -82,11 +82,12 @@ class MessageThreadUtil<T> implements ThreadUtil<T> {
         };
     }
 
+    @SuppressWarnings("deprecation") /* AsyncTask */
     @Override
     public BackgroundCallback<T> getBackgroundProxy(final BackgroundCallback<T> callback) {
         return new BackgroundCallback<T>() {
             final MessageQueue mQueue = new MessageQueue();
-            private final Executor mExecutor = AsyncTask.THREAD_POOL_EXECUTOR;
+            private final Executor mExecutor = android.os.AsyncTask.THREAD_POOL_EXECUTOR;
             AtomicBoolean mBackgroundRunning = new AtomicBoolean(false);
 
             static final int REFRESH = 1;
@@ -155,8 +156,9 @@ class MessageThreadUtil<T> implements ThreadUtil<T> {
                                 callback.loadTile(msg.arg1, msg.arg2);
                                 break;
                             case RECYCLE_TILE:
-                                //noinspection unchecked
-                                callback.recycleTile((TileList.Tile<T>) msg.data);
+                                @SuppressWarnings("unchecked")
+                                TileList.Tile<T> tile = (TileList.Tile<T>) msg.data;
+                                callback.recycleTile(tile);
                                 break;
                             default:
                                 Log.e("ThreadUtil", "Unsupported message, what=" + msg.what);

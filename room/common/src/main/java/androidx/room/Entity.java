@@ -42,21 +42,29 @@ import java.lang.annotation.Target;
  * Example:
  * <pre>
  * {@literal @}Entity
- * public class User {
+ * public class Song {
  *   {@literal @}PrimaryKey
- *   private final int uid;
- *   private String name;
- *   {@literal @}ColumnInfo(name = "last_name")
- *   private String lastName;
+ *   private final long id;
+ *   private final String name;
+ *   {@literal @}ColumnInfo(name = "release_year")
+ *   private final int releaseYear;
  *
- *   public User(int uid) {
- *       this.uid = uid;
+ *   public Song(long id, String name, int releaseYear) {
+ *     this.id = id;
+ *     this.name = name;
+ *     this.releaseYear = releaseYear;
  *   }
- *   public String getLastName() {
- *       return lastName;
+ *
+ *   public int getId() {
+ *     return id;
  *   }
- *   public void setLastName(String lastName) {
- *       this.lastName = lastName;
+ *
+ *   public String getName() {
+ *     return name;
+ *   }
+ *
+ *   public int getReleaseYear() {
+ *     return releaseYear;
  *   }
  * }
  * </pre>
@@ -126,6 +134,9 @@ public @interface Entity {
      * <p>
      * Normally, you can use {@link Ignore}, but this is useful for ignoring fields inherited from
      * parents.
+     * <p>
+     * Columns that are part of an {@link Embedded} field can not be individually ignored. To ignore
+     * columns from an inherited {@link Embedded} field, use the name of the field.
      *
      * @return The list of field names.
      */

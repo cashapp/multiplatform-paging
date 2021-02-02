@@ -16,16 +16,17 @@
 
 package androidx.room.vo
 
+import androidx.room.compiler.processing.XType
 import androidx.room.solver.query.parameter.QueryParameterAdapter
-import javax.lang.model.type.TypeMirror
 
 /**
  * Holds the parameter for a {@link QueryMethod}.
  */
 data class QueryParameter(
-        // this is name seen by java
-        val name: String,
-        // this is the name used in the query. Might be different for kotlin queries
-        val sqlName: String,
-        val type: TypeMirror,
-        val queryParamAdapter: QueryParameterAdapter?)
+    // this is name seen by java
+    val name: String,
+    // this is the name used in the query. Might be different for kotlin queries
+    val sqlName: String,
+    val type: XType,
+    val queryParamAdapter: QueryParameterAdapter?
+)

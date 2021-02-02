@@ -136,22 +136,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentNestingTabsSupport"
-                android:label="@string/fragment_nesting_tabs_support">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".app.FragmentRetainInstanceSupport"
-                android:label="@string/fragment_retain_instance_support">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
-            </intent-filter>
-        </activity>
-
         <activity android:name=".app.FragmentReceiveResultSupport"
                 android:label="@string/fragment_receive_result_support">
             <intent-filter>
@@ -162,22 +146,6 @@
 
         <activity android:name=".app.FragmentStackSupport"
                 android:label="@string/fragment_stack_support">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".app.FragmentTabs"
-                android:label="@string/fragment_tabs">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".app.FragmentTabsPager"
-                android:label="@string/fragment_tabs_pager">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
@@ -200,16 +168,16 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.LoaderCursorSupport"
-                android:label="@string/loader_cursor_support">
+        <activity android:name=".app.FragmentViewModelSupport"
+            android:label="@string/fragment_view_model_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.LoaderRetainedSupport"
-                android:label="@string/loader_retained_support">
+        <activity android:name=".app.LoaderCursorSupport"
+                android:label="@string/loader_cursor_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
@@ -452,6 +420,28 @@
         <!-- MediaBrowserCompat Sample -->
         <activity android:name=".media.MediaBrowserSupport"
             android:label="@string/media_browser_support">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.WindowInsetsPlayground"
+            android:label="@string/insets_playground"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.WindowInsetsControllerPlayground"
+            android:label="@string/insets_controller_playground"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />

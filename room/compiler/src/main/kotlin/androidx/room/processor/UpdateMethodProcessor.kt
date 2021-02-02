@@ -19,45 +19,62 @@ package androidx.room.processor
 import androidx.room.OnConflictStrategy.IGNORE
 import androidx.room.OnConflictStrategy.REPLACE
 import androidx.room.Update
+import androidx.room.compiler.processing.XMethodElement
+import androidx.room.compiler.processing.XType
 import androidx.room.vo.UpdateMethod
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.type.DeclaredType
+import androidx.room.vo.findFieldByColumnName
 
 class UpdateMethodProcessor(
     baseContext: Context,
-    val containing: DeclaredType,
-    val executableElement: ExecutableElement
+    val containing: XType,
+    val executableElement: XMethodElement
 ) {
     val context = baseContext.fork(executableElement)
 
     fun process(): UpdateMethod {
         val delegate = ShortcutMethodProcessor(context, containing, executableElement)
         val annotation = delegate
-                .extractAnnotation(Update::class, ProcessorErrors.MISSING_UPDATE_ANNOTATION)
+            .extractAnnotation(Update::class, ProcessorErrors.MISSING_UPDATE_ANNOTATION)
 
-        val onConflict = annotation?.onConflict ?: OnConflictProcessor.INVALID_ON_CONFLICT
-        context.checker.check(onConflict in REPLACE..IGNORE,
-                executableElement, ProcessorErrors.INVALID_ON_CONFLICT_VALUE)
-
-        val (entities, params) = delegate.extractParams(
-                missingParamError = ProcessorErrors.UPDATE_MISSING_PARAMS
+        val onConflict = annotation?.value?.onConflict ?: OnConflictProcessor.INVALID_ON_CONFLICT
+        context.checker.check(
+            onConflict in REPLACE..IGNORE,
+            executableElement, ProcessorErrors.INVALID_ON_CONFLICT_VALUE
         )
 
-        val methodBinder = context.typeAdapterStore
-                .findDeleteOrUpdateMethodBinder(executableElement.returnType)
+        val (entities, params) = delegate.extractParams(
+            targetEntityType = annotation?.getAsType("entity"),
+            missingParamError = ProcessorErrors.UPDATE_MISSING_PARAMS,
+            onValidatePartialEntity = { entity, pojo ->
+                val missingPrimaryKeys = entity.primaryKey.fields.filter {
+                    pojo.findFieldByColumnName(it.columnName) == null
+                }
+                context.checker.check(
+                    missingPrimaryKeys.isEmpty(), executableElement,
+                    ProcessorErrors.missingPrimaryKeysInPartialEntityForUpdate(
+                        partialEntityName = pojo.typeName.toString(),
+                        primaryKeyNames = missingPrimaryKeys.map { it.columnName }
+                    )
+                )
+            }
+        )
+
+        val returnType = delegate.extractReturnType()
+        val methodBinder = delegate.findDeleteOrUpdateMethodBinder(returnType)
+
         context.checker.check(
-                methodBinder.adapter != null,
-                executableElement,
-                ProcessorErrors.CANNOT_FIND_UPDATE_RESULT_ADAPTER
+            methodBinder.adapter != null,
+            executableElement,
+            ProcessorErrors.CANNOT_FIND_UPDATE_RESULT_ADAPTER
         )
 
         return UpdateMethod(
-                element = delegate.executableElement,
-                name = delegate.executableElement.simpleName.toString(),
-                entities = entities,
-                onConflictStrategy = onConflict,
-                methodBinder = methodBinder,
-                parameters = params
+            element = delegate.executableElement,
+            name = delegate.executableElement.name,
+            entities = entities,
+            onConflictStrategy = onConflict,
+            methodBinder = methodBinder,
+            parameters = params
         )
     }
 }

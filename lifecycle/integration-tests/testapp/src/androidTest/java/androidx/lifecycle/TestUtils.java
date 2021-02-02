@@ -36,9 +36,8 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
 
-import androidx.core.util.Pair;
 import androidx.lifecycle.testapp.TestEvent;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import java.util.ArrayList;
@@ -46,6 +45,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import kotlin.Pair;
 
 class TestUtils {
 

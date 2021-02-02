@@ -32,34 +32,46 @@ import static org.mockito.Mockito.when;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.ProviderInfo;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.slice.Slice;
 import androidx.slice.SliceProvider;
 import androidx.slice.SliceSpec;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@LargeTest
 @SdkSuppress(minSdkVersion = 19)
 public class SliceProviderCompatTest {
 
-    private final Context mContext = InstrumentationRegistry.getContext();
+    private static final String AUTHORITY = "my.authority";
+
+    private ProviderInfo mProviderInfo;
+    private final Context mContext = ApplicationProvider.getApplicationContext();
+
+    @Before
+    public void setup() {
+        mProviderInfo = new ProviderInfo();
+        mProviderInfo.authority = AUTHORITY;
+    }
 
     @Test
     public void testBindWithPermission() {
         Uri uri = new Uri.Builder()
                 .scheme(ContentResolver.SCHEME_CONTENT)
-                .authority("my.authority")
+                .authority(AUTHORITY)
                 .path("my_path")
                 .build();
         Slice s = new Slice.Builder(uri)
@@ -67,6 +79,7 @@ public class SliceProviderCompatTest {
                 .build();
 
         SliceProvider provider = spy(new SliceProviderImpl());
+        provider.attachInfo(mContext, mProviderInfo);
         CompatPermissionManager permissions = mock(CompatPermissionManager.class);
         when(permissions.checkSlicePermission(any(Uri.class), anyInt(), anyInt()))
                 .thenReturn(PERMISSION_GRANTED);
@@ -92,7 +105,7 @@ public class SliceProviderCompatTest {
     public void testBindWithoutPermission() {
         Uri uri = new Uri.Builder()
                 .scheme(ContentResolver.SCHEME_CONTENT)
-                .authority("my.authority")
+                .authority(AUTHORITY)
                 .path("my_path")
                 .build();
         Slice s = new Slice.Builder(uri)
@@ -100,6 +113,7 @@ public class SliceProviderCompatTest {
                 .build();
 
         SliceProvider provider = spy(new SliceProviderImpl());
+        provider.attachInfo(mContext, mProviderInfo);
         CompatPermissionManager permissions = mock(CompatPermissionManager.class);
         when(permissions.checkSlicePermission(any(Uri.class), anyInt(), anyInt()))
                 .thenReturn(PERMISSION_DENIED);
@@ -121,6 +135,39 @@ public class SliceProviderCompatTest {
         assertNotEquals(s.toString(), new Slice(result.getBundle(EXTRA_SLICE)).toString());
     }
 
+    @Test(expected = SecurityException.class)
+    public void testBindWithShadyAuthority() {
+        Uri uri = new Uri.Builder()
+                .scheme(ContentResolver.SCHEME_CONTENT)
+                .authority("my.suspicious")
+                .path("my_path")
+                .build();
+        Slice s = new Slice.Builder(uri)
+                .addText("", null)
+                .build();
+
+        SliceProvider provider = spy(new SliceProviderImpl());
+        provider.attachInfo(mContext, mProviderInfo);
+        CompatPermissionManager permissions = mock(CompatPermissionManager.class);
+        when(permissions.checkSlicePermission(any(Uri.class), anyInt(), anyInt()))
+                .thenReturn(PERMISSION_DENIED);
+
+        when(provider.onBindSlice(eq(uri))).thenReturn(s);
+        SliceProviderCompat compat = new SliceProviderCompat(provider, permissions,
+                mContext) {
+            @Override
+            public String getCallingPackage() {
+                return mContext.getPackageName();
+            }
+        };
+
+        Bundle b = new Bundle();
+        b.putParcelable(EXTRA_BIND_URI, uri);
+        SliceProviderCompat.addSpecs(b, Collections.<SliceSpec>emptySet());
+
+        compat.call(SliceProviderCompat.METHOD_SLICE, null, b);
+    }
+
     public static class SliceProviderImpl extends SliceProvider {
 
         @Override
@@ -129,7 +176,7 @@ public class SliceProviderCompatTest {
         }
 
         @Override
-        public Slice onBindSlice(Uri sliceUri) {
+        public Slice onBindSlice(@NonNull Uri sliceUri) {
             return null;
         }
     }

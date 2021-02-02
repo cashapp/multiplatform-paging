@@ -17,25 +17,23 @@
 package androidx.room.parser
 
 import androidx.room.ColumnInfo
-import org.antlr.v4.runtime.ANTLRInputStream
-import org.antlr.v4.runtime.BaseErrorListener
-import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.RecognitionException
-import org.antlr.v4.runtime.Recognizer
+import androidx.room.compiler.processing.XProcessingEnv
+import androidx.room.compiler.processing.XType
+import androidx.room.ext.CommonTypeNames
+import com.squareup.javapoet.ArrayTypeName
+import com.squareup.javapoet.TypeName
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
-import javax.annotation.processing.ProcessingEnvironment
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
+import java.util.Locale
 
 @Suppress("FunctionName")
 class QueryVisitor(
     private val original: String,
-    private val syntaxErrors: ArrayList<String>,
+    private val syntaxErrors: List<String>,
     statement: ParseTree,
     private val forRuntimeQuery: Boolean
 ) : SQLiteBaseVisitor<Void?>() {
-    private val bindingExpressions = arrayListOf<TerminalNode>()
+    private val bindingExpressions = arrayListOf<BindParameterNode>()
     // table name alias mappings
     private val tableNames = mutableSetOf<Table>()
     private val withClauseNames = mutableSetOf<String>()
@@ -45,22 +43,16 @@ class QueryVisitor(
         queryType = (0 until statement.childCount).map {
             findQueryType(statement.getChild(it))
         }.filterNot { it == QueryType.UNKNOWN }.firstOrNull() ?: QueryType.UNKNOWN
-
         statement.accept(this)
     }
 
     private fun findQueryType(statement: ParseTree): QueryType {
         return when (statement) {
-            is SQLiteParser.Factored_select_stmtContext,
-            is SQLiteParser.Compound_select_stmtContext,
-            is SQLiteParser.Select_stmtContext,
-            is SQLiteParser.Simple_select_stmtContext ->
+            is SQLiteParser.Select_stmtContext ->
                 QueryType.SELECT
-
             is SQLiteParser.Delete_stmt_limitedContext,
             is SQLiteParser.Delete_stmtContext ->
                 QueryType.DELETE
-
             is SQLiteParser.Insert_stmtContext ->
                 QueryType.INSERT
             is SQLiteParser.Update_stmtContext,
@@ -77,19 +69,47 @@ class QueryVisitor(
     override fun visitExpr(ctx: SQLiteParser.ExprContext): Void? {
         val bindParameter = ctx.BIND_PARAMETER()
         if (bindParameter != null) {
-            bindingExpressions.add(bindParameter)
+            val parentContext = ctx.parent
+            val isMultiple = parentContext is SQLiteParser.Comma_separated_exprContext &&
+                !isFixedParamFunctionExpr(parentContext)
+            bindingExpressions.add(
+                BindParameterNode(
+                    node = bindParameter,
+                    isMultiple = isMultiple
+                )
+            )
         }
         return super.visitExpr(ctx)
     }
 
+    /**
+     * Check if a comma separated expression (where multiple binding parameters are accepted) is
+     * part of a function expression that receives a fixed number of parameters. This is
+     * important for determining the priority of type converters used when binding a collection
+     * into a binding parameters and specifically if the function takes a fixed number of
+     * parameter, the collection should not be expanded.
+     */
+    private fun isFixedParamFunctionExpr(
+        ctx: SQLiteParser.Comma_separated_exprContext
+    ): Boolean {
+        if (ctx.parent is SQLiteParser.ExprContext) {
+            val parentExpr = ctx.parent as SQLiteParser.ExprContext
+            val functionName = parentExpr.function_name() ?: return false
+            return fixedParamFunctions.contains(functionName.text.toLowerCase(Locale.US))
+        } else {
+            return false
+        }
+    }
+
     fun createParsedQuery(): ParsedQuery {
         return ParsedQuery(
-                original = original,
-                type = queryType,
-                inputs = bindingExpressions.sortedBy { it.sourceInterval.a },
-                tables = tableNames,
-                syntaxErrors = syntaxErrors,
-                runtimeQueryPlaceholder = forRuntimeQuery)
+            original = original,
+            type = queryType,
+            inputs = bindingExpressions.sortedBy { it.sourceInterval.a },
+            tables = tableNames,
+            syntaxErrors = syntaxErrors,
+            runtimeQueryPlaceholder = forRuntimeQuery
+        )
     }
 
     override fun visitCommon_table_expression(
@@ -107,9 +127,12 @@ class QueryVisitor(
         if (tableName != null) {
             val tableAlias = ctx.table_alias()?.text
             if (tableName !in withClauseNames) {
-                tableNames.add(Table(
+                tableNames.add(
+                    Table(
                         unescapeIdentifier(tableName),
-                        unescapeIdentifier(tableAlias ?: tableName)))
+                        unescapeIdentifier(tableAlias ?: tableName)
+                    )
+                )
             }
         }
         return super.visitTable_or_subquery(ctx)
@@ -127,74 +150,93 @@ class QueryVisitor(
 
     companion object {
         private val ESCAPE_LITERALS = listOf("\"", "'", "`")
+
+        // List of built-in SQLite functions that take a fixed non-zero number of parameters
+        // See: https://sqlite.org/lang_corefunc.html
+        val fixedParamFunctions = setOf(
+            "abs",
+            "glob",
+            "hex",
+            "ifnull",
+            "iif",
+            "instr",
+            "length",
+            "like",
+            "likelihood",
+            "likely",
+            "load_extension",
+            "lower",
+            "ltrim",
+            "nullif",
+            "quote",
+            "randomblob",
+            "replace",
+            "round",
+            "rtrim",
+            "soundex",
+            "sqlite_compileoption_get",
+            "sqlite_compileoption_used",
+            "sqlite_offset",
+            "substr",
+            "trim",
+            "typeof",
+            "unicode",
+            "unlikely",
+            "upper",
+            "zeroblob"
+        )
     }
 }
 
 class SqlParser {
     companion object {
         private val INVALID_IDENTIFIER_CHARS = arrayOf('`', '\"')
-        fun parse(input: String): ParsedQuery {
-            val inputStream = ANTLRInputStream(input)
-            val lexer = SQLiteLexer(inputStream)
-            val tokenStream = CommonTokenStream(lexer)
-            val parser = SQLiteParser(tokenStream)
-            val syntaxErrors = arrayListOf<String>()
-            parser.addErrorListener(object : BaseErrorListener() {
-                override fun syntaxError(
-                    recognizer: Recognizer<*, *>,
-                    offendingSymbol: Any,
-                    line: Int,
-                    charPositionInLine: Int,
-                    msg: String,
-                    e: RecognitionException?
-                ) {
-                    syntaxErrors.add(msg)
-                }
-            })
-            try {
-                val parsed = parser.parse()
-                val statementList = parsed.sql_stmt_list()
-                if (statementList.isEmpty()) {
-                    syntaxErrors.add(ParserErrors.NOT_ONE_QUERY)
-                    return ParsedQuery(input, QueryType.UNKNOWN, emptyList(), emptySet(),
-                            listOf(ParserErrors.NOT_ONE_QUERY), false)
-                }
-                val statements = statementList.first().children
-                        .filter { it is SQLiteParser.Sql_stmtContext }
-                if (statements.size != 1) {
-                    syntaxErrors.add(ParserErrors.NOT_ONE_QUERY)
-                }
-                val statement = statements.first()
-                return QueryVisitor(
-                        original = input,
-                        syntaxErrors = syntaxErrors,
-                        statement = statement,
-                        forRuntimeQuery = false).createParsedQuery()
-            } catch (antlrError: RuntimeException) {
-                return ParsedQuery(input, QueryType.UNKNOWN, emptyList(), emptySet(),
-                        listOf("unknown error while parsing $input : ${antlrError.message}"),
-                        false)
+
+        fun parse(input: String) = SingleQuerySqlParser.parse(
+            input = input,
+            visit = { statement, syntaxErrors ->
+                QueryVisitor(
+                    original = input,
+                    syntaxErrors = syntaxErrors,
+                    statement = statement,
+                    forRuntimeQuery = false
+                ).createParsedQuery()
+            },
+            fallback = { syntaxErrors ->
+                ParsedQuery(
+                    original = input,
+                    type = QueryType.UNKNOWN,
+                    inputs = emptyList(),
+                    tables = emptySet(),
+                    syntaxErrors = syntaxErrors,
+                    runtimeQueryPlaceholder = false
+                )
             }
-        }
+        )
 
         fun isValidIdentifier(input: String): Boolean =
-                input.isNotBlank() && INVALID_IDENTIFIER_CHARS.none { input.contains(it) }
+            input.isNotBlank() && INVALID_IDENTIFIER_CHARS.none { input.contains(it) }
 
         /**
-         * creates a dummy select query for raw queries that queries the given list of tables.
+         * creates a no-op select query for raw queries that queries the given list of tables.
          */
         fun rawQueryForTables(tableNames: Set<String>): ParsedQuery {
             return ParsedQuery(
-                    original = "raw query",
-                    type = QueryType.UNKNOWN,
-                    inputs = emptyList(),
-                    tables = tableNames.map { Table(name = it, alias = it) }.toSet(),
-                    syntaxErrors = emptyList(),
-                    runtimeQueryPlaceholder = true
+                original = "raw query",
+                type = QueryType.UNKNOWN,
+                inputs = emptyList(),
+                tables = tableNames.map { Table(name = it, alias = it) }.toSet(),
+                syntaxErrors = emptyList(),
+                runtimeQueryPlaceholder = true
             )
         }
     }
 }
+
+data class BindParameterNode(
+    private val node: TerminalNode,
+    val isMultiple: Boolean // true if this is a multi-param node
+) : TerminalNode by node
 
 enum class QueryType {
     UNKNOWN,
@@ -217,29 +259,43 @@ enum class SQLTypeAffinity {
     REAL,
     BLOB;
 
-    fun getTypeMirrors(env: ProcessingEnvironment): List<TypeMirror>? {
-        val typeUtils = env.typeUtils
+    fun getTypeMirrors(env: XProcessingEnv): List<XType> {
         return when (this) {
-            TEXT -> listOf(env.elementUtils.getTypeElement("java.lang.String").asType())
-            INTEGER -> withBoxedTypes(env, TypeKind.INT, TypeKind.BYTE, TypeKind.CHAR,
-                    TypeKind.LONG, TypeKind.SHORT)
-            REAL -> withBoxedTypes(env, TypeKind.DOUBLE, TypeKind.FLOAT)
-            BLOB -> listOf(typeUtils.getArrayType(
-                    typeUtils.getPrimitiveType(TypeKind.BYTE)))
+            TEXT -> withBoxedAndNullableTypes(env, CommonTypeNames.STRING)
+            INTEGER -> withBoxedAndNullableTypes(
+                env, TypeName.INT, TypeName.BYTE, TypeName.CHAR,
+                TypeName.LONG, TypeName.SHORT
+            )
+            REAL -> withBoxedAndNullableTypes(env, TypeName.DOUBLE, TypeName.FLOAT)
+            BLOB -> withBoxedAndNullableTypes(env, ArrayTypeName.of(TypeName.BYTE))
             else -> emptyList()
         }
     }
 
-    private fun withBoxedTypes(env: ProcessingEnvironment, vararg primitives: TypeKind):
-            List<TypeMirror> {
-        return primitives.flatMap {
-            val primitiveType = env.typeUtils.getPrimitiveType(it)
-            listOf(primitiveType, env.typeUtils.boxedClass(primitiveType).asType())
-        }
+    /**
+     * produce acceptable variations of the given type names.
+     * If it is primitive, we'll add boxed version
+     * If environment is KSP, we'll add a nullable version as well.
+     */
+    private fun withBoxedAndNullableTypes(
+        env: XProcessingEnv,
+        vararg typeNames: TypeName
+    ): List<XType> {
+        return typeNames.flatMap { typeName ->
+            sequence {
+                val type = env.requireType(typeName)
+                yield(type)
+                if (typeName.isPrimitive) {
+                    yield(type.boxed())
+                }
+                if (env.backend == XProcessingEnv.Backend.KSP) {
+                    yield(type.makeNullable())
+                }
+            }
+        }.toList()
     }
 
     companion object {
-
         fun fromAnnotationValue(value: Int?): SQLTypeAffinity? {
             return when (value) {
                 ColumnInfo.BLOB -> BLOB

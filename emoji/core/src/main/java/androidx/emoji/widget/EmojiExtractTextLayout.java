@@ -32,6 +32,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.view.ViewCompat;
 import androidx.emoji.R;
 import androidx.emoji.text.EmojiCompat;
 import androidx.emoji.text.EmojiSpan;
@@ -60,7 +61,7 @@ import androidx.emoji.text.EmojiSpan;
  * }
  * </pre>
  *
- * @attr ref androidx.emoji.R.styleable#EmojiExtractTextLayout_emojiReplaceStrategy
+ * {@link androidx.emoji.R.attr#emojiReplaceStrategy}
  */
 public class EmojiExtractTextLayout extends LinearLayout {
 
@@ -114,6 +115,9 @@ public class EmojiExtractTextLayout extends LinearLayout {
             if (attrs != null) {
                 final TypedArray a = context.obtainStyledAttributes(attrs,
                         R.styleable.EmojiExtractTextLayout, defStyleAttr, defStyleRes);
+                ViewCompat.saveAttributeDataForStyleable(
+                        this, context, R.styleable.EmojiExtractTextLayout, attrs, a, defStyleAttr,
+                        defStyleRes);
                 final int replaceStrategy = a.getInteger(
                         R.styleable.EmojiExtractTextLayout_emojiReplaceStrategy,
                         EmojiCompat.REPLACE_STRATEGY_DEFAULT);
@@ -131,7 +135,7 @@ public class EmojiExtractTextLayout extends LinearLayout {
      *                        {@link EmojiCompat#REPLACE_STRATEGY_NON_EXISTENT},
      *                        {@link EmojiCompat#REPLACE_STRATEGY_ALL}
      *
-     * @attr ref androidx.emoji.R.styleable#EmojiExtractTextLayout_emojiReplaceStrategy
+     * {@link androidx.emoji.R.attr#emojiReplaceStrategy}
      */
     public void setEmojiReplaceStrategy(@EmojiCompat.ReplaceStrategy int replaceStrategy) {
         mExtractEditText.setEmojiReplaceStrategy(replaceStrategy);
@@ -145,7 +149,7 @@ public class EmojiExtractTextLayout extends LinearLayout {
      *                        {@link EmojiCompat#REPLACE_STRATEGY_NON_EXISTENT},
      *                        {@link EmojiCompat#REPLACE_STRATEGY_ALL}
      *
-     * @attr ref androidx.emoji.R.styleable#EmojiExtractTextLayout_emojiReplaceStrategy
+     * {@link androidx.emoji.R.attr#emojiReplaceStrategy}
      */
     public int getEmojiReplaceStrategy() {
         return mExtractEditText.getEmojiReplaceStrategy();

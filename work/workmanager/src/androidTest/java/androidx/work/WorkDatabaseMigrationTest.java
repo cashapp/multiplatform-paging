@@ -16,36 +16,55 @@
 
 package androidx.work;
 
+import static android.content.Context.MODE_PRIVATE;
 import static android.database.sqlite.SQLiteDatabase.CONFLICT_FAIL;
 
 import static androidx.work.impl.WorkDatabaseMigrations.MIGRATION_3_4;
+import static androidx.work.impl.WorkDatabaseMigrations.MIGRATION_4_5;
+import static androidx.work.impl.WorkDatabaseMigrations.MIGRATION_6_7;
+import static androidx.work.impl.WorkDatabaseMigrations.MIGRATION_7_8;
+import static androidx.work.impl.WorkDatabaseMigrations.MIGRATION_8_9;
 import static androidx.work.impl.WorkDatabaseMigrations.VERSION_1;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_10;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_11;
 import static androidx.work.impl.WorkDatabaseMigrations.VERSION_2;
 import static androidx.work.impl.WorkDatabaseMigrations.VERSION_3;
 import static androidx.work.impl.WorkDatabaseMigrations.VERSION_4;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_5;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_6;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_7;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_8;
+import static androidx.work.impl.WorkDatabaseMigrations.VERSION_9;
+import static androidx.work.impl.utils.IdGenerator.NEXT_ALARM_MANAGER_ID_KEY;
+import static androidx.work.impl.utils.IdGenerator.NEXT_JOB_SCHEDULER_ID_KEY;
+import static androidx.work.impl.utils.IdGenerator.PREFERENCE_FILE_KEY;
+import static androidx.work.impl.utils.PreferenceUtils.KEY_LAST_CANCEL_ALL_TIME_MS;
+import static androidx.work.impl.utils.PreferenceUtils.KEY_RESCHEDULE_NEEDED;
+import static androidx.work.impl.utils.PreferenceUtils.PREFERENCES_FILE_NAME;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import android.arch.persistence.db.SupportSQLiteDatabase;
-import android.arch.persistence.db.framework.FrameworkSQLiteOpenHelperFactory;
-import android.arch.persistence.room.testing.MigrationTestHelper;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.os.Build;
-import android.support.annotation.NonNull;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.annotation.NonNull;
+import androidx.room.testing.MigrationTestHelper;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.work.impl.WorkDatabase;
 import androidx.work.impl.WorkDatabaseMigrations;
 import androidx.work.impl.WorkManagerImpl;
 import androidx.work.impl.model.WorkSpec;
 import androidx.work.impl.model.WorkTypeConverters;
-import androidx.work.impl.utils.Preferences;
 import androidx.work.worker.TestWorker;
 
 import org.junit.Before;
@@ -65,6 +84,7 @@ public class WorkDatabaseMigrationTest {
     private static final String COLUMN_WORKSPEC_ID = "work_spec_id";
     private static final String COLUMN_SYSTEM_ID = "system_id";
     private static final String COLUMN_ALARM_ID = "alarm_id";
+    private static final String COLUMN_RUN_IN_FOREGROUND = "run_in_foreground";
 
     // Queries
     private static final String INSERT_ALARM_INFO = "INSERT INTO alarmInfo VALUES (?, ?)";
@@ -72,11 +92,21 @@ public class WorkDatabaseMigrationTest {
     private static final String CHECK_SYSTEM_ID_INFO = "SELECT * FROM SystemIdInfo";
     private static final String CHECK_ALARM_INFO = "SELECT * FROM alarmInfo";
     private static final String CHECK_TABLE_NAME = "SELECT * FROM %s";
+    private static final String CHECK_INDEX = "PRAGMA index_list(%s)";
+    private static final String CHECK_TABLE_FIELD = "PRAGMA table_info(%s)";
+
     private static final String TABLE_ALARM_INFO = "alarmInfo";
     private static final String TABLE_SYSTEM_ID_INFO = "SystemIdInfo";
     private static final String TABLE_WORKSPEC = "WorkSpec";
     private static final String TABLE_WORKTAG = "WorkTag";
     private static final String TABLE_WORKNAME = "WorkName";
+    private static final String TABLE_WORKPROGRESS = "WorkProgress";
+    private static final String TABLE_PREFERENCE = "Preference";
+    private static final String INDEX_PERIOD_START_TIME = "index_WorkSpec_period_start_time";
+
+    private static final String NAME = "name";
+    private static final String TRIGGER_CONTENT_UPDATE_DELAY = "trigger_content_update_delay";
+    private static final String TRIGGER_MAX_CONTENT_DELAY = "trigger_max_content_delay";
 
     private Context mContext;
     private File mDatabasePath;
@@ -90,8 +120,8 @@ public class WorkDatabaseMigrationTest {
     @Before
     public void setUp() {
         // Delete the database if it exists.
-        mContext = InstrumentationRegistry.getTargetContext();
-        mDatabasePath = InstrumentationRegistry.getContext().getDatabasePath(TEST_DATABASE);
+        mContext = ApplicationProvider.getApplicationContext();
+        mDatabasePath = ApplicationProvider.getApplicationContext().getDatabasePath(TEST_DATABASE);
         if (mDatabasePath.exists()) {
             mDatabasePath.delete();
         }
@@ -176,8 +206,8 @@ public class WorkDatabaseMigrationTest {
     public void testMigrationVersion2To3() throws IOException {
         SupportSQLiteDatabase database =
                 mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_2);
-        WorkDatabaseMigrations.WorkMigration migration2To3 =
-                new WorkDatabaseMigrations.WorkMigration(mContext, VERSION_2, VERSION_3);
+        WorkDatabaseMigrations.RescheduleMigration migration2To3 =
+                new WorkDatabaseMigrations.RescheduleMigration(mContext, VERSION_2, VERSION_3);
 
         database = mMigrationTestHelper.runMigrationsAndValidate(
                 TEST_DATABASE,
@@ -185,8 +215,9 @@ public class WorkDatabaseMigrationTest {
                 VALIDATE_DROPPED_TABLES,
                 migration2To3);
 
-        Preferences preferences = new Preferences(mContext);
-        assertThat(preferences.needsReschedule(), is(true));
+        SharedPreferences sharedPreferences =
+                mContext.getSharedPreferences(PREFERENCES_FILE_NAME, MODE_PRIVATE);
+        assertThat(sharedPreferences.getBoolean(KEY_RESCHEDULE_NEEDED, false), is(true));
         database.close();
     }
 
@@ -234,6 +265,177 @@ public class WorkDatabaseMigrationTest {
         database.close();
     }
 
+    @Test
+    @MediumTest
+    public void testMigrationVersion4To5() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_4);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_5,
+                VALIDATE_DROPPED_TABLES,
+                MIGRATION_4_5);
+        assertThat(checkExists(database, TABLE_WORKSPEC), is(true));
+        assertThat(
+                checkColumnExists(database, TABLE_WORKSPEC, TRIGGER_CONTENT_UPDATE_DELAY),
+                is(true));
+        assertThat(
+                checkColumnExists(database, TABLE_WORKSPEC, TRIGGER_MAX_CONTENT_DELAY),
+                is(true));
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion5To6() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_5);
+        WorkDatabaseMigrations.RescheduleMigration migration5To6 =
+                new WorkDatabaseMigrations.RescheduleMigration(mContext, VERSION_5, VERSION_6);
+
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_6,
+                VALIDATE_DROPPED_TABLES,
+                migration5To6);
+
+        SharedPreferences sharedPreferences =
+                mContext.getSharedPreferences(PREFERENCES_FILE_NAME, MODE_PRIVATE);
+        assertThat(sharedPreferences.getBoolean(KEY_RESCHEDULE_NEEDED, false), is(true));
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion6To7() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_6);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_7,
+                VALIDATE_DROPPED_TABLES,
+                MIGRATION_6_7);
+        assertThat(checkExists(database, TABLE_WORKPROGRESS), is(true));
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion7To8() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_7);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_8,
+                VALIDATE_DROPPED_TABLES,
+                MIGRATION_7_8);
+
+        assertThat(checkIndexExists(database, INDEX_PERIOD_START_TIME, TABLE_WORKSPEC), is(true));
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion8To9() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_8);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_9,
+                VALIDATE_DROPPED_TABLES,
+                MIGRATION_8_9);
+
+        assertThat(checkColumnExists(database, TABLE_WORKSPEC, COLUMN_RUN_IN_FOREGROUND),
+                is(true));
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion9To10() throws IOException {
+        long lastCancelTimeMillis = 1L;
+        int nextJobSchedulerId = 10;
+        int nextAlarmId = 20;
+        // Setup
+        mContext.getSharedPreferences(PREFERENCES_FILE_NAME, MODE_PRIVATE)
+                .edit()
+                .putLong(KEY_LAST_CANCEL_ALL_TIME_MS, lastCancelTimeMillis)
+                .putBoolean(KEY_RESCHEDULE_NEEDED, true)
+                .apply();
+
+        mContext.getSharedPreferences(PREFERENCE_FILE_KEY, MODE_PRIVATE)
+                .edit()
+                .putInt(NEXT_JOB_SCHEDULER_ID_KEY, nextJobSchedulerId)
+                .putInt(NEXT_ALARM_MANAGER_ID_KEY, nextAlarmId)
+                .apply();
+
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_9);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_10,
+                VALIDATE_DROPPED_TABLES,
+                new WorkDatabaseMigrations.WorkMigration9To10(mContext));
+
+        assertThat(checkExists(database, TABLE_PREFERENCE), is(true));
+        String query = "SELECT * FROM `Preference` where `key`=@key";
+        String[] keys = new String[]{
+                KEY_RESCHEDULE_NEEDED,
+                KEY_LAST_CANCEL_ALL_TIME_MS,
+                NEXT_JOB_SCHEDULER_ID_KEY,
+                NEXT_ALARM_MANAGER_ID_KEY
+        };
+        long[] expectedValues = new long[]{
+                1L,
+                lastCancelTimeMillis,
+                nextJobSchedulerId,
+                nextAlarmId
+        };
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            long expected = expectedValues[i];
+            Cursor cursor = database.query(query, new Object[]{key});
+            assertThat(cursor.getCount(), is(1));
+            cursor.moveToFirst();
+            assertThat(cursor.getLong(cursor.getColumnIndex("long_value")), is(expected));
+            cursor.close();
+        }
+        database.close();
+    }
+
+    @Test
+    @MediumTest
+    public void testMigrationVersion10To11() throws IOException {
+        SupportSQLiteDatabase database =
+                mMigrationTestHelper.createDatabase(TEST_DATABASE, VERSION_10);
+        WorkDatabaseMigrations.RescheduleMigration migration10To11 =
+                new WorkDatabaseMigrations.RescheduleMigration(mContext, VERSION_10, VERSION_11);
+        database = mMigrationTestHelper.runMigrationsAndValidate(
+                TEST_DATABASE,
+                VERSION_11,
+                VALIDATE_DROPPED_TABLES,
+                migration10To11);
+
+        String[] keys = new String[]{
+                KEY_RESCHEDULE_NEEDED,
+        };
+        long[] expectedValues = new long[]{
+                1L,
+        };
+
+        String query = "SELECT * FROM `Preference` where `key`=@key";
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            long expected = expectedValues[i];
+            Cursor cursor = database.query(query, new Object[]{key});
+            assertThat(cursor.getCount(), is(1));
+            cursor.moveToFirst();
+            assertThat(cursor.getLong(cursor.getColumnIndex("long_value")), is(expected));
+            cursor.close();
+        }
+        database.close();
+    }
+
     @NonNull
     private ContentValues contentValues(String workSpecId) {
         ContentValues contentValues = new ContentValues();
@@ -241,8 +443,8 @@ public class WorkDatabaseMigrationTest {
         contentValues.put("state", WorkTypeConverters.StateIds.ENQUEUED);
         contentValues.put("worker_class_name", TestWorker.class.getName());
         contentValues.put("input_merger_class_name", OverwritingInputMerger.class.getName());
-        contentValues.put("input", Data.toByteArray(Data.EMPTY));
-        contentValues.put("output", Data.toByteArray(Data.EMPTY));
+        contentValues.put("input", Data.EMPTY.toByteArray());
+        contentValues.put("output", Data.EMPTY.toByteArray());
         contentValues.put("initial_delay", 0L);
         contentValues.put("interval_duration", 0L);
         contentValues.put("flex_duration", 0L);
@@ -270,6 +472,58 @@ public class WorkDatabaseMigrationTest {
             return true;
         } catch (SQLiteException ignored) {
             // Should fail with a SQLiteException (no such table: tableName)
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    private boolean checkIndexExists(
+            @NonNull SupportSQLiteDatabase database,
+            @NonNull String indexName,
+            @NonNull String tableName) {
+
+        Cursor cursor = null;
+        try {
+            cursor = database.query(String.format(CHECK_INDEX, tableName));
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                // https://www.sqlite.org/pragma.html#pragma_table_info
+                // Columns are: (seq, name, uniq)
+                String name = cursor.getString(cursor.getColumnIndex(NAME));
+                if (indexName.equals(name)) {
+                    return true;
+                }
+                cursor.moveToNext();
+            }
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    private boolean checkColumnExists(
+            SupportSQLiteDatabase database,
+            String tableName,
+            String columnName) {
+
+        Cursor cursor = null;
+        try {
+            cursor = database.query(String.format(CHECK_TABLE_FIELD, tableName));
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                // https://www.sqlite.org/pragma.html#pragma_table_info
+                // Columns are: (cid, name, type, notnull, dfit_value, pk)
+                String name = cursor.getString(cursor.getColumnIndex(NAME));
+                if (columnName.equals(name)) {
+                    return true;
+                }
+                cursor.moveToNext();
+            }
             return false;
         } finally {
             if (cursor != null) {

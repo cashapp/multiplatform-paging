@@ -15,7 +15,7 @@
  */
 package com.example.android.supportv7.util;
 
-import android.os.AsyncTask;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +47,8 @@ public class DiffUtilActivity extends AppCompatActivity {
     private Random mRandom = new Random(System.nanoTime());
 
     @Override
+    @SuppressLint("WrongThread")
+    @SuppressWarnings("deprecation") /* AsyncTask */
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         LinearLayout ll = new LinearLayout(this);
@@ -70,9 +72,8 @@ public class DiffUtilActivity extends AppCompatActivity {
                     // already refreshing, do not allow modifications
                     return;
                 }
-                //noinspection unchecked
-                new AsyncTask<List<String>, Void, Pair<List<String>, DiffUtil.DiffResult>>() {
-
+                new android.os.AsyncTask<List<String>, Void, Pair<List<String>,
+                        DiffUtil.DiffResult>>() {
                     @Override
                     protected Pair<List<String>, DiffUtil.DiffResult> doInBackground(
                             List<String>... lists) {

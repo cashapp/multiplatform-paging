@@ -17,12 +17,14 @@
 package androidx.work.testing;
 
 
-import android.support.annotation.NonNull;
-import android.support.annotation.RestrictTo;
+import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
 import androidx.work.Worker;
 import androidx.work.impl.ExecutionListener;
 import androidx.work.impl.Scheduler;
+import androidx.work.impl.WorkDatabase;
 import androidx.work.impl.WorkManagerImpl;
 import androidx.work.impl.model.WorkSpec;
 
@@ -44,37 +46,52 @@ import java.util.UUID;
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 class TestScheduler implements Scheduler, ExecutionListener {
 
-    private final Map<String, InternalWorkState> mInternalWorkStates;
+    private final Context mContext;
+    private final Map<String, InternalWorkState> mPendingWorkStates;
+    private final Map<String, InternalWorkState> mTerminatedWorkStates;
 
-    private static final Object sLock = new Object();
-
-    TestScheduler() {
-        mInternalWorkStates = new HashMap<>();
+    TestScheduler(@NonNull Context context) {
+        mContext = context;
+        mPendingWorkStates = new HashMap<>();
+        mTerminatedWorkStates = new HashMap<>();
     }
 
     @Override
-    public void schedule(WorkSpec... workSpecs) {
+    public boolean hasLimitedSchedulingSlots() {
+        return true;
+    }
+
+    @Override
+    public void schedule(@NonNull WorkSpec... workSpecs) {
         if (workSpecs == null || workSpecs.length <= 0) {
             return;
         }
 
-        synchronized (sLock) {
-            List<String> workSpecIdsToSchedule = new ArrayList<>(workSpecs.length);
-            for (WorkSpec workSpec : workSpecs) {
-                if (!mInternalWorkStates.containsKey(workSpec.id)) {
-                    mInternalWorkStates.put(workSpec.id, new InternalWorkState(workSpec));
-                }
-                workSpecIdsToSchedule.add(workSpec.id);
+        List<String> workSpecIdsToSchedule = new ArrayList<>(workSpecs.length);
+        for (WorkSpec workSpec : workSpecs) {
+            if (!mPendingWorkStates.containsKey(workSpec.id)) {
+                mPendingWorkStates.put(workSpec.id, new InternalWorkState(mContext, workSpec));
             }
-            scheduleInternal(workSpecIdsToSchedule);
+            workSpecIdsToSchedule.add(workSpec.id);
         }
+        scheduleInternal(workSpecIdsToSchedule);
     }
 
     @Override
     public void cancel(@NonNull String workSpecId) {
-        synchronized (sLock) {
-            WorkManagerImpl.getInstance().stopWork(workSpecId);
-            mInternalWorkStates.remove(workSpecId);
+        InternalWorkState internalWorkState = mPendingWorkStates.get(workSpecId);
+        // We don't need to keep track of cancelled workSpecs. This is because subsequent calls
+        // to enqueue() will no-op because insertWorkSpec in WorkDatabase has a conflict
+        // policy of @Ignore. So TestScheduler will _never_ be asked to schedule those
+        // WorkSpecs.
+        WorkManagerImpl.getInstance(mContext).stopWork(workSpecId);
+        if (internalWorkState != null && !internalWorkState.mWorkSpec.isPeriodic()) {
+            // Don't remove PeriodicWorkRequests from the list of pending work states.
+            // This is because we keep track of mPeriodDelayMet for PeriodicWorkRequests.
+            // `mPeriodDelayMet` is set to `false` when `onExecuted()` is called as a result of a
+            // successful run or a cancellation. That way subsequent calls to schedule() no-op
+            // until a developer explicitly calls setPeriodDelayMet().
+            mPendingWorkStates.remove(workSpecId);
         }
     }
 
@@ -86,8 +103,9 @@ class TestScheduler implements Scheduler, ExecutionListener {
      * @throws IllegalArgumentException if {@code workSpecId} is not enqueued
      */
     void setAllConstraintsMet(@NonNull UUID workSpecId) {
-        synchronized (sLock) {
-            InternalWorkState internalWorkState = mInternalWorkStates.get(workSpecId.toString());
+        String id = workSpecId.toString();
+        if (!mTerminatedWorkStates.containsKey(id)) {
+            InternalWorkState internalWorkState = mPendingWorkStates.get(id);
             if (internalWorkState == null) {
                 throw new IllegalArgumentException(
                         "Work with id " + workSpecId + " is not enqueued!");
@@ -105,8 +123,9 @@ class TestScheduler implements Scheduler, ExecutionListener {
      * @throws IllegalArgumentException if {@code workSpecId} is not enqueued
      */
     void setInitialDelayMet(@NonNull UUID workSpecId) {
-        synchronized (sLock) {
-            InternalWorkState internalWorkState = mInternalWorkStates.get(workSpecId.toString());
+        String id = workSpecId.toString();
+        if (!mTerminatedWorkStates.containsKey(id)) {
+            InternalWorkState internalWorkState = mPendingWorkStates.get(id);
             if (internalWorkState == null) {
                 throw new IllegalArgumentException(
                         "Work with id " + workSpecId + " is not enqueued!");
@@ -124,35 +143,34 @@ class TestScheduler implements Scheduler, ExecutionListener {
      * @throws IllegalArgumentException if {@code workSpecId} is not enqueued
      */
     void setPeriodDelayMet(@NonNull UUID workSpecId) {
-        synchronized (sLock) {
-            InternalWorkState internalWorkState = mInternalWorkStates.get(workSpecId.toString());
-            if (internalWorkState == null) {
-                throw new IllegalArgumentException(
-                        "Work with id " + workSpecId + " is not enqueued!");
-            }
-            internalWorkState.mPeriodDelayMet = true;
-            scheduleInternal(Collections.singletonList(workSpecId.toString()));
+        String id = workSpecId.toString();
+        InternalWorkState internalWorkState = mPendingWorkStates.get(id);
+        if (internalWorkState == null) {
+            throw new IllegalArgumentException(
+                    "Work with id " + workSpecId + " is not enqueued!");
         }
+        internalWorkState.mPeriodDelayMet = true;
+        scheduleInternal(Collections.singletonList(workSpecId.toString()));
     }
 
     @Override
     public void onExecuted(@NonNull String workSpecId, boolean needsReschedule) {
-
-        synchronized (sLock) {
-            InternalWorkState internalWorkState = mInternalWorkStates.get(workSpecId);
+        InternalWorkState internalWorkState = mPendingWorkStates.get(workSpecId);
+        if (internalWorkState != null) {
             if (internalWorkState.mWorkSpec.isPeriodic()) {
                 internalWorkState.reset();
             } else {
-                mInternalWorkStates.remove(workSpecId);
+                mTerminatedWorkStates.put(workSpecId, internalWorkState);
+                mPendingWorkStates.remove(workSpecId);
             }
         }
     }
 
     private void scheduleInternal(Collection<String> workSpecIds) {
         for (String workSpecId : workSpecIds) {
-            InternalWorkState internalWorkState = mInternalWorkStates.get(workSpecId);
+            InternalWorkState internalWorkState = mPendingWorkStates.get(workSpecId);
             if (internalWorkState.isRunnable()) {
-                WorkManagerImpl.getInstance().startWork(workSpecId);
+                WorkManagerImpl.getInstance(mContext).startWork(workSpecId);
             }
         }
     }
@@ -162,12 +180,14 @@ class TestScheduler implements Scheduler, ExecutionListener {
      */
     private static class InternalWorkState {
 
+        @NonNull Context mContext;
         @NonNull WorkSpec mWorkSpec;
         boolean mConstraintsMet;
         boolean mInitialDelayMet;
         boolean mPeriodDelayMet;
 
-        InternalWorkState(@NonNull WorkSpec workSpec) {
+        InternalWorkState(@NonNull Context context, @NonNull WorkSpec workSpec) {
+            mContext = context;
             mWorkSpec = workSpec;
             mConstraintsMet = !mWorkSpec.hasConstraints();
             mInitialDelayMet = (mWorkSpec.initialDelay == 0L);
@@ -177,6 +197,13 @@ class TestScheduler implements Scheduler, ExecutionListener {
         void reset() {
             mConstraintsMet = !mWorkSpec.hasConstraints();
             mPeriodDelayMet = !mWorkSpec.isPeriodic();
+            if (mWorkSpec.isPeriodic()) {
+                // Reset the startTime to simulate the first run of PeriodicWork.
+                // Otherwise WorkerWrapper de-dupes runs of PeriodicWork to 1 execution per interval
+                WorkManagerImpl workManager = WorkManagerImpl.getInstance(mContext);
+                WorkDatabase workDatabase = workManager.getWorkDatabase();
+                workDatabase.workSpecDao().setPeriodStartTime(mWorkSpec.id, 0);
+            }
         }
 
         boolean isRunnable() {

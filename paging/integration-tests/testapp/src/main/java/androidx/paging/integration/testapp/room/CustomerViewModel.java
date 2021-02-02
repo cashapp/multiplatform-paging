@@ -16,6 +16,7 @@
 
 package androidx.paging.integration.testapp.room;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 
 import androidx.annotation.WorkerThread;
@@ -45,6 +46,7 @@ public class CustomerViewModel extends AndroidViewModel {
         createDb();
     }
 
+    @SuppressLint("RestrictedApi")
     private void createDb() {
         mDatabase = Room.databaseBuilder(this.getApplication(),
                 SampleDatabase.class, "customerDatabase").build();
@@ -71,27 +73,32 @@ public class CustomerViewModel extends AndroidViewModel {
         return customer;
     }
 
+    @SuppressLint("RestrictedApi")
     void insertCustomer() {
         ArchTaskExecutor.getInstance().executeOnDiskIO(
                 () -> mDatabase.getCustomerDao().insert(createCustomer()));
     }
 
+    @SuppressLint("RestrictedApi")
     void clearAllCustomers() {
         ArchTaskExecutor.getInstance().executeOnDiskIO(
                 () -> mDatabase.getCustomerDao().removeAll());
     }
 
+    @SuppressWarnings("deprecation")
     private static <K> LiveData<PagedList<Customer>> getLivePagedList(
             K initialLoadKey, DataSource.Factory<K, Customer> dataSourceFactory) {
         PagedList.Config config = new PagedList.Config.Builder()
                 .setPageSize(10)
                 .setEnablePlaceholders(false)
                 .build();
+        // Maintained for compatibility.
         return new LivePagedListBuilder<>(dataSourceFactory, config)
                 .setInitialLoadKey(initialLoadKey)
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     private static <K> Flowable<PagedList<Customer>> getPagedListFlowable(
             DataSource.Factory<K, Customer> dataSourceFactory) {
         PagedList.Config config = new PagedList.Config.Builder()

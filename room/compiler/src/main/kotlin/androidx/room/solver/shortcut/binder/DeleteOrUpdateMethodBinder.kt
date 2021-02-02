@@ -17,8 +17,8 @@
 package androidx.room.solver.shortcut.binder
 
 import androidx.room.solver.CodeGenScope
-import androidx.room.vo.ShortcutQueryParameter
 import androidx.room.solver.shortcut.result.DeleteOrUpdateMethodAdapter
+import androidx.room.vo.ShortcutQueryParameter
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.TypeSpec
 
@@ -56,6 +56,7 @@ abstract class DeleteOrUpdateMethodBinder(val adapter: DeleteOrUpdateMethodAdapt
     abstract fun convertAndReturn(
         parameters: List<ShortcutQueryParameter>,
         adapters: Map<String, Pair<FieldSpec, TypeSpec>>,
+        dbField: FieldSpec,
         scope: CodeGenScope
     )
 }

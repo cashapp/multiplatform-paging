@@ -22,7 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import android.graphics.Rect;
 import android.view.View;
 
-import androidx.test.filters.MediumTest;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +36,7 @@ import java.util.Map;
 /**
  * Tests dispatching no-op updates to the GLM and ensures it re-lays out items in the same location
  */
-@MediumTest
+@SmallTest
 @RunWith(Parameterized.class)
 public class GridLayoutManagerNoOpUpdateTest extends BaseGridLayoutManagerTest {
     @Parameterized.Parameters(name = "conf:{0},rtl={1}")
@@ -71,7 +71,7 @@ public class GridLayoutManagerNoOpUpdateTest extends BaseGridLayoutManagerTest {
         Map<Long, Rect> before = takeSnapshot();
 
         View chosen = mGlm.findViewByPosition(1);
-        assertNotNull("test sanity", chosen);
+        assertNotNull("Assumption check", chosen);
         mGlm.expectLayout(2);
         mAdapter.changeAndNotify(1, 1);
         mGlm.waitForLayout(2);

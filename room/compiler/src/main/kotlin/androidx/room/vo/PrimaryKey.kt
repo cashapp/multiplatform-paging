@@ -16,28 +16,25 @@
 package androidx.room.vo
 
 import androidx.room.migration.bundle.PrimaryKeyBundle
-import javax.lang.model.element.Element
+import androidx.room.compiler.processing.XElement
 
 /**
  * Represents a PrimaryKey for an Entity.
  */
-data class PrimaryKey(val declaredIn: Element?, val fields: List<Field>,
-                      val autoGenerateId: Boolean) : HasSchemaIdentity {
+data class PrimaryKey(
+    val declaredIn: XElement?,
+    override val fields: Fields,
+    val autoGenerateId: Boolean
+) : HasSchemaIdentity, HasFields {
     companion object {
-        val MISSING = PrimaryKey(null, emptyList(), false)
+        val MISSING = PrimaryKey(null, Fields(), false)
     }
-
-    val columnNames by lazy { fields.map { it.columnName } }
 
     fun toHumanReadableString(): String {
-        return "PrimaryKey[" +
-                fields.joinToString(separator = ", ", transform = Field::getPath) + "]"
+        return "PrimaryKey[${fields.joinToString(separator = ", ", transform = Field::getPath) }]"
     }
 
-    fun toBundle(): PrimaryKeyBundle = PrimaryKeyBundle(
-            autoGenerateId, fields.map { it.columnName })
+    fun toBundle(): PrimaryKeyBundle = PrimaryKeyBundle(autoGenerateId, columnNames)
 
-    override fun getIdKey(): String {
-        return "$autoGenerateId-${fields.map { it.columnName }}"
-    }
+    override fun getIdKey() = "$autoGenerateId-$columnNames"
 }

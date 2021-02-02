@@ -24,7 +24,7 @@ import java.io.File
  *
  * Currently, we don't use it since build system does not give us the right shas.
  */
-internal object BuildPropParser {
+object BuildPropParser {
     /**
      * Returns the sha which is the reference sha that we should use to find changed files.
      *
@@ -45,7 +45,8 @@ internal object BuildPropParser {
     ): BuildRange? {
         if (!appliedPropsFile.canRead()) {
             logger?.error(
-                    "cannot read applied props file from ${appliedPropsFile.absolutePath}")
+                "cannot read applied props file from ${appliedPropsFile.absolutePath}"
+            )
             return null
         }
         if (!repoPropsFile.canRead()) {
@@ -55,19 +56,21 @@ internal object BuildPropParser {
         val appliedProps = appliedPropsFile.readLines(Charsets.UTF_8).filterNot { it.isEmpty() }
         if (appliedProps.isEmpty() && appliedProps.size > 2) {
             logger?.info(
-                    """
+                """
                     We'll run everything because seems like too many things changed or nothing is
                     changed. Changed projects: $appliedProps
-                    """.trimIndent())
+                """.trimIndent()
+            )
             return null
         }
         val changedProject = appliedProps[0]
         if (changedProject.indexOf("frameworks/support") == -1) {
             logger?.info(
-                    """
+                """
                     Changed project is not frameworks/support. I'll run everything.
                     Changed project: $changedProject
-                    """.trimIndent())
+                """.trimIndent()
+            )
             return null
         }
         val changeSha = changedProject.split(" ").last()
@@ -82,8 +85,9 @@ internal object BuildPropParser {
         val repoSha = androidXLineInRepo.split(" ").last()
         logger?.info("repo sha: $repoSha change sha: $changeSha")
         return BuildRange(
-                buildSha = changeSha,
-                repoSha = repoSha)
+            buildSha = changeSha,
+            repoSha = repoSha
+        )
     }
 
     data class BuildRange(

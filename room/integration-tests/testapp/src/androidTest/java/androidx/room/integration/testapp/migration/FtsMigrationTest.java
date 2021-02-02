@@ -24,6 +24,8 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Dao;
 import androidx.room.Database;
 import androidx.room.Embedded;
@@ -38,10 +40,11 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.room.testing.MigrationTestHelper;
 import androidx.sqlite.db.SupportSQLiteDatabase;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +53,7 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@MediumTest
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN)
 public class FtsMigrationTest {
     private static final String TEST_DB = "migration-test";
@@ -62,7 +65,7 @@ public class FtsMigrationTest {
                 FtsMigrationDb.class.getCanonicalName());
     }
 
-    @Database(entities = {Book.class, User.class, AddressFts.class}, version = 4)
+    @Database(entities = {Book.class, User.class, AddressFts.class, Mail.class}, version = 6)
     abstract static class FtsMigrationDb extends RoomDatabase {
         abstract BookDao getBookDao();
         abstract UserDao getUserDao();
@@ -119,6 +122,16 @@ public class FtsMigrationTest {
         public int zipcode;
     }
 
+    @Entity
+    @Fts4(languageId = "lid")
+    static class Mail {
+        @PrimaryKey
+        @ColumnInfo(name = "rowid")
+        public long mailId;
+        public String content;
+        public int lid;
+    }
+
     @Test
     public void validMigration() throws Exception {
         SupportSQLiteDatabase db;
@@ -142,9 +155,10 @@ public class FtsMigrationTest {
         supportSQLiteDatabase.close();
 
         try {
-            Context targetContext = InstrumentationRegistry.getTargetContext();
+            Context targetContext = ApplicationProvider.getApplicationContext();
             FtsMigrationDb db = Room.databaseBuilder(targetContext, FtsMigrationDb.class, TEST_DB)
-                    .addMigrations(BAD_MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(BAD_MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
+                            MIGRATION_5_6)
                     .build();
             helper.closeWhenFinished(db);
             db.getBookDao().getAllBooks();
@@ -169,6 +183,27 @@ public class FtsMigrationTest {
         assertThat(addresses.get(0).line1, is("Ruth Ave"));
     }
 
+    @Test
+    public void validFtsWithNamedRowIdMigration() throws Exception {
+        SupportSQLiteDatabase db;
+
+        db = helper.createDatabase(TEST_DB, 4);
+        db.close();
+
+        helper.runMigrationsAndValidate(TEST_DB, 5, true, MIGRATION_4_5);
+    }
+
+    @Test
+    public void validFtsWithLanguageIdMigration() throws Exception {
+        SupportSQLiteDatabase db;
+
+        db = helper.createDatabase(TEST_DB, 5);
+        db.close();
+
+        helper.runMigrationsAndValidate(TEST_DB, 6, true, MIGRATION_5_6);
+    }
+
+    @SuppressWarnings("deprecation")
     private FtsMigrationDb getLatestDb() {
         FtsMigrationDb db = Room.databaseBuilder(
                 InstrumentationRegistry.getInstrumentation().getTargetContext(),
@@ -218,6 +253,23 @@ public class FtsMigrationTest {
         }
     };
 
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `Mail` USING FTS4("
+                    + "`content` TEXT NOT NULL)");
+        }
+    };
+
+    private static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("DROP TABLE `Mail`");
+            database.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `Mail` USING FTS4("
+                    + "`content` TEXT NOT NULL, languageid=`lid`)");
+        }
+    };
+
     private static final Migration BAD_MIGRATION_1_2 = new Migration(1, 2) {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
@@ -228,6 +280,6 @@ public class FtsMigrationTest {
     };
 
     private static final Migration[] ALL_MIGRATIONS = new Migration[]{
-            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6
     };
 }

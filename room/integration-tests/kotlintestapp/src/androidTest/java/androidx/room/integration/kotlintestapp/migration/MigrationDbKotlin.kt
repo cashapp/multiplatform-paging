@@ -18,17 +18,31 @@ package androidx.room.integration.kotlintestapp.migration
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Ignore
+import androidx.room.Index
+import androidx.room.Insert
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.RoomDatabase
+import androidx.room.RoomWarnings
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(version = MigrationDbKotlin.LATEST_VERSION,
-        entities = arrayOf(MigrationDbKotlin.Entity1::class, MigrationDbKotlin.Entity2::class,
-                MigrationDbKotlin.Entity4::class))
+@Database(
+    version = MigrationDbKotlin.LATEST_VERSION,
+    entities = arrayOf(
+        MigrationDbKotlin.Entity1::class, MigrationDbKotlin.Entity2::class,
+        MigrationDbKotlin.Entity4::class
+    )
+)
 abstract class MigrationDbKotlin : RoomDatabase() {
 
     internal abstract fun dao(): MigrationDao
-
-    @Entity(indices = arrayOf(Index(value = "name", unique = true)))
+    @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
+    @Entity(indices = arrayOf(Index(value = ["name"], unique = true)))
     data class Entity1(@PrimaryKey var id: Int = 0, var name: String?) {
 
         companion object {
@@ -44,17 +58,27 @@ abstract class MigrationDbKotlin : RoomDatabase() {
     }
 
     @Entity
-    data class Entity3(@PrimaryKey var id: Int = 0, @Ignore var removedInV5: String?,
-                       var name: String?) { // added in version 4, removed at 6
+    data class Entity3(
+        @PrimaryKey var id: Int = 0,
+        @Ignore var removedInV5: String?,
+        var name: String?
+    ) { // added in version 4, removed at 6
         companion object {
             val TABLE_NAME = "Entity3"
         }
     }
 
-    @Entity(foreignKeys = arrayOf(ForeignKey(entity = Entity1::class,
-            parentColumns = arrayOf("name"),
-            childColumns = arrayOf("name"),
-            deferred = true)))
+    @SuppressWarnings(RoomWarnings.MISSING_INDEX_ON_FOREIGN_KEY_CHILD)
+    @Entity(
+        foreignKeys = arrayOf(
+            ForeignKey(
+                entity = Entity1::class,
+                parentColumns = arrayOf("name"),
+                childColumns = arrayOf("name"),
+                deferred = true
+            )
+        )
+    )
     data class Entity4(@PrimaryKey var id: Int = 0, var name: String?) {
         companion object {
             val TABLE_NAME = "Entity4"
@@ -76,8 +100,8 @@ abstract class MigrationDbKotlin : RoomDatabase() {
         fun insert(vararg entity2: Entity2)
     }
 
-    internal class Entity2Pojo(id: Int, addedInV3: String?, name: String?)
-        : Entity2(id, addedInV3, name)
+    internal class Entity2Pojo(id: Int, addedInV3: String?, name: String?) :
+        Entity2(id, addedInV3, name)
 
     /**
      * not a real dao because database will change.
@@ -88,10 +112,12 @@ abstract class MigrationDbKotlin : RoomDatabase() {
             val values = ContentValues()
             values.put("id", id)
             values.put("name", name)
-            val insertionId = mDb.insert(Entity1.TABLE_NAME,
-                    SQLiteDatabase.CONFLICT_REPLACE, values)
+            val insertionId = mDb.insert(
+                Entity1.TABLE_NAME,
+                SQLiteDatabase.CONFLICT_REPLACE, values
+            )
             if (insertionId == -1L) {
-                throw RuntimeException("test sanity failure")
+                throw RuntimeException("test failure")
             }
         }
     }
@@ -105,10 +131,12 @@ abstract class MigrationDbKotlin : RoomDatabase() {
             val values = ContentValues()
             values.put("id", id)
             values.put("name", name)
-            val insertionId = mDb.insert(Entity2.TABLE_NAME,
-                    SQLiteDatabase.CONFLICT_REPLACE, values)
+            val insertionId = mDb.insert(
+                Entity2.TABLE_NAME,
+                SQLiteDatabase.CONFLICT_REPLACE, values
+            )
             if (insertionId == -1L) {
-                throw RuntimeException("test sanity failure")
+                throw RuntimeException("test failure")
             }
         }
     }

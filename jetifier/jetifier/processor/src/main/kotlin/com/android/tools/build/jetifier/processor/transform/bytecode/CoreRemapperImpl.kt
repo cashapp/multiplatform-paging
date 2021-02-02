@@ -88,10 +88,20 @@ class CoreRemapperImpl(
 
         // Verify that we did not make an ambiguous mapping, see b/116745353
         if (!context.allowAmbiguousPackages && AMBIGUOUS_STRINGS.contains(type)) {
-            throw IllegalArgumentException("The given artifact contains a string literal with" +
-                " a package reference '$value' that cannot be safely rewritten. Libraries " +
-                "using reflection such as annotation processors need to be updated manually " +
-                "to add support for androidx.")
+            throw AmbiguousStringJetifierException(
+                "The given artifact contains a string literal " +
+                    "with a package reference '$value' that cannot be safely rewritten. " +
+                    "Libraries using reflection such as annotation processors need to be " +
+                    "updated manually to add support for androidx."
+            )
+        }
+
+        // Strings map has a priority over types map
+        val mappedString = context.config.stringsMap.mapType(type)
+        if (mappedString != null) {
+            changesDone = changesDone || mappedString != type
+            Log.i(TAG, "Map string: '%s' -> '%s'", type, mappedString)
+            return if (hasDotSeparators) mappedString.toDotNotation() else mappedString.fullName
         }
 
         val mappedType = context.config.typesMap.mapType(type)
@@ -148,3 +158,8 @@ class CoreRemapperImpl(
         return path
     }
 }
+
+/**
+ * Thrown when jetifier finds a string reference to a package that has ambiguous mapping.
+ */
+class AmbiguousStringJetifierException(message: String) : Exception(message)

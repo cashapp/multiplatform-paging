@@ -16,42 +16,44 @@
 package androidx.room.processor
 
 import androidx.room.Delete
+import androidx.room.compiler.processing.XMethodElement
+import androidx.room.compiler.processing.XType
 import androidx.room.vo.DeletionMethod
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.type.DeclaredType
 
 class DeletionMethodProcessor(
     baseContext: Context,
-    val containing: DeclaredType,
-    val executableElement: ExecutableElement
+    val containing: XType,
+    val executableElement: XMethodElement
 ) {
     val context = baseContext.fork(executableElement)
 
     fun process(): DeletionMethod {
         val delegate = ShortcutMethodProcessor(context, containing, executableElement)
-        delegate.extractAnnotation(Delete::class, ProcessorErrors.MISSING_DELETE_ANNOTATION)
+        val annotation = delegate
+            .extractAnnotation(Delete::class, ProcessorErrors.MISSING_DELETE_ANNOTATION)
 
         val returnType = delegate.extractReturnType()
 
-        val methodBinder = context.typeAdapterStore
-                .findDeleteOrUpdateMethodBinder(returnType)
+        val methodBinder = delegate.findDeleteOrUpdateMethodBinder(returnType)
 
         context.checker.check(
-                methodBinder.adapter != null,
-                executableElement,
-                ProcessorErrors.CANNOT_FIND_DELETE_RESULT_ADAPTER
+            methodBinder.adapter != null,
+            executableElement,
+            ProcessorErrors.CANNOT_FIND_DELETE_RESULT_ADAPTER
         )
 
         val (entities, params) = delegate.extractParams(
-                missingParamError = ProcessorErrors.DELETION_MISSING_PARAMS
+            targetEntityType = annotation?.getAsType("entity"),
+            missingParamError = ProcessorErrors.DELETION_MISSING_PARAMS,
+            onValidatePartialEntity = { _, _ -> }
         )
 
         return DeletionMethod(
-                element = delegate.executableElement,
-                name = delegate.executableElement.simpleName.toString(),
-                entities = entities,
-                parameters = params,
-                methodBinder = methodBinder
+            element = delegate.executableElement,
+            name = delegate.executableElement.name,
+            entities = entities,
+            parameters = params,
+            methodBinder = methodBinder
         )
     }
 }

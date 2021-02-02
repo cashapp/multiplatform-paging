@@ -14,29 +14,33 @@
  * limitations under the License
  */
 
-
 import androidx.build.LibraryGroups
+import androidx.build.LibraryType
 import androidx.build.LibraryVersions
 
-import static androidx.build.dependencies.DependenciesKt.KOTLIN_STDLIB
+import static androidx.build.dependencies.DependenciesKt.*
 
 plugins {
-    id("SupportKotlinLibraryPlugin")
+    id("AndroidXPlugin")
+    id("kotlin")
+
 }
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
 
 dependencies {
-    compile("com.google.code.gson:gson:2.8.0")
-    compile("org.jetbrains.kotlin:kotlin-stdlib:1.2.20")
-    testCompile("junit:junit:4.12")
-    testCompile("com.google.truth:truth:0.34")
+    api("com.google.code.gson:gson:2.8.0")
+    api(KOTLIN_STDLIB)
+    testImplementation("junit:junit:4.12")
+    testImplementation(TRUTH)
 }
 
-supportLibrary {
+androidx {
     name = "Android Jetifier Core"
-    publish = true
+    type = LibraryType.OTHER_CODE_PROCESSOR
     mavenVersion = LibraryVersions.JETIFIER
     mavenGroup = LibraryGroups.JETIFIER
-    toolingProject = true
     inceptionYear = "2017"
     description = "Android Jetifier Core"
 }

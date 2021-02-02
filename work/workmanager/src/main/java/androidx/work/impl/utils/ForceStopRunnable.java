@@ -20,19 +20,38 @@ import static android.app.AlarmManager.RTC_WAKEUP;
 import static android.app.PendingIntent.FLAG_NO_CREATE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 
+import static androidx.work.WorkInfo.State.ENQUEUED;
+import static androidx.work.impl.model.WorkSpec.SCHEDULE_NOT_REQUESTED_YET;
+
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteAccessPermException;
+import android.database.sqlite.SQLiteCantOpenDatabaseException;
+import android.database.sqlite.SQLiteConstraintException;
+import android.database.sqlite.SQLiteDatabaseCorruptException;
+import android.database.sqlite.SQLiteDatabaseLockedException;
+import android.database.sqlite.SQLiteTableLockedException;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RestrictTo;
-import android.support.annotation.VisibleForTesting;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
+import androidx.work.Configuration;
+import androidx.work.InitializationExceptionHandler;
 import androidx.work.Logger;
+import androidx.work.impl.Schedulers;
+import androidx.work.impl.WorkDatabase;
+import androidx.work.impl.WorkDatabasePathHelper;
 import androidx.work.impl.WorkManagerImpl;
+import androidx.work.impl.background.systemjob.SystemJobScheduler;
+import androidx.work.impl.model.WorkProgressDao;
+import androidx.work.impl.model.WorkSpec;
+import androidx.work.impl.model.WorkSpecDao;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,35 +64,79 @@ import java.util.concurrent.TimeUnit;
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class ForceStopRunnable implements Runnable {
 
-    private static final String TAG = "ForceStopRunnable";
+    private static final String TAG = Logger.tagWithPrefix("ForceStopRunnable");
 
     @VisibleForTesting
     static final String ACTION_FORCE_STOP_RESCHEDULE = "ACTION_FORCE_STOP_RESCHEDULE";
+    @VisibleForTesting
+    static final int MAX_ATTEMPTS = 3;
 
     // All our alarms are use request codes which are > 0.
     private static final int ALARM_ID = -1;
+    private static final long BACKOFF_DURATION_MS = 300L;
     private static final long TEN_YEARS = TimeUnit.DAYS.toMillis(10 * 365);
 
     private final Context mContext;
     private final WorkManagerImpl mWorkManager;
+    private int mRetryCount;
 
     public ForceStopRunnable(@NonNull Context context, @NonNull WorkManagerImpl workManager) {
         mContext = context.getApplicationContext();
         mWorkManager = workManager;
+        mRetryCount = 0;
     }
 
     @Override
     public void run() {
-        if (shouldRescheduleWorkers()) {
-            Logger.debug(TAG, "Rescheduling Workers.");
-            mWorkManager.rescheduleEligibleWork();
-            // Mark the jobs as migrated.
-            mWorkManager.getPreferences().setNeedsReschedule(false);
-        } else if (isForceStopped()) {
-            Logger.debug(TAG, "Application was force-stopped, rescheduling.");
-            mWorkManager.rescheduleEligibleWork();
+        if (!multiProcessChecks()) {
+            return;
         }
-        mWorkManager.onForceStopRunnableCompleted();
+
+        while (true) {
+            // Migrate the database to the no-backup directory if necessary.
+            WorkDatabasePathHelper.migrateDatabase(mContext);
+            // Clean invalid jobs attributed to WorkManager, and Workers that might have been
+            // interrupted because the application crashed (RUNNING state).
+            Logger.get().debug(TAG, "Performing cleanup operations.");
+            try {
+                forceStopRunnable();
+                break;
+            } catch (SQLiteCantOpenDatabaseException
+                    | SQLiteDatabaseCorruptException
+                    | SQLiteDatabaseLockedException
+                    | SQLiteTableLockedException
+                    | SQLiteConstraintException
+                    | SQLiteAccessPermException exception) {
+                mRetryCount++;
+                if (mRetryCount >= MAX_ATTEMPTS) {
+                    // ForceStopRunnable is usually the first thing that accesses a database
+                    // (or an app's internal data directory). This means that weird
+                    // PackageManager bugs are attributed to ForceStopRunnable, which is
+                    // unfortunate. This gives the developer a better error
+                    // message.
+                    String message = "The file system on the device is in a bad state. "
+                            + "WorkManager cannot access the app's internal data store.";
+                    Logger.get().error(TAG, message, exception);
+                    IllegalStateException throwable = new IllegalStateException(message, exception);
+                    InitializationExceptionHandler exceptionHandler =
+                            mWorkManager.getConfiguration().getExceptionHandler();
+                    if (exceptionHandler != null) {
+                        Logger.get().debug(TAG,
+                                "Routing exception to the specified exception handler",
+                                throwable);
+                        exceptionHandler.handleException(throwable);
+                        break;
+                    } else {
+                        throw throwable;
+                    }
+                } else {
+                    long duration = mRetryCount * BACKOFF_DURATION_MS;
+                    Logger.get()
+                            .debug(TAG, String.format("Retrying after %s", duration), exception);
+                    sleep(mRetryCount * BACKOFF_DURATION_MS);
+                }
+            }
+        }
     }
 
     /**
@@ -95,11 +158,110 @@ public class ForceStopRunnable implements Runnable {
     }
 
     /**
+     * Performs all the necessary steps to initialize {@link androidx.work.WorkManager}/
+     */
+    @VisibleForTesting
+    public void forceStopRunnable() {
+        boolean needsScheduling = cleanUp();
+        if (shouldRescheduleWorkers()) {
+            Logger.get().debug(TAG, "Rescheduling Workers.");
+            mWorkManager.rescheduleEligibleWork();
+            // Mark the jobs as migrated.
+            mWorkManager.getPreferenceUtils().setNeedsReschedule(false);
+        } else if (isForceStopped()) {
+            Logger.get().debug(TAG, "Application was force-stopped, rescheduling.");
+            mWorkManager.rescheduleEligibleWork();
+        } else if (needsScheduling) {
+            Logger.get().debug(TAG, "Found unfinished work, scheduling it.");
+            Schedulers.schedule(
+                    mWorkManager.getConfiguration(),
+                    mWorkManager.getWorkDatabase(),
+                    mWorkManager.getSchedulers());
+        }
+        mWorkManager.onForceStopRunnableCompleted();
+    }
+
+    /**
+     * Performs cleanup operations like
+     *
+     * * Cancel invalid JobScheduler jobs.
+     * * Reschedule previously RUNNING jobs.
+     *
+     * @return {@code true} if there are WorkSpecs that need rescheduling.
+     */
+    @VisibleForTesting
+    public boolean cleanUp() {
+        boolean needsReconciling = false;
+        if (Build.VERSION.SDK_INT >= WorkManagerImpl.MIN_JOB_SCHEDULER_API_LEVEL) {
+            // Mitigation for faulty implementations of JobScheduler (b/134058261) and
+            // Mitigation for a platform bug, which causes jobs to get dropped when binding to
+            // SystemJobService fails.
+            needsReconciling = SystemJobScheduler.reconcileJobs(mContext, mWorkManager);
+        }
+        // Reset previously unfinished work.
+        WorkDatabase workDatabase = mWorkManager.getWorkDatabase();
+        WorkSpecDao workSpecDao = workDatabase.workSpecDao();
+        WorkProgressDao workProgressDao = workDatabase.workProgressDao();
+        workDatabase.beginTransaction();
+        boolean needsScheduling;
+        try {
+            List<WorkSpec> workSpecs = workSpecDao.getRunningWork();
+            needsScheduling = workSpecs != null && !workSpecs.isEmpty();
+            if (needsScheduling) {
+                // Mark every instance of unfinished work with state = ENQUEUED and
+                // SCHEDULE_NOT_REQUESTED_AT = -1 irrespective of its current state.
+                // This is because the application might have crashed previously and we should
+                // reschedule jobs that may have been running previously.
+                // Also there is a chance that an application crash, happened during
+                // onStartJob() and now no corresponding job now exists in JobScheduler.
+                // To solve this, we simply force-reschedule all unfinished work.
+                for (WorkSpec workSpec : workSpecs) {
+                    workSpecDao.setState(ENQUEUED, workSpec.id);
+                    workSpecDao.markWorkSpecScheduled(workSpec.id, SCHEDULE_NOT_REQUESTED_YET);
+                }
+            }
+            workProgressDao.deleteAll();
+            workDatabase.setTransactionSuccessful();
+        } finally {
+            workDatabase.endTransaction();
+        }
+        return needsScheduling || needsReconciling;
+    }
+
+    /**
      * @return {@code true} If we need to reschedule Workers.
      */
     @VisibleForTesting
     boolean shouldRescheduleWorkers() {
-        return mWorkManager.getPreferences().needsReschedule();
+        return mWorkManager.getPreferenceUtils().getNeedsReschedule();
+    }
+
+    /**
+     * @return {@code true} if we are allowed to run in the current app process.
+     */
+    @VisibleForTesting
+    public boolean multiProcessChecks() {
+        if (mWorkManager.getRemoteWorkManager() == null) {
+            return true;
+        }
+        Logger.get().debug(TAG, "Found a remote implementation for WorkManager");
+        Configuration configuration = mWorkManager.getConfiguration();
+        boolean isDefaultProcess = ProcessUtils.isDefaultProcess(mContext, configuration);
+        Logger.get().debug(TAG, String.format("Is default app process = %s", isDefaultProcess));
+        return isDefaultProcess;
+    }
+
+    /**
+     * Helps with backoff when exceptions occur during {@link androidx.work.WorkManager}
+     * initialization.
+     */
+    @VisibleForTesting
+    public void sleep(long duration) {
+        try {
+            Thread.sleep(duration);
+        } catch (InterruptedException ignore) {
+            // Nothing to do really.
+        }
     }
 
     /**
@@ -145,7 +307,7 @@ public class ForceStopRunnable implements Runnable {
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public static class BroadcastReceiver extends android.content.BroadcastReceiver {
-        private static final String TAG = "ForceStopRunnable$Rcvr";
+        private static final String TAG = Logger.tagWithPrefix("ForceStopRunnable$Rcvr");
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -154,7 +316,9 @@ public class ForceStopRunnable implements Runnable {
             if (intent != null) {
                 String action = intent.getAction();
                 if (ACTION_FORCE_STOP_RESCHEDULE.equals(action)) {
-                    Logger.verbose(TAG, "Rescheduling alarm that keeps track of force-stops.");
+                    Logger.get().verbose(
+                            TAG,
+                            "Rescheduling alarm that keeps track of force-stops.");
                     ForceStopRunnable.setAlarm(context);
                 }
             }

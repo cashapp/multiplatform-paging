@@ -15,6 +15,7 @@
  */
 package androidx.textclassifier.integration.testapp;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -77,14 +78,14 @@ public class SimpleTextClassifier extends TextClassifier {
                 builder.addLink(
                         spannable.getSpanStart(urlSpan),
                         spannable.getSpanEnd(urlSpan),
-                        Collections.singletonMap(TextClassifier.TYPE_URL, 1.0f),
-                        urlSpan);
+                        Collections.singletonMap(TextClassifier.TYPE_URL, 1.0f));
             }
         }
         return builder.build();
     }
 
     @Override
+    @SuppressLint("RestrictedApi")
     public void onSelectionEvent(SelectionEvent event) {
         super.onSelectionEvent(event);
     }

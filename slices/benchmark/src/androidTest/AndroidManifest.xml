@@ -18,11 +18,13 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         package="androidx.slice.benchmark.test">
-    <uses-sdk android:targetSdkVersion="${target-sdk-version}"/>
 
     <!-- Important: disable debuggable for accurate performance results -->
     <application
             android:debuggable="false"
             tools:replace="android:debuggable">
+        <!-- enable profileableByShell for non-intrusive profiling tools -->
+        <!--suppress AndroidElementNotAllowed -->
+        <profileable android:shell="true"/>
     </application>
 </manifest>

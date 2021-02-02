@@ -18,22 +18,22 @@ package androidx.navigation.testapp
 
 import android.os.Build
 import android.os.Bundle
-import android.support.design.widget.BottomSheetDialogFragment
-import android.support.design.widget.NavigationView
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.graphics.drawable.DrawerArrowDrawable
-import android.support.v7.widget.Toolbar
 import android.transition.Fade
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.graphics.drawable.DrawerArrowDrawable
+import androidx.appcompat.widget.Toolbar
+import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
 import androidx.navigation.createGraph
-import androidx.navigation.testing.TestNavigator
-import androidx.navigation.testing.test
 import androidx.navigation.ui.setupWithNavController
+import androidx.testutils.TestNavigator
+import androidx.testutils.test
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.navigation.NavigationView
 
 /**
  * Simple 'Help' activity that shows the data URI passed to it. In a real world app, it would
@@ -67,13 +67,13 @@ class HelpActivity : AppCompatActivity() {
 
     override fun onSupportNavigateUp(): Boolean {
         finish()
-        NavOptions.applyPopAnimationsToPendingTransition(this)
+        ActivityNavigator.applyPopAnimationsToPendingTransition(this)
         return true
     }
 
     override fun onBackPressed() {
         super.onBackPressed()
-        NavOptions.applyPopAnimationsToPendingTransition(this)
+        ActivityNavigator.applyPopAnimationsToPendingTransition(this)
     }
 }
 
@@ -84,17 +84,19 @@ class BottomSheetNavigationView : BottomSheetDialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         val navigationView = requireActivity().layoutInflater
-                .inflate(R.layout.bottom_bar_menu, container, false) as NavigationView
+            .inflate(R.layout.bottom_bar_menu, container, false) as NavigationView
 
         // Add a fake Navigation Graph just to test out the behavior but not
         // actually navigate anywhere
-        navigationView.setupWithNavController(NavController(requireContext()).apply {
-            navigatorProvider.addNavigator(TestNavigator())
-            graph = createGraph(startDestination = R.id.launcher_home) {
-                test(R.id.launcher_home)
-                test(R.id.android)
+        navigationView.setupWithNavController(
+            NavController(requireContext()).apply {
+                navigatorProvider.addNavigator(TestNavigator())
+                graph = createGraph(startDestination = R.id.launcher_home) {
+                    test(R.id.launcher_home)
+                    test(R.id.android)
+                }
             }
-        })
+        )
         return navigationView
     }
 }

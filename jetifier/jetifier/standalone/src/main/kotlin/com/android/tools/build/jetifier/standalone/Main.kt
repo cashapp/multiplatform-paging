@@ -20,6 +20,7 @@ import com.android.tools.build.jetifier.core.config.ConfigParser
 import com.android.tools.build.jetifier.core.utils.Log
 import com.android.tools.build.jetifier.processor.FileMapping
 import com.android.tools.build.jetifier.processor.Processor
+import com.android.tools.build.jetifier.processor.TimestampsPolicy
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
@@ -39,7 +40,7 @@ class Main {
         val OPTION_INPUT = createOption(
             argName = "i",
             argNameLong = "input",
-            desc = "Input library path (jar, aar, zip)",
+            desc = "Input library path (jar, aar, zip), or source file (java, xml)",
             isRequired = true
         )
         val OPTION_OUTPUT = createOption(
@@ -83,18 +84,35 @@ class Main {
             hasArgs = false,
             isRequired = false
         )
+        val OPTION_STRIP_SIGNATURES = createOption(
+            argName = "stripSignatures",
+            argNameLong = "stripSignatures",
+            desc = "Don't throw an error when jetifying a signed library and instead strip " +
+                "the signature files.",
+            hasArgs = false,
+            isRequired = false
+        )
+        const val ELIGIBLE_TIMESTAMPS = "keepPrevious (default), epoch or now"
+        val OPTION_TIMESTAMPS = createOption(
+            argName = "t",
+            argNameLong = "timestampsPolicy",
+            desc = "Timestamps policy to use for the archived entries as their modified time. " +
+                "Values: $ELIGIBLE_TIMESTAMPS.",
+            hasArgs = true,
+            isRequired = false
+        )
 
-        private fun createOption(
+        internal fun createOption(
             argName: String,
             argNameLong: String,
             desc: String,
             hasArgs: Boolean = true,
             isRequired: Boolean = true
         ): Option {
-            val op = Option(argName, argNameLong, hasArgs, desc)
-            op.isRequired = isRequired
-            OPTIONS.addOption(op)
-            return op
+            return Option(argName, argNameLong, hasArgs, desc).apply {
+                this.isRequired = isRequired
+                OPTIONS.addOption(this)
+            }
         }
 
         @JvmStatic fun main(args: Array<String>) {
@@ -111,16 +129,26 @@ class Main {
 
         Log.setLevel(cmd.getOptionValue(OPTION_LOG_LEVEL.opt))
 
-        val inputLibrary = File(cmd.getOptionValue(OPTION_INPUT.opt))
+        val input = File(cmd.getOptionValue(OPTION_INPUT.opt))
         val output = cmd.getOptionValue(OPTION_OUTPUT.opt)
         val rebuildTopOfTree = cmd.hasOption(OPTION_REBUILD_TOP_OF_TREE.opt)
+        val isReversed = cmd.hasOption(OPTION_REVERSED.opt)
+        val isStrict = cmd.hasOption(OPTION_STRICT.opt)
+        val shouldStripSignatures = cmd.hasOption(OPTION_STRIP_SIGNATURES.opt)
 
-        val fileMappings = mutableSetOf<FileMapping>()
-        if (rebuildTopOfTree) {
-            val tempFile = createTempFile(suffix = "zip")
-            fileMappings.add(FileMapping(inputLibrary, tempFile))
+        val timestampsPolicy = if (cmd.hasOption(OPTION_TIMESTAMPS.opt)) {
+            when (val timestampOp = cmd.getOptionValue(OPTION_TIMESTAMPS.opt)) {
+                "now" -> TimestampsPolicy.NOW
+                "epoch" -> TimestampsPolicy.EPOCH
+                "keepPrevious" -> TimestampsPolicy.KEEP_PREVIOUS
+                else -> throw IllegalArgumentException(
+                    "The provided value '$timestampOp' of " +
+                        "'${OPTION_TIMESTAMPS.longOpt}' argument is not recognized. Eligible " +
+                        "values are: $ELIGIBLE_TIMESTAMPS."
+                )
+            }
         } else {
-            fileMappings.add(FileMapping(inputLibrary, File(output)))
+            TimestampsPolicy.KEEP_PREVIOUS
         }
 
         val config = if (cmd.hasOption(OPTION_CONFIG.opt)) {
@@ -136,21 +164,45 @@ class Main {
             return
         }
 
-        val isReversed = cmd.hasOption(OPTION_REVERSED.opt)
-        val isStrict = cmd.hasOption(OPTION_STRICT.opt)
+        val fileMappings = mutableSetOf<FileMapping>()
+        if (rebuildTopOfTree) {
+            @Suppress("DEPRECATION") // b/174695914
+            val tempFile = createTempFile(suffix = "zip")
+            fileMappings.add(FileMapping(input, tempFile))
+        } else {
+            fileMappings.add(FileMapping(input, File(output)))
+        }
 
-        val processor = Processor.createProcessor2(
+        val processor = Processor.createProcessor4(
             config = config,
             reversedMode = isReversed,
             rewritingSupportLib = rebuildTopOfTree,
-            useFallbackIfTypeIsMissing = !isStrict)
-        processor.transform(fileMappings)
+            stripSignatures = shouldStripSignatures,
+            useFallbackIfTypeIsMissing = !isStrict,
+            timestampsPolicy = timestampsPolicy
+        )
+        val transformationResult = processor.transform2(fileMappings)
+
+        val containsSingleJavaFiles = containsSingleJavaFiles(fileMappings)
+        if (!containsSingleJavaFiles && transformationResult.numberOfLibsModified == 0) {
+            // Jetifier is not needed here
+            Log.w(TAG, "No references were rewritten. You don't need to run Jetifier.")
+        }
 
         if (rebuildTopOfTree) {
             val tempFile = fileMappings.first().to
             TopOfTreeBuilder().rebuildFrom(inputZip = tempFile, outputZip = File(output))
             tempFile.delete()
         }
+    }
+
+    private fun containsSingleJavaFiles(fileMappings: Set<FileMapping>): Boolean {
+        for (fileMapping in fileMappings) {
+            if (fileMapping.from.name.endsWith(".java")) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun parseCmdLine(args: Array<String>): CommandLine? {

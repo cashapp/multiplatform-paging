@@ -30,12 +30,11 @@ import androidx.emoji.text.EmojiCompat;
 import androidx.emoji.text.TestActivity;
 import androidx.emoji.text.TestConfigBuilder;
 import androidx.emoji.util.TestString;
-import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -47,9 +46,10 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EmojiEditTextTest {
 
+    @SuppressWarnings("deprecation")
     @Rule
-    public ActivityTestRule<TestActivity> mActivityRule = new ActivityTestRule<>(
-            TestActivity.class);
+    public androidx.test.rule.ActivityTestRule<TestActivity> mActivityRule =
+            new androidx.test.rule.ActivityTestRule<>(TestActivity.class);
     private Instrumentation mInstrumentation;
 
     @BeforeClass

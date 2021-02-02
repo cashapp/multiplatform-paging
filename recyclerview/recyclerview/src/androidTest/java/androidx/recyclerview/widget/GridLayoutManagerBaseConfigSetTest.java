@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 import android.util.Log;
 import android.view.View;
 
-import androidx.test.filters.MediumTest;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
-@MediumTest
+@SmallTest
 @RunWith(Parameterized.class)
 public class GridLayoutManagerBaseConfigSetTest extends BaseGridLayoutManagerTest {
     @Parameterized.Parameters(name = "{0}")
@@ -69,7 +69,7 @@ public class GridLayoutManagerBaseConfigSetTest extends BaseGridLayoutManagerTes
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                assertSame("test sanity", mRecyclerView, rv);
+                assertSame("Assumption check", mRecyclerView, rv);
                 int globalScrollPosition = 0;
                 int visited = 0;
                 while (visited < mAdapter.getItemCount()) {
@@ -109,7 +109,7 @@ public class GridLayoutManagerBaseConfigSetTest extends BaseGridLayoutManagerTes
             }
         });
         checkForMainThreadException();
-        // test sanity, ensure scroll happened
+        // Assumption check, ensure scroll happened
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {

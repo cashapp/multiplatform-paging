@@ -21,7 +21,6 @@ import androidx.room.ext.CommonTypeNames
 import androidx.room.ext.L
 import androidx.room.ext.N
 import androidx.room.ext.RoomTypeNames
-import androidx.room.ext.typeName
 import androidx.room.solver.CodeGenScope
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.MethodSpec
@@ -32,22 +31,28 @@ import com.squareup.javapoet.TypeSpec
 import javax.lang.model.element.Modifier
 
 class PositionalDataSourceQueryResultBinder(
-        val listAdapter: ListQueryResultAdapter?,
-        val tableNames: Set<String>) : QueryResultBinder(listAdapter) {
-    val itemTypeName: TypeName = listAdapter?.rowAdapter?.out?.typeName() ?: TypeName.OBJECT
+    val listAdapter: ListQueryResultAdapter?,
+    val tableNames: Set<String>
+) : QueryResultBinder(listAdapter) {
+    val itemTypeName: TypeName = listAdapter?.rowAdapter?.out?.typeName ?: TypeName.OBJECT
     val typeName: ParameterizedTypeName = ParameterizedTypeName.get(
-            RoomTypeNames.LIMIT_OFFSET_DATA_SOURCE, itemTypeName)
-    override fun convertAndReturn(roomSQLiteQueryVar: String,
-                                  canReleaseQuery: Boolean,
-                                  dbField: FieldSpec,
-                                  inTransaction: Boolean,
-                                  scope: CodeGenScope) {
+        RoomTypeNames.LIMIT_OFFSET_DATA_SOURCE, itemTypeName
+    )
+    override fun convertAndReturn(
+        roomSQLiteQueryVar: String,
+        canReleaseQuery: Boolean,
+        dbField: FieldSpec,
+        inTransaction: Boolean,
+        scope: CodeGenScope
+    ) {
         // first comma for table names comes from the string since it might be empty in which case
         // we don't need a comma. If list is empty, this prevents generating bad code (it is still
         // an error to have empty list but that is already reported while item is processed)
         val tableNamesList = tableNames.joinToString("") { ", \"$it\"" }
-        val spec = TypeSpec.anonymousClassBuilder("$N, $L, $L $L",
-                dbField, roomSQLiteQueryVar, inTransaction, tableNamesList).apply {
+        val spec = TypeSpec.anonymousClassBuilder(
+            "$N, $L, $L $L",
+            dbField, roomSQLiteQueryVar, inTransaction, tableNamesList
+        ).apply {
             superclass(typeName)
             addMethod(createConvertRowsMethod(scope))
         }.build()
@@ -57,17 +62,17 @@ class PositionalDataSourceQueryResultBinder(
     }
 
     private fun createConvertRowsMethod(scope: CodeGenScope): MethodSpec =
-            MethodSpec.methodBuilder("convertRows").apply {
-                addAnnotation(Override::class.java)
-                addModifiers(Modifier.PROTECTED)
-                returns(ParameterizedTypeName.get(CommonTypeNames.LIST, itemTypeName))
-                val cursorParam = ParameterSpec.builder(AndroidTypeNames.CURSOR, "cursor")
-                        .build()
-                addParameter(cursorParam)
-                val resultVar = scope.getTmpVar("_res")
-                val rowsScope = scope.fork()
-                listAdapter?.convert(resultVar, cursorParam.name, rowsScope)
-                addCode(rowsScope.builder().build())
-                addStatement("return $L", resultVar)
-            }.build()
+        MethodSpec.methodBuilder("convertRows").apply {
+            addAnnotation(Override::class.java)
+            addModifiers(Modifier.PROTECTED)
+            returns(ParameterizedTypeName.get(CommonTypeNames.LIST, itemTypeName))
+            val cursorParam = ParameterSpec.builder(AndroidTypeNames.CURSOR, "cursor")
+                .build()
+            addParameter(cursorParam)
+            val resultVar = scope.getTmpVar("_res")
+            val rowsScope = scope.fork()
+            listAdapter?.convert(resultVar, cursorParam.name, rowsScope)
+            addCode(rowsScope.builder().build())
+            addStatement("return $L", resultVar)
+        }.build()
 }

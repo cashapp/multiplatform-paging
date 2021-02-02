@@ -16,6 +16,11 @@
 
 package androidx.room.verifier
 
+import androidx.room.compiler.processing.XConstructorElement
+import androidx.room.compiler.processing.XElement
+import androidx.room.compiler.processing.XFieldElement
+import androidx.room.compiler.processing.XType
+import androidx.room.compiler.processing.XTypeElement
 import androidx.room.parser.Collate
 import androidx.room.parser.SQLTypeAffinity
 import androidx.room.parser.SqlParser
@@ -29,9 +34,11 @@ import androidx.room.vo.Entity
 import androidx.room.vo.Field
 import androidx.room.vo.FieldGetter
 import androidx.room.vo.FieldSetter
+import androidx.room.vo.Fields
 import androidx.room.vo.PrimaryKey
 import collect
 import columnNames
+import com.squareup.javapoet.TypeName
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.hasItem
@@ -44,13 +51,6 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import simpleRun
 import java.sql.Connection
-import javax.lang.model.element.Element
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.TypeElement
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.PrimitiveType
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
 
 @RunWith(Parameterized::class)
 class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
@@ -61,7 +61,8 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
             val stmt = verifier.connection.createStatement()
             val rs = stmt.executeQuery("select * from sqlite_master WHERE type='table'")
             assertThat(
-                    rs.collect { set -> set.getString("name") }, hasItem(`is`("User")))
+                rs.collect { set -> set.getString("name") }, hasItem(`is`("User"))
+            )
             val table = verifier.connection.prepareStatement("select * from User")
             assertThat(table.columnNames(), `is`(listOf("id", "name", "lastName", "ratio")))
 
@@ -70,77 +71,115 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
     }
 
     private fun createVerifier(invocation: TestInvocation): DatabaseVerifier {
-        val db = userDb(invocation.context)
-        return DatabaseVerifier.create(invocation.context, mock(Element::class.java),
-                db.entities, db.views)!!
+        val db = userDb(invocation)
+        return DatabaseVerifier.create(
+            invocation.context, mock(XElement::class.java),
+            db.entities, db.views
+        )!!
     }
 
     @Test
     fun testFullEntityQuery() {
         validQueryTest("select * from User") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             ColumnInfo("id", SQLTypeAffinity.INTEGER),
                             ColumnInfo("name", SQLTypeAffinity.TEXT),
                             ColumnInfo("lastName", SQLTypeAffinity.TEXT),
                             ColumnInfo("ratio", SQLTypeAffinity.REAL)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
     @Test
     fun testPartialFields() {
         validQueryTest("select id, lastName from User") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             ColumnInfo("id", SQLTypeAffinity.INTEGER),
                             ColumnInfo("lastName", SQLTypeAffinity.TEXT)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
     @Test
     fun testRenamedField() {
         validQueryTest("select id as myId, lastName from User") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             ColumnInfo("myId", SQLTypeAffinity.INTEGER),
                             ColumnInfo("lastName", SQLTypeAffinity.TEXT)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
     @Test
     fun testGrouped() {
         validQueryTest("select MAX(ratio) from User GROUP BY name") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             // unfortunately, we don't get this information
                             ColumnInfo("MAX(ratio)", SQLTypeAffinity.NULL)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
     @Test
     fun testConcat() {
         validQueryTest("select name || lastName as mergedName from User") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             // unfortunately, we don't get this information
                             ColumnInfo("mergedName", SQLTypeAffinity.NULL)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
     @Test
     fun testResultWithArgs() {
         validQueryTest("select id, name || lastName as mergedName from User where name LIKE ?") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             // unfortunately, we don't get this information
                             ColumnInfo("id", SQLTypeAffinity.INTEGER),
                             ColumnInfo("mergedName", SQLTypeAffinity.NULL)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
@@ -170,12 +209,18 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
     @Test
     fun testCollate() {
         validQueryTest("SELECT id, name FROM user ORDER BY name COLLATE LOCALIZED ASC") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             // unfortunately, we don't get this information
                             ColumnInfo("id", SQLTypeAffinity.INTEGER),
                             ColumnInfo("name", SQLTypeAffinity.TEXT)
-                    ))))
+                        )
+                    )
+                )
+            )
         }
     }
 
@@ -184,7 +229,8 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
         simpleRun { invocation ->
             val verifier = createVerifier(invocation)
             val (_, error) = verifier.analyze(
-                    "SELECT id, name FROM user ORDER BY name COLLATE LOCALIZEDASC")
+                "SELECT id, name FROM user ORDER BY name COLLATE LOCALIZEDASC"
+            )
             assertThat(error, notNullValue())
         }.compilesWithoutError()
     }
@@ -192,12 +238,17 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
     @Test
     fun testFullViewQuery() {
         validQueryTest("select * from UserSummary") {
-            assertThat(it, `is`(
-                    QueryResultInfo(listOf(
+            assertThat(
+                it,
+                `is`(
+                    QueryResultInfo(
+                        listOf(
                             ColumnInfo("id", SQLTypeAffinity.INTEGER),
                             ColumnInfo("name", SQLTypeAffinity.TEXT)
-                    ))
-            ))
+                        )
+                    )
+                )
+            )
         }
     }
 
@@ -206,10 +257,39 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
         simpleRun { invocation ->
             val verifier = createVerifier(invocation)
             val (_, error) = verifier.analyze(
-                    "SELECT ratio FROM UserSummary")
+                "SELECT ratio FROM UserSummary"
+            )
             assertThat(error, notNullValue())
             assertThat(error?.message, containsString("no such column: ratio"))
         }.compilesWithoutError()
+    }
+
+    @Test
+    fun defaultValue_exprError() {
+        simpleRun { invocation ->
+            val db = database(
+                listOf(
+                    entity(
+                        invocation,
+                        "User",
+                        field(
+                            "id",
+                            primitive(invocation.context, TypeName.INT),
+                            SQLTypeAffinity.INTEGER
+                        ),
+                        field(
+                            "name",
+                            invocation.context.COMMON_TYPES.STRING,
+                            SQLTypeAffinity.TEXT,
+                            defaultValue = "(NO_SUCH_CONSTANT)"
+                        )
+                    )
+                ),
+                emptyList()
+            )
+            val element = mock(XElement::class.java)
+            DatabaseVerifier.create(invocation.context, element, db.entities, db.views)!!
+        }.failsToCompile().withErrorContaining("default value of column [name]")
     }
 
     private fun validQueryTest(sql: String, cb: (QueryResultInfo) -> Unit) {
@@ -220,83 +300,106 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
         }.compilesWithoutError()
     }
 
-    private fun userDb(context: Context): Database {
+    private fun userDb(invocation: TestInvocation): Database {
+        val context = invocation.context
         return database(
-                listOf(entity("User",
-                        field("id", primitive(context, TypeKind.INT), SQLTypeAffinity.INTEGER),
-                        field("name", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT),
-                        field("lastName", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT),
-                        field("ratio", primitive(context, TypeKind.FLOAT), SQLTypeAffinity.REAL))),
-                listOf(view("UserSummary", "SELECT id, name FROM User",
-                        field("id", primitive(context, TypeKind.INT), SQLTypeAffinity.INTEGER),
-                        field("name", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT))))
+            listOf(
+                entity(
+                    invocation,
+                    "User",
+                    field("id", primitive(context, TypeName.INT), SQLTypeAffinity.INTEGER),
+                    field("name", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT),
+                    field("lastName", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT),
+                    field("ratio", primitive(context, TypeName.FLOAT), SQLTypeAffinity.REAL)
+                )
+            ),
+            listOf(
+                view(
+                    "UserSummary", "SELECT id, name FROM User",
+                    field("id", primitive(context, TypeName.INT), SQLTypeAffinity.INTEGER),
+                    field("name", context.COMMON_TYPES.STRING, SQLTypeAffinity.TEXT)
+                )
+            )
+        )
     }
 
     private fun database(entities: List<Entity>, views: List<DatabaseView>): Database {
         return Database(
-                element = mock(TypeElement::class.java),
-                type = mock(TypeMirror::class.java),
-                entities = entities,
-                views = views,
-                daoMethods = emptyList(),
-                version = -1,
-                exportSchema = false,
-                enableForeignKeys = false)
+            element = mock(XTypeElement::class.java),
+            type = mock(XType::class.java),
+            entities = entities,
+            views = views,
+            daoMethods = emptyList(),
+            version = -1,
+            exportSchema = false,
+            enableForeignKeys = false
+        )
     }
 
-    private fun entity(tableName: String, vararg fields: Field): Entity {
+    private fun entity(
+        invocation: TestInvocation,
+        tableName: String,
+        vararg fields: Field
+    ): Entity {
+        val element = invocation.processingEnv.requireTypeElement("NoOp")
         return Entity(
-                element = mock(TypeElement::class.java),
-                tableName = tableName,
-                type = mock(DeclaredType::class.java),
-                fields = fields.toList(),
-                embeddedFields = emptyList(),
-                indices = emptyList(),
-                primaryKey = PrimaryKey(null, fields.take(1), false),
-                foreignKeys = emptyList(),
-                constructor = Constructor(mock(ExecutableElement::class.java), emptyList()),
-                shadowTableName = null
+            element = element,
+            tableName = tableName,
+            type = mock(XType::class.java),
+            fields = fields.toList(),
+            embeddedFields = emptyList(),
+            indices = emptyList(),
+            primaryKey = PrimaryKey(null, Fields(fields.take(1)), false),
+            foreignKeys = emptyList(),
+            constructor = Constructor(mock(XConstructorElement::class.java), emptyList()),
+            shadowTableName = null
         )
     }
 
     private fun view(viewName: String, query: String, vararg fields: Field): DatabaseView {
         return DatabaseView(
-                element = mock(TypeElement::class.java),
-                viewName = viewName,
-                type = mock(DeclaredType::class.java),
-                fields = fields.toList(),
-                embeddedFields = emptyList(),
-                query = SqlParser.parse(query),
-                constructor = Constructor(mock(ExecutableElement::class.java), emptyList())
+            element = mock(XTypeElement::class.java),
+            viewName = viewName,
+            type = mock(XType::class.java),
+            fields = fields.toList(),
+            embeddedFields = emptyList(),
+            query = SqlParser.parse(query),
+            constructor = Constructor(mock(XConstructorElement::class.java), emptyList())
         )
     }
 
-    private fun field(name: String, type: TypeMirror, affinity: SQLTypeAffinity): Field {
-        val element = mock(Element::class.java)
-        doReturn(type).`when`(element).asType()
+    private fun field(
+        name: String,
+        type: XType,
+        affinity: SQLTypeAffinity,
+        defaultValue: String? = null
+    ): Field {
+        val element = mock(XFieldElement::class.java)
+        doReturn(type).`when`(element).type
         val f = Field(
-                element = element,
-                name = name,
-                type = type,
-                columnName = name,
-                affinity = affinity,
-                collate = if (useLocalizedCollation && affinity == SQLTypeAffinity.TEXT) {
-                    Collate.LOCALIZED
-                } else {
-                    null
-                }
+            element = element,
+            name = name,
+            type = type,
+            columnName = name,
+            affinity = affinity,
+            collate = if (useLocalizedCollation && affinity == SQLTypeAffinity.TEXT) {
+                Collate.LOCALIZED
+            } else {
+                null
+            },
+            defaultValue = defaultValue
         )
         assignGetterSetter(f, name, type)
         return f
     }
 
-    private fun assignGetterSetter(f: Field, name: String, type: TypeMirror) {
+    private fun assignGetterSetter(f: Field, name: String, type: XType) {
         f.getter = FieldGetter(name, type, CallType.FIELD)
         f.setter = FieldSetter(name, type, CallType.FIELD)
     }
 
-    private fun primitive(context: Context, kind: TypeKind): PrimitiveType {
-        return context.processingEnv.typeUtils.getPrimitiveType(kind)
+    private fun primitive(context: Context, typeName: TypeName): XType {
+        return context.processingEnv.requireType(typeName)
     }
 
     private fun getPrimaryKeys(connection: Connection, tableName: String): List<String> {
@@ -305,9 +408,9 @@ class DatabaseVerifierTest(private val useLocalizedCollation: Boolean) {
         return resultSet.collect {
             Pair(it.getString("name"), it.getInt("pk"))
         }
-                .filter { it.second > 0 }
-                .sortedBy { it.second }
-                .map { it.first }
+            .filter { it.second > 0 }
+            .sortedBy { it.second }
+            .map { it.first }
     }
 
     companion object {

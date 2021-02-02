@@ -209,6 +209,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
             RecyclerView mAttachedRv;
 
             @Override
+            @SuppressWarnings("deprecated") // using this for kitkat tests
             public TestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TestViewHolder testViewHolder = super.onCreateViewHolder(parent, viewType);
                 // Good to have colors for debugging
@@ -216,7 +217,6 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 stl.addState(new int[]{android.R.attr.state_focused},
                         new ColorDrawable(Color.RED));
                 stl.addState(StateSet.WILD_CARD, new ColorDrawable(Color.BLUE));
-                //noinspection deprecation used to support kitkat tests
                 testViewHolder.itemView.setBackgroundDrawable(stl);
                 return testViewHolder;
             }
@@ -295,6 +295,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
             RecyclerView mAttachedRv;
 
             @Override
+            @SuppressWarnings("deprecated") // using this for kitkat tests
             public TestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TestViewHolder testViewHolder = super.onCreateViewHolder(parent, viewType);
                 // Good to have colors for debugging
@@ -302,7 +303,6 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 stl.addState(new int[]{android.R.attr.state_focused},
                         new ColorDrawable(Color.RED));
                 stl.addState(StateSet.WILD_CARD, new ColorDrawable(Color.BLUE));
-                //noinspection deprecation used to support kitkat tests
                 testViewHolder.itemView.setBackgroundDrawable(stl);
                 return testViewHolder;
             }
@@ -375,11 +375,19 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
         final int visibleChildCount = 5;
         final int consecutiveFocusablesCount = 2;
         final int consecutiveUnFocusablesCount = 18;
+        final int childWidth = 250;
+        final int childHeight = 1000;
+        // Parent width is 1 more than 4 times child width, so when focusable child is 1 pixel on
+        // screen 4 non-focusable children can fit on screen.
+        final int parentWidth = childWidth * 4 + 1;
+        final int parentHeight = childHeight;
         final TestAdapter adapter = new TestAdapter(
-                consecutiveFocusablesCount + consecutiveUnFocusablesCount) {
+                consecutiveFocusablesCount + consecutiveUnFocusablesCount,
+                new RecyclerView.LayoutParams(childWidth, childHeight)) {
             RecyclerView mAttachedRv;
 
             @Override
+            @SuppressWarnings("deprecated") // using this for kitkat tests
             public TestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TestViewHolder testViewHolder = super.onCreateViewHolder(parent, viewType);
                 // Good to have colors for debugging
@@ -387,7 +395,6 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 stl.addState(new int[]{android.R.attr.state_focused},
                         new ColorDrawable(Color.RED));
                 stl.addState(StateSet.WILD_CARD, new ColorDrawable(Color.BLUE));
-                //noinspection deprecation used to support kitkat tests
                 testViewHolder.itemView.setBackgroundDrawable(stl);
                 return testViewHolder;
             }
@@ -415,7 +422,9 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
             }
         };
         setupByConfig(new Config(HORIZONTAL, false, false).adapter(adapter).reverseLayout(true),
-                false);
+                false,
+                null,
+                new RecyclerView.LayoutParams(parentWidth, parentHeight));
         waitForFirstLayout();
 
         // adapter position of the currently focused item.
@@ -461,11 +470,19 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
         final int visibleChildCount = 5;
         final int consecutiveFocusablesCount = 2;
         final int consecutiveUnFocusablesCount = 18;
+        final int childWidth = 250;
+        final int childHeight = 1000;
+        // Parent width is 1 more than 4 times child width, so when focusable child is 1 pixel on
+        // screen 4 non-focusable children can fit on screen.
+        final int parentWidth = childWidth * 4 + 1;
+        final int parentHeight = childHeight;
         final TestAdapter adapter = new TestAdapter(
-                consecutiveFocusablesCount + consecutiveUnFocusablesCount) {
+                consecutiveFocusablesCount + consecutiveUnFocusablesCount,
+                new RecyclerView.LayoutParams(childWidth, childHeight)) {
             RecyclerView mAttachedRv;
 
             @Override
+            @SuppressWarnings("deprecated") // using this for kitkat tests
             public TestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TestViewHolder testViewHolder = super.onCreateViewHolder(parent, viewType);
                 // Good to have colors for debugging
@@ -473,7 +490,6 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 stl.addState(new int[]{android.R.attr.state_focused},
                         new ColorDrawable(Color.RED));
                 stl.addState(StateSet.WILD_CARD, new ColorDrawable(Color.BLUE));
-                //noinspection deprecation used to support kitkat tests
                 testViewHolder.itemView.setBackgroundDrawable(stl);
                 return testViewHolder;
             }
@@ -500,7 +516,10 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                         + mAttachedRv.getWidth() / (2 * visibleChildCount)) / visibleChildCount);
             }
         };
-        setupByConfig(new Config(HORIZONTAL, false, false).adapter(adapter), false);
+        setupByConfig(new Config(HORIZONTAL, false, false).adapter(adapter),
+                false,
+                null,
+                new RecyclerView.LayoutParams(parentWidth, parentHeight));
         waitForFirstLayout();
 
         // adapter position of the currently focused item.
@@ -557,6 +576,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
             RecyclerView mAttachedRv;
 
             @Override
+            @SuppressWarnings("deprecated") // using this for kitkat tests
             public TestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 TestViewHolder testViewHolder = super.onCreateViewHolder(parent, viewType);
                 // Good to have colors for debugging
@@ -564,7 +584,6 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 stl.addState(new int[]{android.R.attr.state_focused},
                         new ColorDrawable(Color.RED));
                 stl.addState(StateSet.WILD_CARD, new ColorDrawable(Color.BLUE));
-                //noinspection deprecation used to support kitkat tests
                 testViewHolder.itemView.setBackgroundDrawable(stl);
                 return testViewHolder;
             }
@@ -753,14 +772,14 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
         for (int i = 0; i < childCount; i++) {
             View child = mLayoutManager.getChildAt(i);
             RecyclerView.ViewHolder holder = mRecyclerView.getChildViewHolder(child);
-            if (holder.getAdapterPosition() == removePos) {
+            if (holder.getAbsoluteAdapterPosition() == removePos) {
                 toBeRemoved = holder;
             } else {
                 toBeMoved.add(holder);
             }
         }
-        assertNotNull("test sanity", toBeRemoved);
-        assertEquals("test sanity", childCount - 1, toBeMoved.size());
+        assertNotNull("Assumption check", toBeRemoved);
+        assertEquals("Assumption check", childCount - 1, toBeMoved.size());
         LoggingItemAnimator loggingItemAnimator = new LoggingItemAnimator();
         mRecyclerView.setItemAnimator(loggingItemAnimator);
         loggingItemAnimator.reset();
@@ -851,8 +870,8 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
         adapter.setHasStableIds(false);
         config.adapter(adapter);
         setupByConfig(config, true);
-        // Using DummyItemAnimator so we must end all animations manually at the end of the test.
-        final DummyItemAnimator itemAnimator = new DummyItemAnimator();
+        // Using ItemAnimatorDouble so we must end all animations manually at the end of the test.
+        final ItemAnimatorTestDouble itemAnimator = new ItemAnimatorTestDouble();
         mRecyclerView.setItemAnimator(itemAnimator);
 
         // push last item out by increasing first item's size
@@ -864,7 +883,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
         assertTrue(ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_AUTO == originalAccessibility
                 || ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_YES == originalAccessibility);
 
-        itemAnimator.expect(DummyItemAnimator.MOVE_START, 1);
+        itemAnimator.expect(ItemAnimatorTestDouble.MOVE_START, 1);
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -873,7 +892,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
             }
         });
         // wait till itemAnimator starts which will block itemView's accessibility
-        itemAnimator.waitFor(DummyItemAnimator.MOVE_START);
+        itemAnimator.waitFor(ItemAnimatorTestDouble.MOVE_START);
         // RV Changes accessiblity after onMoveStart, so wait one more cycle.
         waitOneCycle();
         assertTrue(itemAnimator.getMovesAnimations().contains(itemViewHolder));
@@ -909,30 +928,30 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
     }
 
     @Test
-    public void layoutFrozenBug70402422() throws Throwable {
+    public void layoutSuppressedBug70402422() throws Throwable {
         final Config config = new Config();
         TestAdapter adapter = new TestAdapter(2);
         adapter.setHasStableIds(false);
         config.adapter(adapter);
         setupByConfig(config, true);
-        // Using DummyItemAnimator so we must end all animations manually at the end of the test.
-        final DummyItemAnimator itemAnimator = new DummyItemAnimator();
+        // Using ItemAnimatorDouble so we must end all animations manually at the end of the test.
+        final ItemAnimatorTestDouble itemAnimator = new ItemAnimatorTestDouble();
         mRecyclerView.setItemAnimator(itemAnimator);
 
         final View firstItemView = mRecyclerView
                 .findViewHolderForAdapterPosition(0).itemView;
 
-        itemAnimator.expect(DummyItemAnimator.REMOVE_START, 1);
+        itemAnimator.expect(ItemAnimatorTestDouble.REMOVE_START, 1);
         mTestAdapter.deleteAndNotify(1, 1);
-        itemAnimator.waitFor(DummyItemAnimator.REMOVE_START);
+        itemAnimator.waitFor(ItemAnimatorTestDouble.REMOVE_START);
 
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.setLayoutFrozen(true);
+                mRecyclerView.suppressLayout(true);
             }
         });
-        // requestLayout during item animation, which should be eaten by setLayoutFrozen(true)
+        // requestLayout during item animation, which should be eaten by suppressLayout(true)
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -947,13 +966,13 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                 itemAnimator.endAnimations();
             }
         });
-        // When setLayoutFrozen(false), the firstItemView should run a layout pass and clear
+        // When suppressLayout(false), the firstItemView should run a layout pass and clear
         // isLayoutRequested() flag.
         mLayoutManager.expectLayouts(1);
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.setLayoutFrozen(false);
+                mRecyclerView.suppressLayout(false);
             }
         });
         mLayoutManager.waitForLayout(1);
@@ -1061,7 +1080,7 @@ public class LinearLayoutManagerTest extends BaseLinearLayoutManagerTest {
                     helper.getStartAfterPadding();
             endMargin = helper.getEndAfterPadding() -
                     helper.getDecoratedEnd(vh.itemView);
-            assertTrue("test sanity, view should not be fully visible", startMargin < 0
+            assertTrue("Assumption check, view should not be fully visible", startMargin < 0
                     || endMargin < 0);
         }
 

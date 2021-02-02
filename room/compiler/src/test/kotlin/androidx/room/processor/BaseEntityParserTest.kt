@@ -21,11 +21,11 @@ import androidx.room.Embedded
 import androidx.room.testing.TestInvocation
 import androidx.room.testing.TestProcessor
 import androidx.room.vo.Entity
-import com.google.auto.common.MoreElements
 import com.google.common.truth.Truth
 import com.google.testing.compile.CompileTester
 import com.google.testing.compile.JavaFileObjects
 import com.google.testing.compile.JavaSourcesSubjectFactory
+import java.io.File
 import javax.tools.JavaFileObject
 
 abstract class BaseEntityParserTest {
@@ -46,7 +46,7 @@ abstract class BaseEntityParserTest {
         attributes: Map<String, String> = mapOf(),
         baseClass: String = "",
         jfos: List<JavaFileObject> = emptyList(),
-        classLoader: ClassLoader = javaClass.classLoader,
+        classpathFiles: Set<File> = emptySet(),
         handler: (Entity, TestInvocation) -> Unit
     ): CompileTester {
         val attributesReplacement: String
@@ -54,8 +54,8 @@ abstract class BaseEntityParserTest {
             attributesReplacement = ""
         } else {
             attributesReplacement = "(" +
-                    attributes.entries.joinToString(",") { "${it.key} = ${it.value}" } +
-                    ")".trimIndent()
+                attributes.entries.joinToString(",") { "${it.key} = ${it.value}" } +
+                ")".trimIndent()
         }
         val baseClassReplacement: String
         if (baseClass == "") {
@@ -64,29 +64,44 @@ abstract class BaseEntityParserTest {
             baseClassReplacement = " extends $baseClass"
         }
         return Truth.assertAbout(JavaSourcesSubjectFactory.javaSources())
-                .that(jfos + JavaFileObjects.forSourceString("foo.bar.MyEntity",
-                        ENTITY_PREFIX.format(attributesReplacement, baseClassReplacement) +
-                                input + ENTITY_SUFFIX
-                ))
-                .withClasspathFrom(classLoader)
-                .processedWith(TestProcessor.builder()
-                        .forAnnotations(androidx.room.Entity::class,
-                                androidx.room.PrimaryKey::class,
-                                androidx.room.Ignore::class,
-                                Embedded::class,
-                                androidx.room.ColumnInfo::class,
-                                NonNull::class)
-                        .nextRunHandler { invocation ->
-                            val entity = invocation.roundEnv
-                                    .getElementsAnnotatedWith(
-                                            androidx.room.Entity::class.java)
-                                    .first { it.toString() == "foo.bar.MyEntity" }
-                            val parser = TableEntityProcessor(invocation.context,
-                                    MoreElements.asType(entity))
-                            val parsedQuery = parser.process()
-                            handler(parsedQuery, invocation)
-                            true
-                        }
-                        .build())
+            .that(
+                jfos + JavaFileObjects.forSourceString(
+                    "foo.bar.MyEntity",
+                    ENTITY_PREFIX.format(attributesReplacement, baseClassReplacement) +
+                        input + ENTITY_SUFFIX
+                )
+            )
+            .apply {
+                if (classpathFiles.isNotEmpty()) {
+                    withClasspath(classpathFiles)
+                }
+            }
+            .processedWith(
+                TestProcessor.builder()
+                    .forAnnotations(
+                        java.lang.SuppressWarnings::class,
+                        androidx.room.Entity::class,
+                        androidx.room.PrimaryKey::class,
+                        androidx.room.Ignore::class,
+                        Embedded::class,
+                        androidx.room.ColumnInfo::class,
+                        NonNull::class
+                    )
+                    .nextRunHandler { invocation ->
+                        val entity = invocation.roundEnv
+                            .getTypeElementsAnnotatedWith(
+                                androidx.room.Entity::class.java
+                            )
+                            .first { it.toString() == "foo.bar.MyEntity" }
+                        val parser = TableEntityProcessor(
+                            invocation.context,
+                            entity
+                        )
+                        val parsedQuery = parser.process()
+                        handler(parsedQuery, invocation)
+                        true
+                    }
+                    .build()
+            )
     }
 }

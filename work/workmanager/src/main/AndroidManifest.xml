@@ -21,6 +21,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application>
         <provider
@@ -43,6 +44,12 @@
             android:enabled="@bool/enable_system_job_service_default"
             android:directBootAware="false"
             tools:targetApi="n"/>
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:directBootAware="false"
+            android:enabled="@bool/enable_system_foreground_service_default"
+            tools:targetApi="n"/>
         <receiver
             android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
             android:enabled="true"
@@ -52,6 +59,7 @@
         <receiver
             android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
             android:enabled="false"
+            android:exported="false"
             android:directBootAware="false"
             tools:targetApi="n">
             <intent-filter>
@@ -62,6 +70,7 @@
         <receiver
             android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
             android:enabled="false"
+            android:exported="false"
             android:directBootAware="false"
             tools:targetApi="n">
             <intent-filter>
@@ -72,6 +81,7 @@
         <receiver
             android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
             android:enabled="false"
+            android:exported="false"
             android:directBootAware="false"
             tools:targetApi="n">
             <intent-filter>
@@ -82,6 +92,7 @@
         <receiver
             android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
             android:enabled="false"
+            android:exported="false"
             android:directBootAware="false"
             tools:targetApi="n">
             <intent-filter>
@@ -91,6 +102,7 @@
         <receiver
             android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
             android:enabled="false"
+            android:exported="false"
             android:directBootAware="false"
             tools:targetApi="n">
             <intent-filter>
@@ -107,6 +119,17 @@
             tools:targetApi="n">
             <intent-filter>
                 <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".impl.diagnostics.DiagnosticsReceiver"
+            android:directBootAware="false"
+            android:enabled="true"
+            android:exported="true"
+            tools:targetApi="n"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
             </intent-filter>
         </receiver>
     </application>

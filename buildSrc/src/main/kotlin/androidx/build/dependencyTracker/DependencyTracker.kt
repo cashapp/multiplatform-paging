@@ -29,38 +29,41 @@ internal class DependencyTracker constructor(
     private val rootProject: Project,
     private val logger: Logger?
 ) {
-    private val dependantList: Map<Project, Set<Project>> by lazy {
+    private val dependentList: Map<Project, Set<Project>> by lazy {
         val result = mutableMapOf<Project, MutableSet<Project>>()
         rootProject.subprojects.forEach { project ->
             logger?.info("checking ${project.path} for dependencies")
             project.configurations.forEach { config ->
                 logger?.info("checking config ${project.path}/$config for dependencies")
                 config
-                        .dependencies
-                        .filterIsInstance(ProjectDependency::class.java)
-                        .forEach {
-                            logger?.info("there is a dependency from ${project.path} to " +
-                                    it.dependencyProject.path)
-                            result.getOrPut(it.dependencyProject) { mutableSetOf() }
-                                    .add(project)
-                        }
+                    .dependencies
+                    .filterIsInstance(ProjectDependency::class.java)
+                    .forEach {
+                        logger?.info(
+                            "there is a dependency from ${project.path} to " +
+                                it.dependencyProject.path
+                        )
+                        result.getOrPut(it.dependencyProject) { mutableSetOf() }
+                            .add(project)
+                    }
             }
         }
         result
     }
 
-    fun findAllDependants(project: Project): Set<Project> {
-        logger?.info("finding dependants of ${project.path}")
+    fun findAllDependents(project: Project): Set<Project> {
+        logger?.info("finding dependents of ${project.path}")
         val result = mutableSetOf<Project>()
-        fun addAllDependants(project: Project) {
+        fun addAllDependents(project: Project) {
             if (result.add(project)) {
-                dependantList[project]?.forEach(::addAllDependants)
+                dependentList[project]?.forEach(::addAllDependents)
             }
         }
-        addAllDependants(project)
-        logger?.info("dependants of ${project.path} is ${result.map {
-            it.path
-        }}")
-        return result
+        addAllDependents(project)
+        logger?.info(
+            "dependents of ${project.path} is ${result.map { it.path }}"
+        )
+        // the project isn't a dependent of itself
+        return result.minus(project)
     }
 }

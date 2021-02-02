@@ -17,6 +17,7 @@
 package androidx.room.integration.testapp.test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -41,17 +42,22 @@ import androidx.room.integration.testapp.dao.UserDao;
 import androidx.room.integration.testapp.dao.UserPetDao;
 import androidx.room.integration.testapp.vo.BlobEntity;
 import androidx.room.integration.testapp.vo.Day;
+import androidx.room.integration.testapp.vo.IdUsername;
 import androidx.room.integration.testapp.vo.NameAndLastName;
 import androidx.room.integration.testapp.vo.Pet;
 import androidx.room.integration.testapp.vo.Product;
 import androidx.room.integration.testapp.vo.User;
 import androidx.room.integration.testapp.vo.UserAndAllPets;
-import androidx.test.InstrumentationRegistry;
+import androidx.room.integration.testapp.vo.UserSummary;
+import androidx.room.integration.testapp.vo.Username;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +67,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -76,7 +83,7 @@ public class SimpleEntityReadWriteTest {
 
     @Before
     public void createDb() {
-        Context context = InstrumentationRegistry.getTargetContext();
+        Context context = ApplicationProvider.getApplicationContext();
         TestDatabase db = Room.inMemoryDatabaseBuilder(context, TestDatabase.class).build();
         mUserDao = db.getUserDao();
         mPetDao = db.getPetDao();
@@ -210,6 +217,16 @@ public class SimpleEntityReadWriteTest {
     }
 
     @Test
+    public void updateUsingPartialEntity() {
+        User user = TestUtil.createUser(3);
+        mUserDao.insert(user);
+        user.setName("i am an updated name");
+        IdUsername name = new IdUsername(3, "i am an updated name");
+        assertThat(mUserDao.updateUsername(name), is(1));
+        assertThat(mUserDao.load(user.getId()), equalTo(user));
+    }
+
+    @Test
     public void updateNonExisting() {
         User user = TestUtil.createUser(3);
         mUserDao.insert(user);
@@ -255,6 +272,16 @@ public class SimpleEntityReadWriteTest {
     }
 
     @Test
+    public void deleteUsingPartialEntity() {
+        User user = TestUtil.createUser(3);
+        mUserDao.insert(user);
+        Username name = new Username(user.getName());
+        assertThat(mUserDao.deleteViaUsername(name), is(1));
+        assertThat(mUserDao.deleteViaUsername(name), is(0));
+        assertThat(mUserDao.load(3), is(nullValue()));
+    }
+
+    @Test
     public void deleteAll() {
         User[] users = TestUtil.createUsersArray(3, 5, 7, 9);
         mUserDao.insertAll(users);
@@ -264,6 +291,17 @@ public class SimpleEntityReadWriteTest {
         int deleteCount = mUserDao.deleteAll(new User[]{users[0], users[3],
                 TestUtil.createUser(9)});
         assertThat(deleteCount, is(2));
+        assertThat(mUserDao.loadByIds(3, 5, 7, 9), is(new User[]{users[1], users[2]}));
+    }
+
+    @Test
+    public void deleteUser() {
+        User[] users = TestUtil.createUsersArray(3, 5, 7, 9);
+        mUserDao.insertAll(users);
+        assertThat(mUserDao.loadByIds(3, 5, 7, 9), is(users));
+        // Using the void return value version of delete
+        mUserDao.deleteUser(new User[]{users[0], users[3],
+                TestUtil.createUser(9)});
         assertThat(mUserDao.loadByIds(3, 5, 7, 9), is(new User[]{users[1], users[2]}));
     }
 
@@ -468,8 +506,21 @@ public class SimpleEntityReadWriteTest {
         mBlobEntityDao.insert(b);
         List<BlobEntity> list = mBlobEntityDao.selectAll();
         assertThat(list, hasSize(2));
+        ImmutableList<BlobEntity> immutableList = mBlobEntityDao.selectAllImmutable();
+        assertThat(immutableList, hasSize(2));
         mBlobEntityDao.updateContent(2, "ghi".getBytes(Charsets.UTF_8));
         assertThat(mBlobEntityDao.getContent(2), is(equalTo("ghi".getBytes(Charsets.UTF_8))));
+    }
+
+    @Test
+    public void blobImmutable() {
+        BlobEntity a = new BlobEntity(1, "abc".getBytes(Charsets.UTF_8));
+        BlobEntity b = new BlobEntity(2, "def".getBytes(Charsets.UTF_8));
+        mBlobEntityDao.insert(a);
+        mBlobEntityDao.insert(b);
+        ImmutableList<BlobEntity> immutableList = mBlobEntityDao.selectAllImmutable();
+        assertThat(immutableList, hasSize(2));
+        assertThat(immutableList.get(1).content, is(equalTo("def".getBytes(Charsets.UTF_8))));
     }
 
     @Test
@@ -626,6 +677,68 @@ public class SimpleEntityReadWriteTest {
         List<User> monday = mUserDao.findUsersByWorkDays(toSet(Day.MONDAY));
         assertThat(monday, is(Arrays.asList(user1, user2)));
 
+    }
+
+    @Test
+    public void subquery() {
+        User user = TestUtil.createUser(3);
+        user.setName("john");
+        mUserDao.insert(user);
+        List<UserSummary> users = mUserDao.getNames();
+        assertThat(users, hasSize(1));
+        assertThat(users.get(0).getName(), is(equalTo("john")));
+    }
+
+    @Test
+    public void queryByCollection() {
+        User[] users = TestUtil.createUsersArray(3, 5, 7, 9);
+        mUserDao.insertAll(users);
+        List<Integer> ids = Arrays.asList(3, 5, 7, 9);
+        List<User> loadedUsers = mUserDao.loadByIdCollection(ids);
+        assertThat(loadedUsers, hasSize(4));
+        assertThat(loadedUsers, hasItems(users));
+    }
+
+    @Test
+    public void queryByQueue() {
+        User[] users = TestUtil.createUsersArray(3, 5, 7, 9);
+        mUserDao.insertAll(users);
+        LinkedList<Integer> ids = new LinkedList<>(Arrays.asList(3, 5, 7, 9));
+        List<User> loadedUsers = mUserDao.loadByIdQueue(ids);
+        assertThat(loadedUsers, hasSize(4));
+        assertThat(loadedUsers, hasItems(users));
+    }
+
+    @Test
+    public void queryBySet() {
+        User[] users = TestUtil.createUsersArray(3, 5, 7, 9);
+        mUserDao.insertAll(users);
+        HashSet<Integer> ids = new HashSet<>(Arrays.asList(3, 5, 7, 9));
+        List<User> loadedUsers = mUserDao.loadByIdSet(ids);
+        assertThat(loadedUsers, hasSize(4));
+        assertThat(loadedUsers, hasItems(users));
+    }
+
+    @Test
+    public void updateQuery() {
+        User user1 = TestUtil.createUser(1);
+        mUserDao.insert(user1);
+        mUserDao.setSameNames("same", 1);
+        User result = mUserDao.load(1);
+        assertThat(result.getName(), is("same"));
+        assertThat(result.getLastName(), is("same"));
+    }
+
+    @Test
+    public void projectionWithTablePrefix() {
+        User user1 = TestUtil.createUser(1);
+        mUserDao.insert(user1);
+        List<NameAndLastName> read = mUserDao.selectByName_withTablePrefixAndUnion(user1.getName());
+        NameAndLastName expected = new NameAndLastName(
+                user1.getName(),
+                user1.getLastName()
+        );
+        assertThat(read, CoreMatchers.equalTo(Arrays.asList(expected)));
     }
 
     private Set<Day> toSet(Day... days) {

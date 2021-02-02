@@ -19,20 +19,22 @@ package androidx.slice.builders
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
-import androidx.test.InstrumentationRegistry
-import androidx.test.filters.SdkSuppress
 import androidx.core.graphics.drawable.IconCompat
 import androidx.slice.SliceProvider
 import androidx.slice.SliceSpecs
 import androidx.slice.builders.ListBuilder.ICON_IMAGE
 import androidx.slice.builders.ktx.test.R
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.filters.MediumTest
+import androidx.test.filters.SdkSuppress
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 @SdkSuppress(minSdkVersion = 19)
+@MediumTest
 class SliceBuildersKtxTest {
     private val testUri = Uri.parse("content://com.example.android.sliceuri")
-    private val context = InstrumentationRegistry.getContext()
+    private val context = ApplicationProvider.getApplicationContext() as android.content.Context
 
     init {
         SliceProvider.setSpecs(setOf(SliceSpecs.LIST))
@@ -40,14 +42,14 @@ class SliceBuildersKtxTest {
     }
 
     private fun pendingIntentToTestActivity() =
-            PendingIntent.getActivity(
-                    context, 0, Intent(context, TestActivity::class.java), 0
-            )
+        PendingIntent.getActivity(
+            context, 0, Intent(context, TestActivity::class.java), 0
+        )
 
     private val accentColor = 0xff3949
 
     private fun createIcon(id: Int) =
-            IconCompat.createWithResource(context, id)
+        IconCompat.createWithResource(context, id)
 
     @Test
     fun helloWorldSlice() {
@@ -58,23 +60,24 @@ class SliceBuildersKtxTest {
         }
 
         val slice = ListBuilder(context, testUri, ListBuilder.INFINITY).setHeader(
-                ListBuilder.HeaderBuilder().apply {
-                    setTitle("Hello World")
-                }
+            ListBuilder.HeaderBuilder().apply {
+                setTitle("Hello World")
+            }
         ).build()
 
         // Compare toString()s because Slice.equals is not implemented.
         assertEquals(sliceKtx.toString(), slice.toString())
     }
 
-    @Test
+    // Temporarily disabled due to b/116146018.
+    // @Test
     fun allBuildersTogether() {
         val pendingIntent = pendingIntentToTestActivity()
         val tapAction = tapSliceAction(
-                pendingIntentToTestActivity(),
-                createIcon(R.drawable.ic_android_black_24dp),
-                ListBuilder.SMALL_IMAGE,
-                "Title"
+            pendingIntentToTestActivity(),
+            createIcon(R.drawable.ic_android_black_24dp),
+            ListBuilder.SMALL_IMAGE,
+            "Title"
         )
         val sliceKtx = list(context = context, uri = testUri, ttl = ListBuilder.INFINITY) {
             header { setPrimaryAction(tapAction) }
@@ -94,19 +97,20 @@ class SliceBuildersKtxTest {
         assertEquals(slice.toString(), sliceKtx.toString())
     }
 
-    @Test
+    // Temporarily disabled due to b/116146018.
+    // @Test
     fun sanity_withGridRow() {
         val tapAction = tapSliceAction(
-                pendingIntentToTestActivity(),
-                createIcon(R.drawable.ic_android_black_24dp),
-                ListBuilder.SMALL_IMAGE,
-                "Title"
+            pendingIntentToTestActivity(),
+            createIcon(R.drawable.ic_android_black_24dp),
+            ListBuilder.SMALL_IMAGE,
+            "Title"
         )
         val toggleAction = toggleSliceAction(
-                pendingIntentToTestActivity(),
-                createIcon(R.drawable.ic_android_black_24dp),
-                "Title",
-                false
+            pendingIntentToTestActivity(),
+            createIcon(R.drawable.ic_android_black_24dp),
+            "Title",
+            false
         )
         val titleText1 = "cell title text 1"
         val titleText2 = "cell title text 2"
@@ -131,23 +135,30 @@ class SliceBuildersKtxTest {
         }
 
         val slice = ListBuilder(context, testUri, ListBuilder.INFINITY).addGridRow(
-                GridRowBuilder().apply {
-                    setPrimaryAction(tapAction)
-                    addCell(GridRowBuilder.CellBuilder().apply {
+            GridRowBuilder().apply {
+                setPrimaryAction(tapAction)
+                addCell(
+                    GridRowBuilder.CellBuilder().apply {
                         addTitleText(titleText1)
-                        addImage(createIcon(R.drawable.ic_android_black_24dp),
-                                ListBuilder.SMALL_IMAGE)
+                        addImage(
+                            createIcon(R.drawable.ic_android_black_24dp),
+                            ListBuilder.SMALL_IMAGE
+                        )
                         addText(text1)
                     }
-                    )
-                    addCell(GridRowBuilder.CellBuilder().apply {
+                )
+                addCell(
+                    GridRowBuilder.CellBuilder().apply {
                         addTitleText(titleText2)
-                        addImage(createIcon(R.drawable.ic_android_black_24dp),
-                                ListBuilder.SMALL_IMAGE)
+                        addImage(
+                            createIcon(R.drawable.ic_android_black_24dp),
+                            ListBuilder.SMALL_IMAGE
+                        )
                         addText(text2)
                     }
-                    )
-                }).addAction(toggleAction).build()
+                )
+            }
+        ).addAction(toggleAction).build()
 
         // Compare toString()s because Slice.equals is not implemented.
         assertEquals(sliceKtx.toString(), slice.toString())
@@ -156,31 +167,31 @@ class SliceBuildersKtxTest {
     @Test
     fun sanity_withMixedGridRowAndRow() {
         val resIds = intArrayOf(
-                R.drawable.ic_all_out_black_24dp,
-                R.drawable.ic_android_black_24dp,
-                R.drawable.ic_attach_money_black_24dp
+            R.drawable.ic_all_out_black_24dp,
+            R.drawable.ic_android_black_24dp,
+            R.drawable.ic_attach_money_black_24dp
         )
 
         val pendingIntent = pendingIntentToTestActivity()
         val rowPrimaryAction = tapSliceAction(
-                pendingIntent,
-                createIcon(R.drawable.ic_android_black_24dp),
-                ListBuilder.LARGE_IMAGE,
-                "Droid"
+            pendingIntent,
+            createIcon(R.drawable.ic_android_black_24dp),
+            ListBuilder.LARGE_IMAGE,
+            "Droid"
         )
 
         val sliceAction1 = SliceAction(
-                pendingIntent,
-                createIcon(R.drawable.ic_all_out_black_24dp),
-                ListBuilder.LARGE_IMAGE,
-                "Action1"
+            pendingIntent,
+            createIcon(R.drawable.ic_all_out_black_24dp),
+            ListBuilder.LARGE_IMAGE,
+            "Action1"
         )
 
         val sliceAction2 = SliceAction(
-                pendingIntent,
-                createIcon(R.drawable.ic_all_out_black_24dp),
-                "Action2",
-                false
+            pendingIntent,
+            createIcon(R.drawable.ic_all_out_black_24dp),
+            "Action2",
+            false
         )
 
         val icons = (resIds + resIds).map {
@@ -205,22 +216,25 @@ class SliceBuildersKtxTest {
 
         val slice = ListBuilder(context, testUri, ListBuilder.INFINITY).apply {
             setAccentColor(accentColor)
-            addRow(ListBuilder.RowBuilder()
+            addRow(
+                ListBuilder.RowBuilder()
                     .setTitle("Title")
                     .setSubtitle("Subtitle")
                     .setPrimaryAction(rowPrimaryAction)
             )
             addAction(sliceAction1)
             addAction(sliceAction2)
-            addGridRow(GridRowBuilder().apply {
-                icons.forEach { icon ->
-                    GridRowBuilder.CellBuilder().addImage(icon, ICON_IMAGE)
-                    addCell(GridRowBuilder.CellBuilder().apply {
-                        addImage(icon, ICON_IMAGE)
+            addGridRow(
+                GridRowBuilder().apply {
+                    icons.forEach { icon ->
+                        GridRowBuilder.CellBuilder().addImage(icon, ICON_IMAGE)
+                        addCell(
+                            GridRowBuilder.CellBuilder().apply {
+                                addImage(icon, ICON_IMAGE)
+                            }
+                        )
                     }
-                    )
                 }
-            }
             )
         }.build()
 

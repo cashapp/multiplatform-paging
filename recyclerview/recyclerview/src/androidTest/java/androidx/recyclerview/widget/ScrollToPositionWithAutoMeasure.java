@@ -27,8 +27,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import android.graphics.Rect;
 import android.view.View;
 
-import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,7 +37,7 @@ import org.junit.runner.RunWith;
  * Tests scroll to position with wrap content to make sure that LayoutManagers can keep track of
  * the position if layout is called multiple times.
  */
-@MediumTest
+@SmallTest
 @RunWith(AndroidJUnit4.class)
 public class ScrollToPositionWithAutoMeasure extends BaseRecyclerViewInstrumentationTest {
     @Test
@@ -68,7 +68,7 @@ public class ScrollToPositionWithAutoMeasure extends BaseRecyclerViewInstrumenta
         recyclerView.setAdapter(new TestAdapter(1000));
         setRecyclerView(recyclerView);
         getInstrumentation().waitForIdleSync();
-        assertThat("Test sanity", recyclerView.getChildCount() > 0, is(true));
+        assertThat("Assumption check", recyclerView.getChildCount() > 0, is(true));
         mActivityRule.runOnUiThread(new Runnable() {
             @Override
             public void run() {

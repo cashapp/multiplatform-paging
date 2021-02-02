@@ -32,11 +32,10 @@ import android.widget.EditText;
 import androidx.emoji.test.R;
 import androidx.emoji.util.KeyboardUtil;
 import androidx.emoji.util.TestString;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.Suppress;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.testutils.PollingCheck;
 
 import org.junit.Before;
@@ -50,9 +49,10 @@ import org.junit.runner.RunWith;
 @Suppress
 public class EmojiKeyboardTest {
 
+    @SuppressWarnings("deprecation")
     @Rule
-    public ActivityTestRule<TestActivity> mActivityRule = new ActivityTestRule<>(
-            TestActivity.class);
+    public androidx.test.rule.ActivityTestRule<TestActivity> mActivityRule =
+            new androidx.test.rule.ActivityTestRule<>(TestActivity.class);
     private Instrumentation mInstrumentation;
 
     @BeforeClass

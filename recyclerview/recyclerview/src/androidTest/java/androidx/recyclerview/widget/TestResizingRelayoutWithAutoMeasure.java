@@ -30,7 +30,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.filters.MediumTest;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +45,7 @@ import java.util.Map;
  * Tests whether the layout manager can keep its children positions properly after it is re-laid
  * out with larger/smaller intermediate size but the same final size.
  */
-@MediumTest
+@SmallTest
 @RunWith(Parameterized.class)
 public class TestResizingRelayoutWithAutoMeasure extends BaseRecyclerViewInstrumentationTest {
     private final int mRvWidth;
@@ -101,13 +101,13 @@ public class TestResizingRelayoutWithAutoMeasure extends BaseRecyclerViewInstrum
         recyclerView.setAdapter(adapter);
         setRecyclerView(recyclerView);
         getInstrumentation().waitForIdleSync();
-        assertThat("Test sanity", recyclerView.getChildCount() > 0, is(true));
+        assertThat("Assumption check", recyclerView.getChildCount() > 0, is(true));
         final int lastPosition = recyclerView.getAdapter().getItemCount() - 1;
         smoothScrollToPosition(lastPosition);
-        assertThat("test sanity", recyclerView.findViewHolderForAdapterPosition(lastPosition),
+        assertThat("Assumption check", recyclerView.findViewHolderForAdapterPosition(lastPosition),
                 notNullValue());
-        assertThat("test sanity", mRvWidth, is(recyclerView.getWidth()));
-        assertThat("test sanity", mRvHeight, is(recyclerView.getHeight()));
+        assertThat("Assumption check", mRvWidth, is(recyclerView.getWidth()));
+        assertThat("Assumption check", mRvHeight, is(recyclerView.getHeight()));
         recyclerView.waitUntilLayout();
         recyclerView.waitUntilAnimations();
         final Map<Integer, Rect> startPositions = capturePositions(recyclerView);
