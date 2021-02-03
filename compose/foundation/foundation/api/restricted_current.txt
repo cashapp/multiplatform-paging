@@ -13,9 +13,7 @@ package androidx.compose.foundation {
   }
 
   @androidx.compose.runtime.Immutable public final class BorderStroke {
-    method public float component1-D9Ej5fM();
-    method public androidx.compose.ui.graphics.Brush component2();
-    method @androidx.compose.runtime.Immutable public androidx.compose.foundation.BorderStroke copy-v_fYJzc(float width, androidx.compose.ui.graphics.Brush brush);
+    method public androidx.compose.foundation.BorderStroke copy-v_fYJzc(optional float width, optional androidx.compose.ui.graphics.Brush brush);
     method public androidx.compose.ui.graphics.Brush getBrush();
     method public float getWidth-D9Ej5fM();
     property public final androidx.compose.ui.graphics.Brush brush;
@@ -59,7 +57,7 @@ package androidx.compose.foundation {
   }
 
   @androidx.compose.runtime.Stable public interface Indication {
-    method public androidx.compose.foundation.IndicationInstance createInstance();
+    method @androidx.compose.runtime.Composable public androidx.compose.foundation.IndicationInstance createInstance();
   }
 
   public interface IndicationInstance {
@@ -68,8 +66,8 @@ package androidx.compose.foundation {
   }
 
   public final class IndicationKt {
-    method @Deprecated public static androidx.compose.runtime.ProvidableCompositionLocal<kotlin.jvm.functions.Function0<androidx.compose.foundation.Indication>>! getAmbientIndication();
-    method public static androidx.compose.runtime.ProvidableCompositionLocal<kotlin.jvm.functions.Function0<androidx.compose.foundation.Indication>> getLocalIndication();
+    method @Deprecated public static androidx.compose.runtime.ProvidableCompositionLocal<androidx.compose.foundation.Indication>! getAmbientIndication();
+    method public static androidx.compose.runtime.ProvidableCompositionLocal<androidx.compose.foundation.Indication> getLocalIndication();
     method public static androidx.compose.ui.Modifier indication(androidx.compose.ui.Modifier, androidx.compose.foundation.InteractionState interactionState, optional androidx.compose.foundation.Indication? indication);
   }
 
@@ -164,9 +162,6 @@ package androidx.compose.foundation.animation {
 
   @androidx.compose.runtime.Immutable public final class FlingConfig {
     ctor public FlingConfig(androidx.compose.animation.core.FloatDecayAnimationSpec decayAnimation, kotlin.jvm.functions.Function1<? super java.lang.Float,androidx.compose.animation.core.TargetAnimation> adjustTarget);
-    method public androidx.compose.animation.core.FloatDecayAnimationSpec component1();
-    method public kotlin.jvm.functions.Function1<java.lang.Float,androidx.compose.animation.core.TargetAnimation> component2();
-    method @androidx.compose.runtime.Immutable public androidx.compose.foundation.animation.FlingConfig copy(androidx.compose.animation.core.FloatDecayAnimationSpec decayAnimation, kotlin.jvm.functions.Function1<? super java.lang.Float,androidx.compose.animation.core.TargetAnimation> adjustTarget);
     method public kotlin.jvm.functions.Function1<java.lang.Float,androidx.compose.animation.core.TargetAnimation> getAdjustTarget();
     method public androidx.compose.animation.core.FloatDecayAnimationSpec getDecayAnimation();
     property public final kotlin.jvm.functions.Function1<java.lang.Float,androidx.compose.animation.core.TargetAnimation> adjustTarget;
@@ -548,6 +543,33 @@ package androidx.compose.foundation.text {
 
   public final class InlineTextContentKt {
     method public static void appendInlineContent(androidx.compose.ui.text.AnnotatedString.Builder, String id, optional String alternateText);
+  }
+
+  public interface KeyboardActionScope {
+    method public void defaultKeyboardAction(androidx.compose.ui.text.input.ImeAction imeAction);
+  }
+
+  public final class KeyboardActions {
+    ctor public KeyboardActions(kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onDone, kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onGo, kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onNext, kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onPrevious, kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onSearch, kotlin.jvm.functions.Function1<? super androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onSend);
+    ctor public KeyboardActions();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnDone();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnGo();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnNext();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnPrevious();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnSearch();
+    method public kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? getOnSend();
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onDone;
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onGo;
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onNext;
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onPrevious;
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onSearch;
+    property public final kotlin.jvm.functions.Function1<androidx.compose.foundation.text.KeyboardActionScope,kotlin.Unit>? onSend;
+    field public static final androidx.compose.foundation.text.KeyboardActions.Companion Companion;
+  }
+
+  public static final class KeyboardActions.Companion {
+    method public androidx.compose.foundation.text.KeyboardActions getDefault();
+    property public final androidx.compose.foundation.text.KeyboardActions Default;
   }
 
   @androidx.compose.runtime.Immutable public final class KeyboardOptions {
