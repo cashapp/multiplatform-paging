@@ -16,12 +16,15 @@
 
 package androidx.car.app.model;
 
+import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+
 import android.text.SpannableString;
 import android.text.Spanned;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 import androidx.car.app.utils.CollectionUtils;
 import androidx.car.app.utils.StringUtils;
 
@@ -31,7 +34,36 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A model used to send text with attached spans to the host.
+ * A model that represents text to display in the car screen.
+ *
+ * <h2>Text handling in the library</h2>
+ *
+ * Models that consume text strings take a {@link CharSequence} type as the parameter type. These
+ * strings can contain spans that are applied to the text and allow, for example, changing the
+ * color of the text, introducing inline images, or displaying a time duration.
+ * As described in
+ * <a href="https://developer.android.com/guide/topics/text/spans">the span documentation</a>,
+ * you can use types such as {@link SpannableString} or {@link android.text.SpannedString} to
+ * create the strings with the spans
+ *
+ * <p>The Car App Library only supports a specific set of spans of type {@link CarSpan}. Further,
+ * individual APIs in the library that take text as input may only support a certain subset of
+ * {@link CarSpan}s. Spans that are not supported will be simply ignored by the host.
+ *
+ * <p>By default and unless explicitly documented in the individual APIs that take a text
+ * parameter as input, spans for that API are not supported and will be ignored.
+ *
+ * <p>For example, the {@link Row.Builder#addText(CharSequence)} API documents that
+ * {@link ForegroundCarColorSpan} instances can be used to color the text of the row. This means any
+ * other types of spans except {@link ForegroundCarColorSpan} will be ignored.
+ *
+ * <p>{@link CarText} instances represent the text that was passed by the app through a
+ * {@link CharSequence}, with the non-{@link CarSpan} spans removed.
+ *
+ * <p>The {@link CarText#toString} method can be used to get a string representation of the string,
+ * whereas the {@link CarText#toCharSequence()} method returns the reconstructed
+ * {@link CharSequence}, with the non{@link CarSpan} spans removed.
+ *
  */
 public final class CarText {
     @Keep
@@ -92,7 +124,10 @@ public final class CarText {
 
     /**
      * Returns a shortened string from the input {@code text}.
+     *
+     * @hide
      */
+    @RestrictTo(LIBRARY)
     @Nullable
     public static String toShortString(@Nullable CarText text) {
         return text == null ? null : StringUtils.shortenString(text.toString());
