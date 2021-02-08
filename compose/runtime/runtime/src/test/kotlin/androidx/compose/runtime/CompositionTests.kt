@@ -35,6 +35,7 @@ import androidx.compose.runtime.mock.SelectContact
 import androidx.compose.runtime.mock.compositionTest
 import androidx.compose.runtime.mock.skip
 import androidx.compose.runtime.mock.Text
+import androidx.compose.runtime.mock.View
 import androidx.compose.runtime.mock.expectChanges
 import androidx.compose.runtime.mock.expectNoChanges
 import androidx.compose.runtime.mock.validate
@@ -44,7 +45,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
-import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -57,12 +57,6 @@ fun Container(content: @Composable () -> Unit) = content()
 @OptIn(ExperimentalComposeApi::class, InternalComposeApi::class)
 @Suppress("unused")
 class CompositionTests {
-
-    @AfterTest
-    fun teardown() {
-        clearRoots()
-    }
-
     @Test
     fun simple() = compositionTest {
         compose {
@@ -2608,6 +2602,40 @@ class CompositionTests {
         validate()
     }
 
+    @Test
+    fun testModificationsPropagateToSubcomposition() = compositionTest {
+        var value by mutableStateOf(0)
+        val content: MutableState<@Composable () -> Unit> = mutableStateOf({ })
+        @Suppress("VARIABLE_WITH_REDUNDANT_INITIALIZER")
+        var subCompositionOccurred = false
+
+        @Composable
+        fun ComposeContent() {
+            content.value()
+        }
+
+        fun updateContent(parentValue: Int) {
+            content.value = {
+                subCompositionOccurred = true
+                assertEquals(parentValue, value)
+            }
+        }
+
+        compose {
+            updateContent(value)
+            TestSubcomposition {
+                ComposeContent()
+            }
+        }
+
+        subCompositionOccurred = false
+
+        value = 10
+        expectChanges()
+
+        assertTrue(subCompositionOccurred)
+    }
+
     /**
      * This test checks that an updated ComposableLambda capture used in a subcomposition
      * correctly invalidates that subcomposition and schedules recomposition of that subcomposition.
@@ -2642,15 +2670,15 @@ class CompositionTests {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun testCompositionReferenceIsRemembered() = runBlockingTest {
+    fun testCompositionContextIsRemembered() = runBlockingTest {
         localRecomposerTest { recomposer ->
             val composition = Composition(EmptyApplier(), recomposer)
             try {
                 lateinit var scope: RecomposeScope
-                val parentReferences = mutableListOf<CompositionReference>()
+                val parentReferences = mutableListOf<CompositionContext>()
                 composition.setContent {
                     scope = currentRecomposeScope
-                    parentReferences += rememberCompositionReference()
+                    parentReferences += rememberCompositionContext()
                 }
                 scope.invalidate()
                 advanceUntilIdle()
@@ -2777,10 +2805,10 @@ class CompositionTests {
 
 @OptIn(InternalComposeApi::class, ExperimentalComposeApi::class)
 @Composable
-private fun TestSubcomposition(
+internal fun TestSubcomposition(
     content: @Composable () -> Unit
 ) {
-    val parentRef = rememberCompositionReference()
+    val parentRef = rememberCompositionContext()
     val currentContent by rememberUpdatedState(content)
     DisposableEffect(parentRef) {
         val subcomposition = ControlledComposition(EmptyApplier(), parentRef)
@@ -2790,6 +2818,32 @@ private fun TestSubcomposition(
         subcomposition.applyChanges()
         onDispose {
             subcomposition.dispose()
+        }
+    }
+}
+
+class Ref<T : Any> {
+    lateinit var value: T
+}
+
+@Composable fun NarrowInvalidateForReference(ref: Ref<CompositionContext>) {
+    ref.value = rememberCompositionContext()
+}
+
+@Composable
+fun testDeferredSubcomposition(block: @Composable () -> Unit): () -> Unit {
+    val container = remember { View() }
+    val ref = Ref<CompositionContext>()
+    NarrowInvalidateForReference(ref = ref)
+    return {
+        @OptIn(ExperimentalComposeApi::class)
+        Composition(
+            ViewApplier(container),
+            ref.value
+        ).apply {
+            setContent {
+                block()
+            }
         }
     }
 }

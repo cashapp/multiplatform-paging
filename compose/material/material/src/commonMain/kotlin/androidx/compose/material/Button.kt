@@ -35,7 +35,7 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -122,7 +122,7 @@ fun Button(
             indication = null
         )
     ) {
-        Providers(LocalContentAlpha provides contentColor.alpha) {
+        CompositionLocalProvider(LocalContentAlpha provides contentColor.alpha) {
             ProvideTextStyle(
                 value = MaterialTheme.typography.button
             ) {
@@ -384,23 +384,23 @@ object ButtonDefaults {
      * a [Button].
      *
      * @param backgroundColor the background color of this [Button] when enabled
-     * @param disabledBackgroundColor the background color of this [Button] when not enabled
      * @param contentColor the content color of this [Button] when enabled
+     * @param disabledBackgroundColor the background color of this [Button] when not enabled
      * @param disabledContentColor the content color of this [Button] when not enabled
      */
     @Composable
     fun buttonColors(
         backgroundColor: Color = MaterialTheme.colors.primary,
+        contentColor: Color = contentColorFor(backgroundColor),
         disabledBackgroundColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f)
             .compositeOver(MaterialTheme.colors.surface),
-        contentColor: Color = contentColorFor(backgroundColor),
         disabledContentColor: Color = MaterialTheme.colors.onSurface
             .copy(alpha = ContentAlpha.disabled)
     ): ButtonColors = DefaultButtonColors(
-        backgroundColor,
-        disabledBackgroundColor,
-        contentColor,
-        disabledContentColor
+        backgroundColor = backgroundColor,
+        contentColor = contentColor,
+        disabledBackgroundColor = disabledBackgroundColor,
+        disabledContentColor = disabledContentColor
     )
 
     /**
@@ -418,10 +418,10 @@ object ButtonDefaults {
         disabledContentColor: Color = MaterialTheme.colors.onSurface
             .copy(alpha = ContentAlpha.disabled)
     ): ButtonColors = DefaultButtonColors(
-        backgroundColor,
-        backgroundColor,
-        contentColor,
-        disabledContentColor
+        backgroundColor = backgroundColor,
+        contentColor = contentColor,
+        disabledBackgroundColor = backgroundColor,
+        disabledContentColor = disabledContentColor
     )
 
     /**
@@ -439,10 +439,10 @@ object ButtonDefaults {
         disabledContentColor: Color = MaterialTheme.colors.onSurface
             .copy(alpha = ContentAlpha.disabled)
     ): ButtonColors = DefaultButtonColors(
-        backgroundColor,
-        backgroundColor,
-        contentColor,
-        disabledContentColor
+        backgroundColor = backgroundColor,
+        contentColor = contentColor,
+        disabledBackgroundColor = backgroundColor,
+        disabledContentColor = disabledContentColor
     )
 
     /**
@@ -469,9 +469,11 @@ object ButtonDefaults {
     /**
      * The default content padding used by [TextButton]
      */
-    val TextButtonContentPadding = ContentPadding.copy(
+    val TextButtonContentPadding = PaddingValues(
         start = TextButtonHorizontalPadding,
-        end = TextButtonHorizontalPadding
+        top = ContentPadding.calculateTopPadding(),
+        end = TextButtonHorizontalPadding,
+        bottom = ContentPadding.calculateBottomPadding()
     )
 }
 
@@ -503,7 +505,9 @@ private class DefaultButtonElevation(
 
         if (!enabled) {
             // No transition when moving to a disabled state
-            animatable.snapTo(target)
+            LaunchedEffect(target) {
+                animatable.snapTo(target)
+            }
         } else {
             LaunchedEffect(target) {
                 val lastInteraction = when (animatable.targetValue) {
@@ -528,8 +532,8 @@ private class DefaultButtonElevation(
 @Immutable
 private class DefaultButtonColors(
     private val backgroundColor: Color,
-    private val disabledBackgroundColor: Color,
     private val contentColor: Color,
+    private val disabledBackgroundColor: Color,
     private val disabledContentColor: Color
 ) : ButtonColors {
     @Composable
@@ -549,8 +553,8 @@ private class DefaultButtonColors(
         other as DefaultButtonColors
 
         if (backgroundColor != other.backgroundColor) return false
-        if (disabledBackgroundColor != other.disabledBackgroundColor) return false
         if (contentColor != other.contentColor) return false
+        if (disabledBackgroundColor != other.disabledBackgroundColor) return false
         if (disabledContentColor != other.disabledContentColor) return false
 
         return true
@@ -558,8 +562,8 @@ private class DefaultButtonColors(
 
     override fun hashCode(): Int {
         var result = backgroundColor.hashCode()
-        result = 31 * result + disabledBackgroundColor.hashCode()
         result = 31 * result + contentColor.hashCode()
+        result = 31 * result + disabledBackgroundColor.hashCode()
         result = 31 * result + disabledContentColor.hashCode()
         return result
     }

@@ -13,29 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("DEPRECATION")
 
 package androidx.compose.foundation
 
-import androidx.compose.animation.asDisposableClock
-import androidx.compose.animation.core.AnimationClockObservable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.SpringSpec
-import androidx.compose.foundation.animation.FlingConfig
-import androidx.compose.foundation.animation.defaultFlingConfig
 import androidx.compose.foundation.animation.scrollBy
 import androidx.compose.foundation.animation.smoothScrollBy
 import androidx.compose.foundation.gestures.ScrollScope
-import androidx.compose.foundation.gestures.Scrollable
-import androidx.compose.foundation.gestures.ScrollableController
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -46,7 +34,6 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.structuralEqualityPolicy
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
@@ -55,7 +42,6 @@ import androidx.compose.ui.layout.LayoutModifier
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
-import androidx.compose.ui.platform.LocalAnimationClock
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.semantics.ScrollAxisRange
@@ -65,7 +51,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.verticalScrollAxisRange
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -77,27 +62,11 @@ import kotlin.math.roundToInt
  * @sample androidx.compose.foundation.samples.ControlledScrollableRowSample
  *
  * @param initial initial scroller position to start with
- * @param interactionState [InteractionState] that will be updated when the element with this
- * state is being scrolled by dragging, using [Interaction.Dragged]. If you want to know whether
- * the fling (or smooth scroll) is in progress, use [ScrollState.isAnimationRunning].
  */
 @Composable
-fun rememberScrollState(
-    initial: Float = 0f,
-    interactionState: InteractionState? = null
-): ScrollState {
-    val clock = LocalAnimationClock.current.asDisposableClock()
-    val config = defaultFlingConfig()
-    return rememberSaveable(
-        clock, config, interactionState,
-        saver = ScrollState.Saver(config, clock, interactionState)
-    ) {
-        ScrollState(
-            flingConfig = config,
-            initial = initial,
-            animationClock = clock,
-            interactionState = interactionState
-        )
+fun rememberScrollState(initial: Float = 0f): ScrollState {
+    return rememberSaveable(saver = ScrollState.Saver) {
+        ScrollState(initial = initial)
     }
 }
 
@@ -113,19 +82,9 @@ fun rememberScrollState(
  * @sample androidx.compose.foundation.samples.ControlledScrollableRowSample
  *
  * @param initial value of the scroll
- * @param flingConfig fling configuration to use for flinging
- * @param animationClock animation clock to run flinging and smooth scrolling on
- * @param interactionState [InteractionState] that will be updated when the element with this
- * state is being scrolled by dragging, using [Interaction.Dragged]. If you want to know whether
- * the fling (or smooth scroll) is in progress, use [ScrollState.isAnimationRunning].
  */
 @Stable
-class ScrollState(
-    initial: Float,
-    internal val flingConfig: FlingConfig,
-    animationClock: AnimationClockObservable,
-    interactionState: InteractionState? = null
-) : Scrollable {
+class ScrollState(initial: Float) : ScrollableState {
 
     /**
      * current scroll position value in pixels
@@ -145,57 +104,36 @@ class ScrollState(
             }
         }
 
+    /**
+     * [InteractionState] that will be updated when the element with this state is being scrolled
+     * by dragging, using [Interaction.Dragged]. If you want to know whether the fling (or smooth
+     * scroll) is in progress, use [ScrollState.isScrollInProgress].
+     */
+    val interactionState: InteractionState = InteractionState()
+
     private var _maxValueState = mutableStateOf(Float.POSITIVE_INFINITY, structuralEqualityPolicy())
 
-    internal val scrollableController =
-        ScrollableController(
-            flingConfig = flingConfig,
-            animationClock = animationClock,
-            consumeScrollDelta = {
-                val absolute = (value + it)
-                val newValue = absolute.coerceIn(0f, maxValue)
-                val changed = absolute != newValue
-                if (changed) stopFlingAnimation()
-                val consumed = newValue - value
-                value += consumed
+    private val scrollableState = ScrollableState {
+        val absolute = (value + it)
+        val newValue = absolute.coerceIn(0f, maxValue)
+        val changed = absolute != newValue
+        val consumed = newValue - value
+        value += consumed
 
-                // Avoid floating-point rounding error
-                if (changed) consumed else it
-            },
-            interactionState = interactionState
-        )
+        // Avoid floating-point rounding error
+        if (changed) consumed else it
+    }
 
-    /**
-     * Call this function to take control of scrolling and gain the ability to send scroll events
-     * via [ScrollScope.scrollBy]. All actions that change the logical scroll position must be
-     * performed within a [scroll] block (even if they don't call any other methods on this
-     * object) in order to guarantee that mutual exclusion is enforced.
-     *
-     * Cancels the currently running scroll, if any, and suspends until the cancellation is
-     * complete.
-     *
-     * If [scroll] is called from elsewhere, this will be canceled.
-     */
     override suspend fun scroll(
+        scrollPriority: MutatePriority,
         block: suspend ScrollScope.() -> Unit
-    ): Unit = scrollableController.scroll(block)
+    ): Unit = scrollableState.scroll(scrollPriority, block)
 
-    /**
-     * Stop any ongoing animation, smooth scrolling or fling occurring on this [ScrollState]
-     */
-    fun stopAnimation() {
-        scrollableController.stopAnimation()
-    }
+    override fun dispatchRawDelta(delta: Float): Float =
+        scrollableState.dispatchRawDelta(delta)
 
-    private fun stopFlingAnimation() {
-        scrollableController.stopFlingAnimation()
-    }
-
-    /**
-     * whether this [ScrollState] is currently animating/flinging
-     */
-    val isAnimationRunning
-        get() = scrollableController.isAnimationRunning
+    override val isScrollInProgress: Boolean
+        get() = scrollableState.isScrollInProgress
 
     /**
      * Smooth scroll to position in pixels
@@ -208,7 +146,7 @@ class ScrollState(
         value: Float,
         spec: AnimationSpec<Float> = SpringSpec()
     ) {
-        (this as Scrollable).smoothScrollBy(value - this.value, spec)
+        this.smoothScrollBy(value - this.value, spec)
     }
 
     /**
@@ -222,133 +160,17 @@ class ScrollState(
      * @param value number of pixels to scroll by
      * @return the amount of scroll consumed
      */
-    suspend fun scrollTo(
-        value: Float
-    ): Float {
-        return (this as Scrollable).scrollBy(value - this.value)
-    }
+    suspend fun scrollTo(value: Float): Float = this.scrollBy(value - this.value)
 
     companion object {
         /**
          * The default [Saver] implementation for [ScrollState].
          */
-        fun Saver(
-            flingConfig: FlingConfig,
-            animationClock: AnimationClockObservable,
-            interactionState: InteractionState?
-        ): Saver<ScrollState, *> = Saver<ScrollState, Float>(
+        val Saver: Saver<ScrollState, *> = Saver(
             save = { it.value },
-            restore = { ScrollState(it, flingConfig, animationClock, interactionState) }
+            restore = { ScrollState(it) }
         )
     }
-}
-
-/**
- * Variation of [Column] that scrolls when content is bigger than its height.
- *
- * The content of the [ScrollableColumn] is clipped to its bounds.
- *
- * @param modifier modifier for this [ScrollableColumn]
- * @param scrollState state of the scroll, such as current offset and max offset
- * @param verticalArrangement The vertical arrangement of the layout's children
- * @param horizontalAlignment The horizontal alignment of the layout's children
- * @param reverseScrollDirection reverse the direction of scrolling, when `true`, [ScrollState
- * .value] = 0 will mean bottom, when `false`, [ScrollState.value] = 0 will mean top
- * @param isScrollEnabled param to enable or disable touch input scrolling. If you own
- * [ScrollState], you still can call [ScrollState.smoothScrollTo] and other methods on it.
- * @param contentPadding convenience param to specify padding around content. This will add
- * padding for the content after it has been clipped, which is not possible via [modifier] param
- */
-@Composable
-@Deprecated(
-    "Prefer to use LazyColumn instead. Or you can use Column(Modifier.verticalScroll" +
-        "(rememberScrollState()) if your scrolling content is small enough.",
-    ReplaceWith(
-        "LazyColumn(modifier = modifier, contentPadding = contentPadding, " +
-            "reverseLayout = reverseScrollDirection, horizontalAlignment = horizontalAlignment) {" +
-            "\n // use `item` for separate elements like headers" +
-            "\n // and `items` for lists of identical elements" +
-            "\n item (content)" +
-            "\n }",
-        "androidx.compose.foundation.lazy.LazyColumn"
-    )
-)
-fun ScrollableColumn(
-    modifier: Modifier = Modifier,
-    scrollState: ScrollState = rememberScrollState(0f),
-    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    reverseScrollDirection: Boolean = false,
-    isScrollEnabled: Boolean = true,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = modifier
-            .verticalScroll(
-                scrollState,
-                isScrollEnabled,
-                reverseScrolling = reverseScrollDirection
-            )
-            .padding(contentPadding),
-        verticalArrangement = verticalArrangement,
-        horizontalAlignment = horizontalAlignment,
-        content = content
-    )
-}
-
-/**
- * Variation of [Row] that scrolls when content is bigger than its width.
- *
- * The content of the [ScrollableRow] is clipped to its bounds.
- *
- * @param modifier modifier for this [ScrollableRow]
- * @param scrollState state of the scroll, such as current offset and max offset
- * @param horizontalArrangement The horizontal arrangement of the layout's children
- * @param verticalAlignment The vertical alignment of the layout's children
- * @param reverseScrollDirection reverse the direction of scrolling, when `true`, [ScrollState
- * .value] = 0 will mean right, when `false`, [ScrollState.value] = 0 will mean left
- * @param isScrollEnabled param to enable or disable touch input scrolling. If you own
- * [ScrollState], you still can call [ScrollState.smoothScrollTo] and other methods on it.
- * @param contentPadding convenience param to specify padding around content. This will add
- * padding for the content after it has been clipped, which is not possible via [modifier] param.
- */
-@Composable
-@Deprecated(
-    "Prefer to use LazyRow instead. Or you can use Row(Modifier.horizontalScroll" +
-        "(rememberScrollState()) if your scrolling content is small enough.",
-    ReplaceWith(
-        "LazyRow(modifier = modifier, contentPadding = contentPadding, " +
-            "reverseLayout = reverseScrollDirection, verticalAlignment = verticalAlignment) {" +
-            "\n // use `item` for separate elements like headers" +
-            "\n // and `items` for lists of identical elements" +
-            "\n item (content)" +
-            "\n }",
-        "androidx.compose.foundation.lazy.LazyRow"
-    )
-)
-fun ScrollableRow(
-    modifier: Modifier = Modifier,
-    scrollState: ScrollState = rememberScrollState(0f),
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    verticalAlignment: Alignment.Vertical = Alignment.Top,
-    reverseScrollDirection: Boolean = false,
-    isScrollEnabled: Boolean = true,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: @Composable RowScope.() -> Unit
-) {
-    Row(
-        modifier = modifier
-            .horizontalScroll(
-                scrollState,
-                isScrollEnabled,
-                reverseScrolling = reverseScrollDirection
-            )
-            .padding(contentPadding),
-        horizontalArrangement = horizontalArrangement,
-        verticalAlignment = verticalAlignment,
-        content = content
-    )
 }
 
 /**
@@ -362,17 +184,21 @@ fun ScrollableRow(
  *
  * @param state state of the scroll
  * @param enabled whether or not scrolling via touch input is enabled
+ * @param flingSpec fling animation configuration to use when drag ends with velocity. If `null`,
+ * default fling configuration will be used.
  * @param reverseScrolling reverse the direction of scrolling, when `true`, 0 [ScrollState.value]
  * will mean bottom, when `false`, 0 [ScrollState.value] will mean top
  */
 fun Modifier.verticalScroll(
     state: ScrollState,
     enabled: Boolean = true,
+    flingSpec: DecayAnimationSpec<Float>? = null,
     reverseScrolling: Boolean = false
 ) = scroll(
     state = state,
     isScrollable = enabled,
     reverseScrolling = reverseScrolling,
+    flingSpec = flingSpec,
     isVertical = true
 )
 
@@ -387,23 +213,28 @@ fun Modifier.verticalScroll(
  *
  * @param state state of the scroll
  * @param enabled whether or not scrolling via touch input is enabled
+ * @param flingSpec fling animation configuration to use when drag ends with velocity. If `null`,
+ * default fling configuration will be used.
  * @param reverseScrolling reverse the direction of scrolling, when `true`, 0 [ScrollState.value]
  * will mean right, when `false`, 0 [ScrollState.value] will mean left
  */
 fun Modifier.horizontalScroll(
     state: ScrollState,
     enabled: Boolean = true,
+    flingSpec: DecayAnimationSpec<Float>? = null,
     reverseScrolling: Boolean = false
 ) = scroll(
     state = state,
     isScrollable = enabled,
     reverseScrolling = reverseScrolling,
+    flingSpec = flingSpec,
     isVertical = false
 )
 
 private fun Modifier.scroll(
     state: ScrollState,
     reverseScrolling: Boolean,
+    flingSpec: DecayAnimationSpec<Float>?,
     isScrollable: Boolean,
     isVertical: Boolean
 ) = composed(
@@ -426,9 +257,9 @@ private fun Modifier.scroll(
                     action = { x: Float, y: Float ->
                         coroutineScope.launch {
                             if (isVertical) {
-                                (state as Scrollable).scrollBy(y)
+                                (state as ScrollableState).scrollBy(y)
                             } else {
-                                (state as Scrollable).scrollBy(x)
+                                (state as ScrollableState).scrollBy(x)
                             }
                         }
                         return@scrollBy true
@@ -443,7 +274,9 @@ private fun Modifier.scroll(
             // if rtl and horizontal, do not reverse to make it right-to-left
             reverseDirection = if (!isVertical && isRtl) reverseScrolling else !reverseScrolling,
             enabled = isScrollable,
-            controller = state.scrollableController
+            interactionState = state.interactionState,
+            flingSpec = flingSpec,
+            state = state
         )
         val layout = ScrollingLayoutModifier(state, reverseScrolling, isVertical)
         semantics.then(scrolling).clipToBounds().then(layout)
@@ -452,6 +285,7 @@ private fun Modifier.scroll(
         name = "scroll"
         properties["state"] = state
         properties["reverseScrolling"] = reverseScrolling
+        properties["flingSpec"] = flingSpec
         properties["isScrollable"] = isScrollable
         properties["isVertical"] = isVertical
     }

@@ -16,8 +16,11 @@
 
 package androidx.compose.compiler.plugins.kotlin
 
+import org.intellij.lang.annotations.Language
+
 abstract class AbstractControlFlowTransformTests : ComposeIrTransformTest() {
     protected fun controlFlow(
+        @Language("kotlin")
         source: String,
         expectedTransformed: String,
         dumpTree: Boolean = false
@@ -25,7 +28,7 @@ abstract class AbstractControlFlowTransformTests : ComposeIrTransformTest() {
         """
             import androidx.compose.runtime.Composable
             import androidx.compose.runtime.key
-            import androidx.compose.runtime.ComposableContract
+            import androidx.compose.runtime.NonRestartableComposable
 
             $source
         """.trimIndent(),

@@ -17,7 +17,6 @@
 package androidx.compose.material
 
 import android.os.Build
-import androidx.compose.animation.core.ManualAnimationClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,7 +56,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
 import com.google.common.truth.Truth
-import org.junit.Before
+import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -75,15 +74,8 @@ class BottomSheetScaffoldTest {
 
     private val sheetContent = "frontLayerTag"
 
-    private lateinit var clock: ManualAnimationClock
-
     private fun advanceClock() {
-        clock.clockTimeMillis += 100000L
-    }
-
-    @Before
-    fun init() {
-        clock = ManualAnimationClock(initTimeMillis = 0L)
+        rule.mainClock.advanceTimeBy(100_000L)
     }
 
     @Test
@@ -108,8 +100,7 @@ class BottomSheetScaffoldTest {
         rule.setContent {
             BottomSheetScaffold(
                 scaffoldState = rememberBottomSheetScaffoldState(
-                    bottomSheetState =
-                        rememberBottomSheetState(initialValue = BottomSheetValue.Expanded)
+                    bottomSheetState = rememberBottomSheetState(BottomSheetValue.Expanded)
                 ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
@@ -126,11 +117,11 @@ class BottomSheetScaffoldTest {
 
     @Test
     fun bottomSheetScaffold_testExpandAction_whenCollapsed() {
-        val bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed, clock = clock)
         rule.setContent {
             BottomSheetScaffold(
-                scaffoldState =
-                    rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState),
+                scaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+                ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
                 },
@@ -153,11 +144,11 @@ class BottomSheetScaffoldTest {
 
     @Test
     fun bottomSheetScaffold_testCollapseAction_whenExpanded() {
-        val bottomSheetState = BottomSheetState(BottomSheetValue.Expanded, clock = clock)
         rule.setContent {
             BottomSheetScaffold(
-                scaffoldState =
-                    rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState),
+                scaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = rememberBottomSheetState(BottomSheetValue.Expanded)
+                ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
                 },
@@ -179,35 +170,33 @@ class BottomSheetScaffoldTest {
     }
 
     @Test
-    fun backdropScaffold_revealAndConceal_manually() {
-        val bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed, clock = clock)
+    fun backdropScaffold_revealAndConceal_manually(): Unit = runBlocking {
+        lateinit var bottomSheetState: BottomSheetState
         rule.setContent {
+            bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
             BottomSheetScaffold(
-                scaffoldState =
-                    rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState),
+                scaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = bottomSheetState
+                ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight,
-                bodyContent = { Text("Content") }
+                content = { Text("Content") }
             )
         }
 
         rule.onNodeWithTag(sheetContent)
             .assertTopPositionInRootIsEqualTo(rule.rootHeight() - peekHeight)
 
-        rule.runOnIdle {
-            bottomSheetState.expand()
-        }
+        bottomSheetState.expand()
 
         advanceClock()
 
         rule.onNodeWithTag(sheetContent)
             .assertTopPositionInRootIsEqualTo(rule.rootHeight() - 300.dp)
 
-        rule.runOnIdle {
-            bottomSheetState.collapse()
-        }
+        bottomSheetState.collapse()
 
         advanceClock()
 
@@ -217,21 +206,23 @@ class BottomSheetScaffoldTest {
 
     @Test
     fun bottomSheetScaffold_revealBySwiping() {
-        val bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed, clock = clock)
+        lateinit var bottomSheetState: BottomSheetState
         rule.setContent {
+            bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
             BottomSheetScaffold(
-                scaffoldState =
-                    rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState),
+                scaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = bottomSheetState
+                ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight,
-                bodyContent = { Text("Content") }
+                content = { Text("Content") }
             )
         }
 
         rule.runOnIdle {
-            Truth.assertThat(bottomSheetState.value).isEqualTo(BottomSheetValue.Collapsed)
+            Truth.assertThat(bottomSheetState.currentValue).isEqualTo(BottomSheetValue.Collapsed)
         }
 
         rule.onNodeWithTag(sheetContent)
@@ -240,7 +231,7 @@ class BottomSheetScaffoldTest {
         advanceClock()
 
         rule.runOnIdle {
-            Truth.assertThat(bottomSheetState.value).isEqualTo(BottomSheetValue.Expanded)
+            Truth.assertThat(bottomSheetState.currentValue).isEqualTo(BottomSheetValue.Expanded)
         }
 
         rule.onNodeWithTag(sheetContent)
@@ -249,28 +240,30 @@ class BottomSheetScaffoldTest {
         advanceClock()
 
         rule.runOnIdle {
-            Truth.assertThat(bottomSheetState.value).isEqualTo(BottomSheetValue.Collapsed)
+            Truth.assertThat(bottomSheetState.currentValue).isEqualTo(BottomSheetValue.Collapsed)
         }
     }
 
     @Test
     fun bottomSheetScaffold_revealBySwiping_gesturesDisabled() {
-        val bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed, clock = clock)
+        lateinit var bottomSheetState: BottomSheetState
         rule.setContent {
+            bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
             BottomSheetScaffold(
-                scaffoldState =
-                    rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState),
+                scaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = bottomSheetState
+                ),
                 sheetContent = {
                     Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
                 },
                 sheetGesturesEnabled = false,
                 sheetPeekHeight = peekHeight,
-                bodyContent = { Text("Content") }
+                content = { Text("Content") }
             )
         }
 
         rule.runOnIdle {
-            Truth.assertThat(bottomSheetState.value).isEqualTo(BottomSheetValue.Collapsed)
+            Truth.assertThat(bottomSheetState.currentValue).isEqualTo(BottomSheetValue.Collapsed)
         }
 
         rule.onNodeWithTag(sheetContent)
@@ -279,13 +272,13 @@ class BottomSheetScaffoldTest {
         advanceClock()
 
         rule.runOnIdle {
-            Truth.assertThat(bottomSheetState.value).isEqualTo(BottomSheetValue.Collapsed)
+            Truth.assertThat(bottomSheetState.currentValue).isEqualTo(BottomSheetValue.Collapsed)
         }
     }
 
     @Test
     @Ignore("unignore once animation sync is ready (b/147291885)")
-    fun bottomSheetScaffold_drawer_manualControl() {
+    fun bottomSheetScaffold_drawer_manualControl() = runBlocking {
         var drawerChildPosition: Offset = Offset.Zero
         lateinit var scaffoldState: BottomSheetScaffoldState
         rule.setContent {
@@ -318,13 +311,9 @@ class BottomSheetScaffoldTest {
             }
         }
         Truth.assertThat(drawerChildPosition.x).isLessThan(0f)
-        rule.runOnUiThread {
-            scaffoldState.drawerState.open()
-        }
+        scaffoldState.drawerState.open()
         Truth.assertThat(drawerChildPosition.x).isLessThan(0f)
-        rule.runOnUiThread {
-            scaffoldState.drawerState.close()
-        }
+        scaffoldState.drawerState.close()
         Truth.assertThat(drawerChildPosition.x).isLessThan(0f)
     }
 
@@ -365,7 +354,7 @@ class BottomSheetScaffoldTest {
     }
 
     @Test
-    fun bottomSheetScaffold_fab_position() {
+    fun bottomSheetScaffold_fab_position(): Unit = runBlocking {
         val fabTag = "fab"
         var fabSize: IntSize = IntSize.Zero
         lateinit var scaffoldState: BottomSheetScaffoldState
@@ -389,7 +378,7 @@ class BottomSheetScaffoldTest {
                         Icon(Icons.Filled.Favorite, null)
                     }
                 },
-                bodyContent = { Text("Content") }
+                content = { Text("Content") }
             )
         }
         with(rule.density) {
@@ -397,9 +386,7 @@ class BottomSheetScaffoldTest {
                 rule.rootHeight() - peekHeight - fabSize.height.toDp() / 2
             )
         }
-        rule.runOnUiThread {
-            scaffoldState.bottomSheetState.expand()
-        }
+        scaffoldState.bottomSheetState.expand()
         advanceClock()
 
         with(rule.density) {
@@ -466,7 +453,7 @@ class BottomSheetScaffoldTest {
             }
         }
         rule.runOnIdle {
-            Truth.assertThat(innerPadding.bottom).isEqualTo(peekHeight)
+            Truth.assertThat(innerPadding.calculateBottomPadding()).isEqualTo(peekHeight)
         }
     }
 }

@@ -26,14 +26,12 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ModalDrawerLayout
+import androidx.compose.material.ModalDrawer
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.runtime.InternalComposeApi
-import androidx.compose.runtime.resetSourceInfo
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,7 +51,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
+import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -65,7 +63,7 @@ import kotlin.math.roundToInt
 
 private const val DEBUG = false
 
-@LargeTest
+@MediumTest
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 29) // Render id is not returned for api < 29
 @OptIn(UiToolingDataApi::class)
@@ -75,8 +73,6 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
     @Before
     fun before() {
-        @OptIn(InternalComposeApi::class)
-        resetSourceInfo()
         density = Density(activity)
         view = activityTestRule.activity.findViewById<ViewGroup>(android.R.id.content)
         isDebugInspectorInfoEnabled = true
@@ -228,9 +224,9 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         show {
             Inspectable(slotTableRecord) {
-                ModalDrawerLayout(
+                ModalDrawer(
                     drawerContent = { Text("Something") },
-                    bodyContent = {
+                    content = {
                         Column {
                             Text(text = "Hello World", color = Color.Green)
                             Button(onClick = {}) { Text(text = "OK") }
@@ -247,8 +243,8 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         if (DEBUG) {
             validate(nodes, builder, checkParameters = false) {
-                node("Box", children = listOf("ModalDrawerLayout"))
-                node("ModalDrawerLayout", children = listOf("Column", "Text"))
+                node("Box", children = listOf("ModalDrawer"))
+                node("ModalDrawer", children = listOf("Column", "Text"))
                 node("Column", children = listOf("Text", "Button"))
                 node("Text")
                 node("Button", children = listOf("Text"))
@@ -265,9 +261,9 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         show {
             Inspectable(slotTableRecord) {
-                ModalDrawerLayout(
+                ModalDrawer(
                     drawerContent = { Text("Something") },
-                    bodyContent = {
+                    content = {
                         Column {
                             Text(text = "Hello World", color = Color.Green)
                             Button(onClick = {}) { Text(text = "OK") }
@@ -285,8 +281,8 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         if (DEBUG) {
             validate(nodes, builder, checkParameters = false) {
-                node("Box", children = listOf("ModalDrawerLayout"))
-                node("ModalDrawerLayout", children = listOf("WithConstraints"))
+                node("Box", children = listOf("ModalDrawer"))
+                node("ModalDrawer", children = listOf("WithConstraints"))
                 node("WithConstraints", children = listOf("SubcomposeLayout"))
                 node("SubcomposeLayout", children = listOf("Box"))
                 node("Box", children = listOf("Box", "Canvas", "Surface"))

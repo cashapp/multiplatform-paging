@@ -16,13 +16,14 @@
 package androidx.compose.desktop
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionReference
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.Keyboard
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.MenuBar
+import java.awt.Container
 import java.awt.Frame
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -34,7 +35,12 @@ import javax.swing.JMenuBar
 import javax.swing.SwingUtilities
 import javax.swing.WindowConstants
 
-val AppWindowAmbient = compositionLocalOf<AppWindow?>()
+/**
+ * Local composition of [AppWindow]. [AppWindow] is a high level window implementation. This local
+ * composition is used to get the current [AppWindow].
+ */
+val LocalAppWindow = compositionLocalOf<AppWindow>()
+internal val LocalLayerContainer = compositionLocalOf<Container>()
 
 /**
  * Opens a window with the given content.
@@ -399,12 +405,13 @@ class AppWindow : AppFrame {
     }
 
     private fun onCreate(
-        parentComposition: CompositionReference? = null,
+        parentComposition: CompositionContext? = null,
         content: @Composable () -> Unit
     ) {
         window.setContent(parentComposition) {
-            Providers(
-                AppWindowAmbient provides this,
+            CompositionLocalProvider(
+                LocalAppWindow provides this,
+                LocalLayerContainer provides window,
                 content = content
             )
         }
@@ -419,7 +426,7 @@ class AppWindow : AppFrame {
      * @param content Composable content of the window.
      */
     fun show(
-        parentComposition: CompositionReference? = null,
+        parentComposition: CompositionContext? = null,
         content: @Composable () -> Unit
     ) {
         if (invoker != null) {

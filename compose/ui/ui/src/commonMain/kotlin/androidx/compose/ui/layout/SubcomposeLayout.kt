@@ -20,12 +20,12 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.CompositionReference
+import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCompositionReference
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.materialize
 import androidx.compose.ui.node.ComposeUiNode
@@ -34,7 +34,7 @@ import androidx.compose.ui.node.LayoutNode.LayoutState
 import androidx.compose.ui.node.MeasureBlocks
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.subcomposeInto
+import androidx.compose.ui.platform.createSubcomposition
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 
@@ -64,7 +64,7 @@ fun SubcomposeLayout(
     measureBlock: SubcomposeMeasureScope.(Constraints) -> MeasureResult
 ) {
     val state = remember { SubcomposeLayoutState() }
-    state.compositionRef = rememberCompositionReference()
+    state.compositionContext = rememberCompositionContext()
 
     val materialized = currentComposer.materialize(modifier)
     val density = LocalDensity.current
@@ -103,7 +103,7 @@ interface SubcomposeMeasureScope : MeasureScope {
 private class SubcomposeLayoutState :
     SubcomposeMeasureScope,
     RememberObserver {
-    var compositionRef: CompositionReference? = null
+    var compositionContext: CompositionContext? = null
 
     // MeasureScope delegation
     override var layoutDirection: LayoutDirection = LayoutDirection.Rtl
@@ -158,17 +158,34 @@ private class SubcomposeLayoutState :
     }
 
     private fun subcompose(node: LayoutNode, nodeState: NodeState) {
-        node.ignoreModelReads {
+        node.withNoSnapshotReadObservation {
             val content = nodeState.content
             nodeState.composition = subcomposeInto(
+                existing = nodeState.composition,
                 container = node,
-                parent = compositionRef ?: error("parent composition reference not set"),
+                parent = compositionContext ?: error("parent composition reference not set"),
                 // Do not optimize this by passing nodeState.content directly; the additional
                 // composable function call from the lambda expression affects the scope of
                 // recomposition and recomposition of siblings.
                 composable = { content() }
             )
         }
+    }
+
+    private fun subcomposeInto(
+        existing: Composition?,
+        container: LayoutNode,
+        parent: CompositionContext,
+        composable: @Composable () -> Unit
+    ): Composition {
+        return if (existing == null || existing.isDisposed) {
+            createSubcomposition(container, parent)
+        } else {
+            existing
+        }
+            .apply {
+                setContent(composable)
+            }
     }
 
     private fun disposeAfterIndex(currentIndex: Int) {

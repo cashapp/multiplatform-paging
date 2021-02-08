@@ -17,12 +17,12 @@
 package androidx.compose.ui.window
 
 import androidx.compose.desktop.AppWindow
-import androidx.compose.desktop.AppWindowAmbient
+import androidx.compose.desktop.LocalAppWindow
 import androidx.compose.desktop.WindowEvents
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.rememberCompositionReference
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -78,12 +78,12 @@ fun Dialog(
     properties: DialogProperties = DialogProperties(),
     content: @Composable () -> Unit
 ) {
-    val attached = AppWindowAmbient.current
-    if (attached?.pair != null) {
+    val attached = LocalAppWindow.current
+    if (attached.pair != null) {
         return
     }
 
-    val parentComposition = rememberCompositionReference()
+    val parentComposition = rememberCompositionContext()
     val dialog = remember {
         AppWindow(
             attached = attached,

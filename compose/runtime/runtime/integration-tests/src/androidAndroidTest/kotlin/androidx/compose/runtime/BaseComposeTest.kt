@@ -25,7 +25,6 @@ import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.node.UiApplier
 import androidx.compose.ui.platform.LocalContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -101,19 +100,19 @@ abstract class BaseComposeTest {
     )
 
     @Composable
+    @Suppress("UNUSED_PARAMETER")
     fun subCompose(block: @Composable () -> Unit) {
-        val container = remember { View(activity) }
-        val reference = rememberCompositionReference()
-        @OptIn(ExperimentalComposeApi::class)
-        Composition(
-            container,
-            UiApplier(container),
-            reference
-        ).apply {
-            setContent {
-                block()
-            }
-        }
+//        val reference = rememberCompositionContext()
+//        remember {
+//            Composition(
+//                UiApplier(View(activity)),
+//                reference
+//            )
+//        }.apply {
+//            setContent {
+//                block()
+//            }
+//        }
     }
 }
 
@@ -137,7 +136,7 @@ class ComposeTester(val activity: ComponentActivity, val composable: @Composable
 
     private fun initialComposition(composable: @Composable () -> Unit) {
         activity.show {
-            Providers(
+            CompositionLocalProvider(
                 LocalContext provides activity
             ) {
                 composable()

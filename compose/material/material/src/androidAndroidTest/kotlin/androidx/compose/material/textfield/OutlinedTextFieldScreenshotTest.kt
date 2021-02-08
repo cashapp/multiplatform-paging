@@ -25,7 +25,7 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.setMaterialContent
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.testutils.assertAgainstGolden
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -106,6 +106,7 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_not_focused")
     }
 
+    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_focused() {
         rule.setMaterialContent {
@@ -124,10 +125,11 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_focused")
     }
 
+    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_focused_rtl() {
         rule.setMaterialContent {
-            Providers(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Box(Modifier.semantics(mergeDescendants = true) {}.testTag(TextFieldTag)) {
                     OutlinedTextField(
                         value = "",
@@ -144,6 +146,7 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_focused_rtl")
     }
 
+    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_error_focused() {
         rule.setMaterialContent {
@@ -183,7 +186,7 @@ class OutlinedTextFieldScreenshotTest {
     @Test
     fun outlinedTextField_textColor_fallbackToContentColor() {
         rule.setMaterialContent {
-            Providers(LocalContentColor provides Color.Magenta) {
+            CompositionLocalProvider(LocalContentColor provides Color.Magenta) {
                 OutlinedTextField(
                     value = "Hello, world!",
                     onValueChange = {},

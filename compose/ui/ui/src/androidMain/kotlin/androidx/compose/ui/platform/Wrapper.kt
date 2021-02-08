@@ -19,16 +19,15 @@ import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.ComponentActivity
 import androidx.annotation.MainThread
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.CompositionData
-import androidx.compose.runtime.CompositionReference
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.tooling.CompositionData
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.InternalComposeApi
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.tooling.LocalInspectionTables
@@ -48,54 +47,13 @@ private val TAG = "Wrapper"
 // instead.
 @MainThread
 @OptIn(ExperimentalComposeApi::class)
-internal actual fun subcomposeInto(
+internal actual fun createSubcomposition(
     container: LayoutNode,
-    parent: CompositionReference,
-    composable: @Composable () -> Unit
+    parent: CompositionContext
 ): Composition = Composition(
-    container,
     UiApplier(container),
     parent
-).apply {
-    setContent(composable)
-}
-
-/**
- * Composes the given composable into the given activity. The [content] will become the root view
- * of the given activity.
- *
- * [Composition.dispose] is called automatically when the Activity is destroyed.
- *
- * @param parent The parent composition reference to coordinate scheduling of composition updates
- * @param content A `@Composable` function declaring the UI contents
- */
-// TODO: Remove the androidx.activity dependency from this module when removing this
-@Deprecated(
-    "Moved to the androidx.activity:activity-compose artifact",
-    replaceWith = ReplaceWith(
-        "this.setContent(parent, content)",
-        "androidx.activity.compose.setContent"
-    )
 )
-fun ComponentActivity.setContent(
-    parent: CompositionReference? = null,
-    content: @Composable () -> Unit
-) {
-    val existingComposeView = window.decorView
-        .findViewById<ViewGroup>(android.R.id.content)
-        .getChildAt(0) as? ComposeView
-
-    if (existingComposeView != null) with(existingComposeView) {
-        setParentCompositionReference(parent)
-        setContent(content)
-    } else ComposeView(this).apply {
-        // Set content and parent **before** setContentView
-        // to have ComposeView create the composition on attach
-        setParentCompositionReference(parent)
-        setContent(content)
-        setContentView(this, DefaultLayoutParams)
-    }
-}
 
 /**
  * Composes the given composable into the given view.
@@ -111,7 +69,7 @@ fun ComponentActivity.setContent(
  * @param content Composable that will be the content of the view.
  */
 internal fun ViewGroup.setContent(
-    parent: CompositionReference,
+    parent: CompositionContext,
     content: @Composable () -> Unit
 ): Composition {
     GlobalSnapshotManager.ensureStarted()
@@ -127,7 +85,7 @@ internal fun ViewGroup.setContent(
 @OptIn(InternalComposeApi::class)
 private fun doSetContent(
     owner: AndroidComposeView,
-    parent: CompositionReference,
+    parent: CompositionContext,
     content: @Composable () -> Unit
 ): Composition {
     if (inspectionWanted(owner)) {
@@ -137,8 +95,7 @@ private fun doSetContent(
         )
         enableDebugInspectorInfo()
     }
-    @OptIn(ExperimentalComposeApi::class)
-    val original = Composition(owner.root, UiApplier(owner.root), parent)
+    val original = Composition(UiApplier(owner.root), parent)
     val wrapped = owner.view.getTag(R.id.wrapped_composition_tag)
         as? WrappedComposition
         ?: WrappedComposition(owner, original).also {
@@ -201,7 +158,7 @@ private class WrappedComposition(
                         LaunchedEffect(owner) { owner.keyboardVisibilityEventLoop() }
                         LaunchedEffect(owner) { owner.boundsUpdatesEventLoop() }
 
-                        Providers(LocalInspectionTables provides inspectionTable) {
+                        CompositionLocalProvider(LocalInspectionTables provides inspectionTable) {
                             ProvideAndroidCompositionLocals(owner, content)
                         }
                     }

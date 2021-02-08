@@ -37,7 +37,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +50,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalTextInputService
 import androidx.compose.ui.platform.LocalTextToolbar
@@ -58,9 +59,10 @@ import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertEditableTextEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
@@ -123,7 +125,7 @@ class TextFieldTest {
         var isFocused = false
         rule.setContent {
             val state = remember { mutableStateOf("") }
-            Providers(
+            CompositionLocalProvider(
                 LocalTextInputService provides inputService
             ) {
                 BasicTextField(
@@ -162,7 +164,7 @@ class TextFieldTest {
             .thenReturn(inputSessionToken)
 
         rule.setContent {
-            Providers(
+            CompositionLocalProvider(
                 LocalTextInputService provides textInputService
             ) {
                 TextFieldApp()
@@ -233,7 +235,7 @@ class TextFieldTest {
             .thenReturn(inputSessionToken)
 
         rule.setContent {
-            Providers(
+            CompositionLocalProvider(
                 LocalTextInputService provides textInputService
             ) {
                 OnlyDigitsApp()
@@ -292,7 +294,7 @@ class TextFieldTest {
 
         val onTextLayout: (TextLayoutResult) -> Unit = mock()
         rule.setContent {
-            Providers(
+            CompositionLocalProvider(
                 LocalTextInputService provides textInputService
             ) {
                 val state = remember { mutableStateOf("") }
@@ -406,7 +408,7 @@ class TextFieldTest {
                 onValueChange = {},
                 textStyle = TextStyle(color = Color.White),
                 modifier = Modifier.preferredSize(10.dp, 20.dp).background(color = Color.White),
-                cursorColor = Color.Blue
+                cursorBrush = SolidColor(Color.Blue)
             )
         }
 
@@ -711,3 +713,12 @@ class TextFieldTest {
         }
     }
 }
+
+private fun SemanticsNodeInteraction.assertEditableTextEquals(
+    value: String
+): SemanticsNodeInteraction =
+    assert(
+        SemanticsMatcher("${SemanticsProperties.EditableText.name} = '$value'") {
+            it.config.getOrNull(SemanticsProperties.EditableText)?.text.equals(value)
+        }
+    )

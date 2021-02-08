@@ -18,6 +18,7 @@ package androidx.wear.watchface.style
 
 import android.graphics.drawable.Icon
 import android.os.Parcel
+
 import androidx.wear.watchface.style.UserStyleSetting.BooleanUserStyleSetting
 import androidx.wear.watchface.style.UserStyleSetting.ComplicationsUserStyleSetting
 import androidx.wear.watchface.style.UserStyleSetting.CustomValueUserStyleSetting
@@ -30,6 +31,7 @@ import androidx.wear.watchface.style.data.UserStyleWireFormat
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -455,5 +457,83 @@ class StyleParcelableTest {
         val options3Overlays = ArrayList(options[3].complicationOverlays)
         assertThat(options3Overlays[0].complicationId).isEqualTo(leftComplicationID)
         assertFalse(options3Overlays[0].enabled!!)
+    }
+
+    @Test
+    fun styleSchemaToString() {
+        val settingIcon1 = Icon.createWithContentUri("settingIcon1")
+        val settingIcon2 = Icon.createWithContentUri("settingIcon2")
+        val styleSetting1 = ListUserStyleSetting(
+            "id1",
+            "displayName1",
+            "description1",
+            settingIcon1,
+            listOf(option1, option2),
+            listOf(Layer.BASE_LAYER)
+        )
+        val styleSetting2 = ListUserStyleSetting(
+            "id2",
+            "displayName2",
+            "description2",
+            settingIcon2,
+            listOf(option3, option4),
+            listOf(Layer.TOP_LAYER)
+        )
+        val styleSetting3 = BooleanUserStyleSetting(
+            "id3",
+            "displayName3",
+            "description3",
+            null,
+            true,
+            listOf(Layer.BASE_LAYER)
+        )
+        val styleSetting4 = CustomValueUserStyleSetting(
+            "default",
+            listOf(Layer.BASE_LAYER)
+        )
+
+        val schema = UserStyleSchema(
+            listOf(
+                styleSetting1,
+                styleSetting2,
+                styleSetting3,
+                styleSetting4
+            )
+        )
+
+        assertThat(schema.toString()).isEqualTo(
+            "[{id1 : 1, 2}, {id2 : 3, 4}, {id3 : true, false}, {CustomValue : default}]"
+        )
+    }
+
+    @Ignore
+    @Test
+    fun userStyleToString() {
+        val settingIcon1 = Icon.createWithContentUri("settingIcon1")
+        val settingIcon2 = Icon.createWithContentUri("settingIcon2")
+        val styleSetting1 = ListUserStyleSetting(
+            "id1",
+            "displayName1",
+            "description1",
+            settingIcon1,
+            listOf(option1, option2),
+            listOf(Layer.BASE_LAYER)
+        )
+        val styleSetting2 = ListUserStyleSetting(
+            "id2",
+            "displayName2",
+            "description2",
+            settingIcon2,
+            listOf(option3, option4),
+            listOf(Layer.TOP_LAYER)
+        )
+        val style = UserStyle(
+            mapOf(
+                styleSetting1 to option2,
+                styleSetting2 to option3
+            )
+        )
+
+        assertThat(style.toString()).isEqualTo("[id1 -> 2, id2 -> 3]")
     }
 }

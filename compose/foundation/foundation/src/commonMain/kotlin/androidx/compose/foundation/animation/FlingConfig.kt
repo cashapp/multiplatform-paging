@@ -18,14 +18,13 @@
 
 package androidx.compose.foundation.animation
 
-import androidx.compose.animation.core.AnimatedFloat
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.FloatDecayAnimationSpec
 import androidx.compose.animation.core.FloatExponentialDecaySpec
-import androidx.compose.animation.core.OnAnimationEnd
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TargetAnimation
-import androidx.compose.animation.core.fling
+import androidx.compose.animation.core.generateDecayAnimationSpec
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import kotlin.math.abs
@@ -83,6 +82,13 @@ fun defaultFlingConfig(
     adjustTarget: (Float) -> TargetAnimation? = { null }
 ): FlingConfig = actualFlingConfig(adjustTarget)
 
+/**
+ * Default [DecayAnimationSpec] representing a fling curve.
+ */
+@Composable
+fun defaultFlingSpec(): DecayAnimationSpec<Float> =
+    actualFlingConfig { null }.decayAnimation.generateDecayAnimationSpec()
+
 @Composable
 internal expect fun actualFlingConfig(adjustTarget: (Float) -> TargetAnimation?): FlingConfig
 
@@ -109,26 +115,4 @@ fun FlingConfig(
         TargetAnimation(adjusted, animationSpec)
     }
     return FlingConfig(decayAnimation, adjustTarget)
-}
-
-/**
- * Starts a fling animation with the specified starting velocity and fling configuration.
- *
- * @param startVelocity Starting velocity of the fling animation
- * @param config configuration that specifies fling behaviour
- * @param onAnimationEnd callback to be invoked when fling finishes by decay
- * or being interrupted by gesture input.
- * Consider second boolean param "cancelled" to know what happened.
- */
-internal fun AnimatedFloat.fling(
-    startVelocity: Float,
-    config: FlingConfig,
-    onAnimationEnd: OnAnimationEnd? = null
-) {
-    fling(
-        startVelocity,
-        config.decayAnimation,
-        config.adjustTarget,
-        onAnimationEnd
-    )
 }

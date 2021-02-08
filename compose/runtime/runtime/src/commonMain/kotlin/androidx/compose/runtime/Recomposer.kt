@@ -16,10 +16,12 @@
 
 package androidx.compose.runtime
 
+import androidx.compose.runtime.collection.IdentityArraySet
 import androidx.compose.runtime.snapshots.MutableSnapshot
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotApplyResult
 import androidx.compose.runtime.snapshots.fastForEach
+import androidx.compose.runtime.tooling.CompositionData
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -98,7 +100,7 @@ interface RecomposerInfo {
 )
 class Recomposer(
     effectCoroutineContext: CoroutineContext
-) : CompositionReference() {
+) : CompositionContext() {
     /**
      * This is a running count of the number of times the recomposer awoke and applied changes to
      * one or more composers. This count is unaffected if the composer awakes and recomposed but
@@ -285,6 +287,33 @@ class Recomposer(
             get() = this@Recomposer.hasPendingWork
         override val changeCount: Long
             get() = this@Recomposer.changeCount
+        fun saveStateAndDisposeForHotReload(): List<HotReloadable> {
+            val compositions = synchronized(stateLock) { knownCompositions.toList() }
+            return compositions
+                .mapNotNull { it as? CompositionImpl }
+                .map { HotReloadable(it).apply { clearContent() } }
+        }
+    }
+
+    private class HotReloadable(
+        private val composition: CompositionImpl
+    ) {
+        private var composable: @Composable () -> Unit = composition.composable
+        fun clearContent() {
+            if (composition.isRoot) {
+                composition.setContent { }
+            }
+        }
+
+        fun resetContent() {
+            composition.composable = composable
+        }
+
+        fun recompose() {
+            if (composition.isRoot) {
+                composition.setContent(composable)
+            }
+        }
     }
 
     private val recomposerInfo = RecomposerInfoImpl()
@@ -416,9 +445,12 @@ class Recomposer(
                             }
 
                             // Perform recomposition for any invalidated composers
+                            val modifiedValues = IdentityArraySet<Any>()
                             try {
                                 toRecompose.fastForEach { composer ->
-                                    performRecompose(composer)?.let { toApply += it }
+                                    performRecompose(composer, modifiedValues)?.let {
+                                        toApply += it
+                                    }
                                 }
                                 if (toApply.isNotEmpty()) changeCount++
                             } finally {
@@ -465,9 +497,6 @@ class Recomposer(
         effectJob.cancel()
     }
 
-    @Deprecated("renamed to cancel(); consider close() for your use case", ReplaceWith("cancel()"))
-    fun shutDown() = cancel()
-
     /**
      * Close this [Recomposer]. Once all effects launched by managed compositions complete,
      * any active call to [runRecomposeAndApplyChanges] will return normally and this [Recomposer]
@@ -494,7 +523,7 @@ class Recomposer(
         content: @Composable () -> Unit
     ) {
         val composerWasComposing = composition.isComposing
-        composing(composition) {
+        composing(composition, null) {
             composition.composeContent(content)
         }
         // TODO(b/143755743)
@@ -518,10 +547,14 @@ class Recomposer(
         }
     }
 
-    private fun performRecompose(composition: ControlledComposition): ControlledComposition? {
+    private fun performRecompose(
+        composition: ControlledComposition,
+        modifiedValues: IdentityArraySet<Any>
+    ): ControlledComposition? {
         if (composition.isComposing || composition.isDisposed) return null
         return if (
-            composing(composition) {
+            composing(composition, modifiedValues) {
+                modifiedValues.forEach { composition.recordWriteOf(it) }
                 composition.recompose()
             }
         ) composition else null
@@ -531,13 +564,23 @@ class Recomposer(
         return { value -> composition.recordReadOf(value) }
     }
 
-    private fun writeObserverOf(composition: ControlledComposition): (Any) -> Unit {
-        return { value -> composition.recordWriteOf(value) }
+    private fun writeObserverOf(
+        composition: ControlledComposition,
+        modifiedValues: IdentityArraySet<Any>?
+    ): (Any) -> Unit {
+        return { value ->
+            composition.recordWriteOf(value)
+            modifiedValues?.add(value)
+        }
     }
 
-    private inline fun <T> composing(composition: ControlledComposition, block: () -> T): T {
+    private inline fun <T> composing(
+        composition: ControlledComposition,
+        modifiedValues: IdentityArraySet<Any>?,
+        block: () -> T
+    ): T {
         val snapshot = Snapshot.takeMutableSnapshot(
-            readObserverOf(composition), writeObserverOf(composition)
+            readObserverOf(composition), writeObserverOf(composition, modifiedValues)
         )
         try {
             return snapshot.enter(block)
@@ -556,12 +599,6 @@ class Recomposer(
             // TODO(chuckj): Consider lifting this restriction by forcing a recompose
         }
     }
-
-    /**
-     * Returns true if any pending invalidations have been scheduled.
-     */
-    @Deprecated("Replaced by hasPendingWork", ReplaceWith("hasPendingWork"))
-    fun hasInvalidations(): Boolean = hasPendingWork
 
     /**
      * `true` if this [Recomposer] has any pending work scheduled, regardless of whether or not
@@ -590,10 +627,6 @@ class Recomposer(
     // Recomposer always starts with a constant compound hash
     internal override val compoundHashKey: Int
         get() = RecomposerCompoundHashKey
-
-    // Collecting key sources happens at the level of a composer; starts as false
-    internal override val collectingKeySources: Boolean
-        get() = false
 
     // Collecting parameter happens at the level of a composer; starts as false
     internal override val collectingParameterInformation: Boolean
@@ -625,7 +658,7 @@ class Recomposer(
 
     companion object {
 
-        private val _runningRecomposers = MutableStateFlow(persistentSetOf<RecomposerInfo>())
+        private val _runningRecomposers = MutableStateFlow(persistentSetOf<RecomposerInfoImpl>())
 
         /**
          * An observable [Set] of [RecomposerInfo]s for currently
@@ -635,7 +668,7 @@ class Recomposer(
         val runningRecomposers: StateFlow<Set<RecomposerInfo>>
             get() = _runningRecomposers
 
-        private fun addRunning(info: RecomposerInfo) {
+        private fun addRunning(info: RecomposerInfoImpl) {
             while (true) {
                 val old = _runningRecomposers.value
                 val new = old.add(info)
@@ -643,12 +676,27 @@ class Recomposer(
             }
         }
 
-        private fun removeRunning(info: RecomposerInfo) {
+        private fun removeRunning(info: RecomposerInfoImpl) {
             while (true) {
                 val old = _runningRecomposers.value
                 val new = old.remove(info)
                 if (old === new || _runningRecomposers.compareAndSet(old, new)) break
             }
+        }
+
+        internal fun saveStateAndDisposeForHotReload(): Any {
+            // NOTE: when we move composition/recomposition onto multiple threads, we will want
+            // to ensure that we pause recompositions before this call.
+            return _runningRecomposers.value.flatMap { it.saveStateAndDisposeForHotReload() }
+        }
+
+        internal fun loadStateAndComposeForHotReload(token: Any) {
+            // NOTE: when we move composition/recomposition onto multiple threads, we will want
+            // to ensure that we pause recompositions before this call.
+            @Suppress("UNCHECKED_CAST")
+            val holders = token as List<HotReloadable>
+            holders.forEach { it.resetContent() }
+            holders.forEach { it.recompose() }
         }
     }
 }

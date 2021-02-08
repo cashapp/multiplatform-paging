@@ -40,6 +40,7 @@ import org.junit.runner.RunWith
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalMaterialApi::class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
 class DrawerScreenshotTest {
 
@@ -53,10 +54,10 @@ class DrawerScreenshotTest {
     private fun ComposeContentTestRule.setBottomDrawer(drawerValue: BottomDrawerValue) {
         setMaterialContent {
             Box(Modifier.size(10.dp, 100.dp).testTag("container")) {
-                BottomDrawerLayout(
+                BottomDrawer(
                     drawerState = rememberBottomDrawerState(drawerValue),
                     drawerContent = { Box(Modifier.fillMaxSize().background(Color.Red)) },
-                    bodyContent = { Box(Modifier.fillMaxSize().background(Color.Yellow)) }
+                    content = { Box(Modifier.fillMaxSize().background(Color.Yellow)) }
                 )
             }
         }
@@ -65,10 +66,10 @@ class DrawerScreenshotTest {
     private fun ComposeContentTestRule.setModalDrawer(drawerValue: DrawerValue) {
         setMaterialContent {
             Box(Modifier.size(100.dp, 10.dp).testTag("container")) {
-                ModalDrawerLayout(
+                ModalDrawer(
                     drawerState = rememberDrawerState(drawerValue),
                     drawerContent = { Box(Modifier.fillMaxSize().background(Color.Red)) },
-                    bodyContent = { Box(Modifier.fillMaxSize().background(Color.Yellow)) }
+                    content = { Box(Modifier.fillMaxSize().background(Color.Yellow)) }
                 )
             }
         }

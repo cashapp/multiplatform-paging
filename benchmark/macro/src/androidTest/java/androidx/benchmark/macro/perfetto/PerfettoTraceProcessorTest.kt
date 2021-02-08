@@ -33,11 +33,11 @@ import kotlin.test.assertFailsWith
 @RunWith(AndroidJUnit4::class)
 class PerfettoTraceProcessorTest {
     @Test
-    fun shellFile() {
+    fun shellPath() {
         assumeTrue(PerfettoTraceProcessor.isAbiSupported())
-        val shellFile = PerfettoTraceProcessor.shellFile.absolutePath
+        val shellPath = PerfettoTraceProcessor.shellPath
         val device = InstrumentationRegistry.getInstrumentation().device()
-        val out = device.executeShellCommand("$shellFile --version")
+        val out = device.executeShellCommand("$shellPath --version")
         assertTrue(
             "expect to get Perfetto version string, saw: $out",
             out.contains("Perfetto v")
@@ -64,11 +64,23 @@ class PerfettoTraceProcessorTest {
     fun validateAbiNotSupportedBehavior() {
         assumeFalse(PerfettoTraceProcessor.isAbiSupported())
         assertFailsWith<IllegalStateException> {
-            PerfettoTraceProcessor.shellFile
+            PerfettoTraceProcessor.shellPath
         }
 
         assertFailsWith<IllegalStateException> {
             PerfettoTraceProcessor.getJsonMetrics("ignored_path", "ignored_metric")
         }
+    }
+
+    @Test
+    fun validateTraceProcessorBinariesExist() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val suffixes = listOf("aarch64")
+        val entries = suffixes.map { "trace_processor_shell_$it" }.toSet()
+        val assets = context.assets.list("") ?: emptyArray()
+        assertTrue(
+            "Expected to find $entries",
+            assets.toSet().containsAll(entries)
+        )
     }
 }

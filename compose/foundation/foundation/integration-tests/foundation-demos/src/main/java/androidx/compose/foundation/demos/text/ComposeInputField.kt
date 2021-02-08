@@ -23,9 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,7 +47,7 @@ fun InputFieldDemo() {
             TagLine(tag = "LTR Layout")
         }
         item {
-            Providers(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TagLine(tag = "simple editing single line")
                     EditLine(singleLine = true)
@@ -61,7 +62,7 @@ fun InputFieldDemo() {
             TagLine(tag = "RTL Layout")
         }
         item {
-            Providers(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TagLine(tag = "simple editing RTL")
                     EditLine()
@@ -90,12 +91,10 @@ internal fun EditLine(
             keyboardType = keyboardType,
             imeAction = imeAction
         ),
+        keyboardActions = KeyboardActions { controller.value?.hideSoftwareKeyboard() },
         onValueChange = { state.value = it },
         textStyle = TextStyle(fontSize = fontSize8),
         onTextInputStarted = { controller.value = it },
-        onImeActionPerformed = {
-            controller.value?.hideSoftwareKeyboard()
-        }
     )
 }
 

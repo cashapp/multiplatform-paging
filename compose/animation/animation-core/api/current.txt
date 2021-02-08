@@ -1,10 +1,6 @@
 // Signature format: 4.0
 package androidx.compose.animation.core {
 
-  public final class AndroidAnimationClockKt {
-    method public static void setRootAnimationClockFactory(kotlin.jvm.functions.Function1<? super kotlinx.coroutines.CoroutineScope,? extends androidx.compose.animation.core.AnimationClockObservable> p);
-  }
-
   public final class Animatable<T, V extends androidx.compose.animation.core.AnimationVector> {
     ctor public Animatable(T? initialValue, androidx.compose.animation.core.TwoWayConverter<T,V> typeConverter, T? visibilityThreshold);
     method public suspend Object? animateDecay(T? initialVelocity, androidx.compose.animation.core.DecayAnimationSpec<T> animationSpec, optional kotlin.jvm.functions.Function1<? super androidx.compose.animation.core.Animatable<T,V>,kotlin.Unit>? block, optional kotlin.coroutines.Continuation<? super androidx.compose.animation.core.AnimationResult<T,V>> p);
@@ -18,8 +14,8 @@ package androidx.compose.animation.core {
     method public T! getVelocity();
     method public V getVelocityVector();
     method public boolean isRunning();
-    method public void snapTo(T? targetValue);
-    method public void stop();
+    method public suspend Object? snapTo(T? targetValue, kotlin.coroutines.Continuation<? super kotlin.Unit> p);
+    method public suspend Object? stop(kotlin.coroutines.Continuation<? super kotlin.Unit> p);
     method public void updateBounds(optional T? lowerBound, optional T? upperBound);
     property public final boolean isRunning;
     property public final T? lowerBound;
@@ -36,7 +32,6 @@ package androidx.compose.animation.core {
   }
 
   public final class AnimateAsStateKt {
-    method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<androidx.compose.ui.unit.Bounds> animateBoundsAsState(androidx.compose.ui.unit.Bounds targetValue, optional androidx.compose.animation.core.AnimationSpec<androidx.compose.ui.unit.Bounds> animationSpec, optional kotlin.jvm.functions.Function1<? super androidx.compose.ui.unit.Bounds,kotlin.Unit>? finishedListener);
     method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<androidx.compose.ui.unit.Dp> animateDpAsState-Lz7ev7o(float targetValue, optional androidx.compose.animation.core.AnimationSpec<androidx.compose.ui.unit.Dp> animationSpec, optional kotlin.jvm.functions.Function1<? super androidx.compose.ui.unit.Dp,kotlin.Unit>? finishedListener);
     method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<java.lang.Float> animateFloatAsState(float targetValue, optional androidx.compose.animation.core.AnimationSpec<java.lang.Float> animationSpec, optional float visibilityThreshold, optional kotlin.jvm.functions.Function1<? super java.lang.Float,kotlin.Unit>? finishedListener);
     method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<java.lang.Integer> animateIntAsState(int targetValue, optional androidx.compose.animation.core.AnimationSpec<java.lang.Integer> animationSpec, optional kotlin.jvm.functions.Function1<? super java.lang.Integer,kotlin.Unit>? finishedListener);
@@ -46,32 +41,6 @@ package androidx.compose.animation.core {
     method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<androidx.compose.ui.geometry.Rect> animateRectAsState(androidx.compose.ui.geometry.Rect targetValue, optional androidx.compose.animation.core.AnimationSpec<androidx.compose.ui.geometry.Rect> animationSpec, optional kotlin.jvm.functions.Function1<? super androidx.compose.ui.geometry.Rect,kotlin.Unit>? finishedListener);
     method @androidx.compose.runtime.Composable public static androidx.compose.runtime.State<androidx.compose.ui.geometry.Size> animateSizeAsState-rlPqr8Y(long targetValue, optional androidx.compose.animation.core.AnimationSpec<androidx.compose.ui.geometry.Size> animationSpec, optional kotlin.jvm.functions.Function1<? super androidx.compose.ui.geometry.Size,kotlin.Unit>? finishedListener);
     method @androidx.compose.runtime.Composable public static <T, V extends androidx.compose.animation.core.AnimationVector> androidx.compose.runtime.State<T> animateValueAsState(T? targetValue, androidx.compose.animation.core.TwoWayConverter<T,V> typeConverter, optional androidx.compose.animation.core.AnimationSpec<T> animationSpec, optional T? visibilityThreshold, optional kotlin.jvm.functions.Function1<? super T,kotlin.Unit>? finishedListener);
-  }
-
-  @Deprecated public abstract class AnimatedFloat extends androidx.compose.animation.core.BaseAnimatedValue<java.lang.Float,androidx.compose.animation.core.AnimationVector1D> {
-    ctor @Deprecated public AnimatedFloat(androidx.compose.animation.core.AnimationClockObservable clock, float visibilityThreshold);
-    method @Deprecated public final float getMax();
-    method @Deprecated public final float getMin();
-    method @Deprecated public final float getVelocity();
-    method @Deprecated public final void setBounds(optional float min, optional float max);
-    method @Deprecated public void snapTo(float targetValue);
-    property public final float max;
-    property public final float min;
-    property public final float velocity;
-  }
-
-  @Deprecated public abstract class AnimatedValue<T, V extends androidx.compose.animation.core.AnimationVector> extends androidx.compose.animation.core.BaseAnimatedValue<T,V> {
-    ctor @Deprecated public AnimatedValue(androidx.compose.animation.core.TwoWayConverter<T,V> typeConverter, androidx.compose.animation.core.AnimationClockObservable clock, T? visibilityThreshold);
-    method @Deprecated public final V getVelocity();
-    property public final V velocity;
-  }
-
-  public final class AnimatedValueKt {
-    method @Deprecated public static androidx.compose.animation.core.AnimatedFloat AnimatedFloat(float initVal, androidx.compose.animation.core.AnimationClockObservable clock, optional float visibilityThreshold);
-    method @Deprecated public static <T, V extends androidx.compose.animation.core.AnimationVector> androidx.compose.animation.core.AnimatedValue<T,V> AnimatedValue(T? initVal, androidx.compose.animation.core.TwoWayConverter<T,V> typeConverter, androidx.compose.animation.core.AnimationClockObservable clock, optional T? visibilityThreshold);
-    method @Deprecated public static <V extends androidx.compose.animation.core.AnimationVector> androidx.compose.animation.core.AnimatedValue<V,V> AnimatedVector(V initVal, androidx.compose.animation.core.AnimationClockObservable clock, optional V visibilityThreshold);
-    method @Deprecated public static void fling(androidx.compose.animation.core.AnimatedFloat, float startVelocity, optional androidx.compose.animation.core.FloatDecayAnimationSpec decay, optional kotlin.jvm.functions.Function3<? super androidx.compose.animation.core.AnimationEndReason,? super java.lang.Float,? super java.lang.Float,kotlin.Unit>? onEnd);
-    method @Deprecated public static void fling(androidx.compose.animation.core.AnimatedFloat, float startVelocity, optional androidx.compose.animation.core.FloatDecayAnimationSpec decay, kotlin.jvm.functions.Function1<? super java.lang.Float,androidx.compose.animation.core.TargetAnimation> adjustTarget, optional kotlin.jvm.functions.Function3<? super androidx.compose.animation.core.AnimationEndReason,? super java.lang.Float,? super java.lang.Float,kotlin.Unit>? onEnd);
   }
 
   public interface Animation<T, V extends androidx.compose.animation.core.AnimationVector> {
@@ -88,15 +57,6 @@ package androidx.compose.animation.core {
     property public abstract androidx.compose.animation.core.TwoWayConverter<T,V> typeConverter;
   }
 
-  public interface AnimationClockObservable {
-    method public void subscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-    method public void unsubscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-  }
-
-  public interface AnimationClockObserver {
-    method public void onAnimationFrame(long frameTimeMillis);
-  }
-
   public final class AnimationConstants {
     field public static final int DefaultDurationMillis = 300; // 0x12c
     field public static final androidx.compose.animation.core.AnimationConstants INSTANCE;
@@ -107,7 +67,6 @@ package androidx.compose.animation.core {
     enum_constant public static final androidx.compose.animation.core.AnimationEndReason BoundReached;
     enum_constant public static final androidx.compose.animation.core.AnimationEndReason Finished;
     enum_constant public static final androidx.compose.animation.core.AnimationEndReason Interrupted;
-    enum_constant @Deprecated public static final androidx.compose.animation.core.AnimationEndReason TargetReached;
   }
 
   public final class AnimationKt {
@@ -257,26 +216,6 @@ package androidx.compose.animation.core {
     method public static androidx.compose.animation.core.AnimationVector4D AnimationVector(float v1, float v2, float v3, float v4);
   }
 
-  @Deprecated public abstract sealed class BaseAnimatedValue<T, V extends androidx.compose.animation.core.AnimationVector> {
-    method @Deprecated public final void animateTo(T? targetValue, optional androidx.compose.animation.core.AnimationSpec<T> anim, optional kotlin.jvm.functions.Function2<? super androidx.compose.animation.core.AnimationEndReason,? super T,kotlin.Unit>? onEnd);
-    method @Deprecated protected void checkFinished(long playtime);
-    method @Deprecated public final T! getTargetValue();
-    method @Deprecated public abstract T! getValue();
-    method @Deprecated public final boolean isRunning();
-    method @Deprecated protected abstract void setValue(T! p);
-    method @Deprecated public void snapTo(T? targetValue);
-    method @Deprecated public final void stop();
-    property public final boolean isRunning;
-    property public final T! targetValue;
-    property public abstract T! value;
-  }
-
-  public abstract class BaseAnimationClock implements androidx.compose.animation.core.AnimationClockObservable {
-    ctor public BaseAnimationClock();
-    method public void subscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-    method public void unsubscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-  }
-
   public final class ComplexDoubleKt {
   }
 
@@ -314,11 +253,6 @@ package androidx.compose.animation.core {
     method public static float calculateTargetValue(androidx.compose.animation.core.DecayAnimationSpec<java.lang.Float>, float initialValue, float initialVelocity);
     method public static <T> androidx.compose.animation.core.DecayAnimationSpec<T> exponentialDecay(optional float frictionMultiplier, optional float absVelocityThreshold);
     method public static <T> androidx.compose.animation.core.DecayAnimationSpec<T> generateDecayAnimationSpec(androidx.compose.animation.core.FloatDecayAnimationSpec);
-  }
-
-  public final class DefaultAnimationClock extends androidx.compose.animation.core.BaseAnimationClock {
-    ctor public DefaultAnimationClock();
-    method public void dispatchTime$metalava_module(long frameTimeMillis);
   }
 
   public interface DurationBasedAnimationSpec<T> extends androidx.compose.animation.core.FiniteAnimationSpec<T> {
@@ -395,6 +329,21 @@ package androidx.compose.animation.core {
     property public final int duration;
   }
 
+  public interface InfiniteAnimationPolicy extends kotlin.coroutines.CoroutineContext.Element {
+    method public default kotlin.coroutines.CoroutineContext.Key<?> getKey();
+    method public suspend <R> Object? onInfiniteOperation(kotlin.jvm.functions.Function1<? super kotlin.coroutines.Continuation<? super R>,?> block, kotlin.coroutines.Continuation<? super R> p);
+    property public default kotlin.coroutines.CoroutineContext.Key<?> key;
+    field public static final androidx.compose.animation.core.InfiniteAnimationPolicy.Key Key;
+  }
+
+  public static final class InfiniteAnimationPolicy.Key implements kotlin.coroutines.CoroutineContext.Key<androidx.compose.animation.core.InfiniteAnimationPolicy> {
+  }
+
+  public final class InfiniteAnimationPolicyKt {
+    method public static suspend inline <R> Object? withInfiniteAnimationFrameMillis(kotlin.jvm.functions.Function1<? super java.lang.Long,? extends R> onFrame, kotlin.coroutines.Continuation<? super R> p);
+    method public static suspend <R> Object? withInfiniteAnimationFrameNanos(kotlin.jvm.functions.Function1<? super java.lang.Long,? extends R> onFrame, kotlin.coroutines.Continuation<? super R> p);
+  }
+
   public final class InfiniteRepeatableSpec<T> implements androidx.compose.animation.core.AnimationSpec<T> {
     ctor public InfiniteRepeatableSpec(androidx.compose.animation.core.DurationBasedAnimationSpec<T> animation, androidx.compose.animation.core.RepeatMode repeatMode);
     method public androidx.compose.animation.core.DurationBasedAnimationSpec<T> getAnimation();
@@ -441,18 +390,9 @@ package androidx.compose.animation.core {
     property public final int durationMillis;
   }
 
-  public final class ManualAnimationClock extends androidx.compose.animation.core.BaseAnimationClock {
-    ctor public ManualAnimationClock(long initTimeMillis, boolean dispatchOnSubscribe);
-    method public long getClockTimeMillis();
-    method public boolean getHasObservers();
-    method public void setClockTimeMillis(long value);
-    property public final long clockTimeMillis;
-    property public final boolean hasObservers;
-  }
-
   public final class ManualFrameClock implements androidx.compose.runtime.MonotonicFrameClock {
-    ctor @Deprecated public ManualFrameClock(long initialTime, boolean dispatchOnSubscribe);
     ctor public ManualFrameClock(long initialTime);
+    ctor public ManualFrameClock();
     method public void advanceClock(long nanos);
     method public long getCurrentTime();
     method public boolean getHasAwaiters();
@@ -463,14 +403,6 @@ package androidx.compose.animation.core {
 
   public final class ManualFrameClockKt {
     method public static void advanceClockMillis(androidx.compose.animation.core.ManualFrameClock, long millis);
-  }
-
-  public final class MonotonicFrameAnimationClock implements androidx.compose.animation.core.AnimationClockObservable {
-    ctor public MonotonicFrameAnimationClock(kotlinx.coroutines.CoroutineScope scope);
-    method public boolean getHasObservers();
-    method public void subscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-    method public void unsubscribe(androidx.compose.animation.core.AnimationClockObserver observer);
-    property public final boolean hasObservers;
   }
 
   public final class MutableTransitionState<S> {
@@ -601,7 +533,6 @@ package androidx.compose.animation.core {
   }
 
   public final class TransitionKt {
-    method @androidx.compose.runtime.Composable public static inline <S> androidx.compose.runtime.State<androidx.compose.ui.unit.Bounds> animateBounds(androidx.compose.animation.core.Transition<S>, optional kotlin.jvm.functions.Function1<? super androidx.compose.animation.core.Transition.Segment<S>,? extends androidx.compose.animation.core.FiniteAnimationSpec<androidx.compose.ui.unit.Bounds>> transitionSpec, optional String label, kotlin.jvm.functions.Function1<? super S,androidx.compose.ui.unit.Bounds> targetValueByState);
     method @androidx.compose.runtime.Composable public static inline <S> androidx.compose.runtime.State<androidx.compose.ui.unit.Dp> animateDp(androidx.compose.animation.core.Transition<S>, optional kotlin.jvm.functions.Function1<? super androidx.compose.animation.core.Transition.Segment<S>,? extends androidx.compose.animation.core.FiniteAnimationSpec<androidx.compose.ui.unit.Dp>> transitionSpec, optional String label, kotlin.jvm.functions.Function1<? super S,androidx.compose.ui.unit.Dp> targetValueByState);
     method @androidx.compose.runtime.Composable public static inline <S> androidx.compose.runtime.State<java.lang.Float> animateFloat(androidx.compose.animation.core.Transition<S>, optional kotlin.jvm.functions.Function1<? super androidx.compose.animation.core.Transition.Segment<S>,? extends androidx.compose.animation.core.FiniteAnimationSpec<java.lang.Float>> transitionSpec, optional String label, kotlin.jvm.functions.Function1<? super S,java.lang.Float> targetValueByState);
     method @androidx.compose.runtime.Composable public static inline <S> androidx.compose.runtime.State<java.lang.Integer> animateInt(androidx.compose.animation.core.Transition<S>, optional kotlin.jvm.functions.Function1<? super androidx.compose.animation.core.Transition.Segment<S>,? extends androidx.compose.animation.core.FiniteAnimationSpec<java.lang.Integer>> transitionSpec, optional String label, kotlin.jvm.functions.Function1<? super S,java.lang.Integer> targetValueByState);
@@ -642,7 +573,6 @@ package androidx.compose.animation.core {
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.unit.Dp,androidx.compose.animation.core.AnimationVector1D> getVectorConverter(androidx.compose.ui.unit.Dp.Companion);
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.unit.DpOffset,androidx.compose.animation.core.AnimationVector2D> getVectorConverter(androidx.compose.ui.unit.DpOffset.Companion);
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.geometry.Size,androidx.compose.animation.core.AnimationVector2D> getVectorConverter(androidx.compose.ui.geometry.Size.Companion);
-    method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.unit.Bounds,androidx.compose.animation.core.AnimationVector4D> getVectorConverter(androidx.compose.ui.unit.Bounds.Companion);
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.geometry.Offset,androidx.compose.animation.core.AnimationVector2D> getVectorConverter(androidx.compose.ui.geometry.Offset.Companion);
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.unit.IntOffset,androidx.compose.animation.core.AnimationVector2D> getVectorConverter(androidx.compose.ui.unit.IntOffset.Companion);
     method public static androidx.compose.animation.core.TwoWayConverter<androidx.compose.ui.unit.IntSize,androidx.compose.animation.core.AnimationVector2D> getVectorConverter(androidx.compose.ui.unit.IntSize.Companion);
@@ -753,7 +683,6 @@ package androidx.compose.animation.core {
     method public static long getVisibilityThreshold(androidx.compose.ui.geometry.Size.Companion);
     method public static long getVisibilityThreshold(androidx.compose.ui.unit.IntSize.Companion);
     method public static androidx.compose.ui.geometry.Rect getVisibilityThreshold(androidx.compose.ui.geometry.Rect.Companion);
-    method public static androidx.compose.ui.unit.Bounds getVisibilityThreshold(androidx.compose.ui.unit.Bounds.Companion);
   }
 
 }

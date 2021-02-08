@@ -19,7 +19,7 @@ package androidx.compose.runtime.saveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ExperimentalComposeApi
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 
@@ -78,12 +78,12 @@ private class SaveableStateHolderImpl(
         key(key) {
             val registryHolder = remember {
                 require(parentSaveableStateRegistry?.canBeSaved(key) ?: true) {
-                    "Type of the key used for withRestorableState is not supported. On Android " +
-                        "you can only use types which can be stored inside the Bundle."
+                    "Type of the key $key is not supported. On Android you can only use types " +
+                        "which can be stored inside the Bundle."
                 }
                 RegistryHolder(key)
             }
-            Providers(
+            CompositionLocalProvider(
                 LocalSaveableStateRegistry provides registryHolder.registry,
                 content = content
             )
