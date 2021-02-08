@@ -33,7 +33,7 @@ import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -424,19 +424,20 @@ class MaterialRippleThemeTest {
         val contentColor = Color.Black
 
         val rippleColor = Color.Red
-        val rippleAlpha = 0.5f
+        val expectedAlpha = 0.5f
+        val rippleAlpha = RippleAlpha { expectedAlpha }
 
         val rippleTheme = object : RippleTheme {
             @Composable
             override fun defaultColor() = rippleColor
 
             @Composable
-            override fun rippleAlpha() = RippleAlpha { rippleAlpha }
+            override fun rippleAlpha() = rippleAlpha
         }
 
         rule.setContent {
             MaterialTheme {
-                Providers(LocalRippleTheme provides rippleTheme) {
+                CompositionLocalProvider(LocalRippleTheme provides rippleTheme) {
                     Surface(contentColor = contentColor) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             RippleBox(interactionState, rememberRipple())
@@ -446,7 +447,10 @@ class MaterialRippleThemeTest {
             }
         }
 
-        val expectedColor = calculateResultingRippleColor(rippleColor, rippleOpacity = rippleAlpha)
+        val expectedColor = calculateResultingRippleColor(
+            rippleColor,
+            rippleOpacity = expectedAlpha
+        )
 
         assertRippleMatches(
             interactionState,
@@ -463,19 +467,19 @@ class MaterialRippleThemeTest {
         val contentColor = Color.Black
 
         val rippleColor = Color.Red
-        val rippleAlpha = 0.5f
+        val expectedAlpha = 0.5f
+        val rippleAlpha = RippleAlpha { 0.5f }
 
         val rippleTheme = object : RippleTheme {
             @Composable
             override fun defaultColor() = rippleColor
-
             @Composable
-            override fun rippleAlpha() = RippleAlpha { rippleAlpha }
+            override fun rippleAlpha() = rippleAlpha
         }
 
         rule.setContent {
             MaterialTheme {
-                Providers(LocalRippleTheme provides rippleTheme) {
+                CompositionLocalProvider(LocalRippleTheme provides rippleTheme) {
                     Surface(contentColor = contentColor) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             RippleBox(interactionState, rememberRipple())
@@ -485,7 +489,10 @@ class MaterialRippleThemeTest {
             }
         }
 
-        val expectedColor = calculateResultingRippleColor(rippleColor, rippleOpacity = rippleAlpha)
+        val expectedColor = calculateResultingRippleColor(
+            rippleColor,
+            rippleOpacity = expectedAlpha
+        )
 
         assertRippleMatches(
             interactionState,
@@ -500,11 +507,12 @@ class MaterialRippleThemeTest {
         val interactionState = InteractionState()
 
         fun createRippleTheme(color: Color, alpha: Float) = object : RippleTheme {
+            val rippleAlpha = RippleAlpha { alpha }
             @Composable
             override fun defaultColor() = color
 
             @Composable
-            override fun rippleAlpha() = RippleAlpha { alpha }
+            override fun rippleAlpha() = rippleAlpha
         }
 
         val initialColor = Color.Red
@@ -514,7 +522,7 @@ class MaterialRippleThemeTest {
 
         rule.setContent {
             MaterialTheme {
-                Providers(LocalRippleTheme provides rippleTheme) {
+                CompositionLocalProvider(LocalRippleTheme provides rippleTheme) {
                     Surface(contentColor = Color.Black) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             RippleBox(interactionState, rememberRipple())
@@ -565,6 +573,7 @@ class MaterialRippleThemeTest {
         val interactionState = InteractionState()
 
         val alpha = 0.5f
+        val rippleAlpha = RippleAlpha { 0.5f }
         val expectedRippleColor = Color.Red
 
         val theme = object : RippleTheme {
@@ -572,12 +581,12 @@ class MaterialRippleThemeTest {
             override fun defaultColor() = LocalContentColor.current
 
             @Composable
-            override fun rippleAlpha() = RippleAlpha { alpha }
+            override fun rippleAlpha() = rippleAlpha
         }
 
         rule.setContent {
             MaterialTheme {
-                Providers(LocalRippleTheme provides theme) {
+                CompositionLocalProvider(LocalRippleTheme provides theme) {
                     Surface(contentColor = Color.Black) {
                         // Create ripple where contentColor is black
                         val ripple = rememberRipple()

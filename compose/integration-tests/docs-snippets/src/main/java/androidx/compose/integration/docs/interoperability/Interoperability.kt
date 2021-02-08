@@ -18,7 +18,8 @@
 // Ignore lint warnings in documentation snippets
 @file:Suppress(
     "unused", "UNUSED_PARAMETER", "UNUSED_VARIABLE", "UNUSED_ANONYMOUS_PARAMETER",
-    "RedundantSuspendModifier", "CascadeIf", "ClassName", "RemoveExplicitTypeArguments"
+    "RedundantSuspendModifier", "CascadeIf", "ClassName", "RemoveExplicitTypeArguments",
+    "ControlFlowWithEmptyBody", "PropertyName"
 )
 
 package androidx.compose.integration.docs.interoperability
@@ -84,9 +85,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
-import androidx.compose.ui.viewinterop.viewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 /**
  * This file lets DevRel track changes to snippets present in
@@ -226,7 +232,8 @@ private object InteropSnippet6 {
     }
 }
 
-@Composable private fun RowScope.InteropSnippet7() {
+@Composable
+private fun RowScope.InteropSnippet7() {
     Text(
         text = stringResource(R.string.ok),
         modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))
@@ -270,6 +277,7 @@ private object InteropSnippet9 {
         }
     }
 }
+
 /* ktlint-enable indent */
 private object InteropSnippet10 {
     class ExampleViewModel : ViewModel() { /*...*/ }
@@ -528,7 +536,6 @@ private object BetaSnippets {
         }
     }
 
-    @Suppress("ControlFlowWithEmptyBody")
     private object InteropSnippet6 {
         @Composable
         fun MyComposable() {
@@ -541,7 +548,6 @@ private object BetaSnippets {
         }
     }
 
-    @Suppress("ControlFlowWithEmptyBody")
     private object InteropSnippet7 {
         @Composable
         fun MyComposable() {
@@ -558,6 +564,60 @@ private object BetaSnippets {
     }
 
     private object InteropSnippet8 {
+        class ExampleActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+
+                setContent {
+                    MaterialTheme {
+                        Column {
+                            Greeting("user1")
+                            Greeting("user2")
+                        }
+                    }
+                }
+            }
+        }
+
+        @Composable
+        fun Greeting(userId: String) {
+            val greetingViewModel: GreetingViewModel = viewModel(
+                factory = GreetingViewModelFactory(userId)
+            )
+            val messageUser by greetingViewModel.message.observeAsState("")
+
+            Text(messageUser)
+        }
+
+        class GreetingViewModel(private val userId: String) : ViewModel() {
+            private val _message = MutableLiveData("Hi $userId")
+            val message: LiveData<String> = _message
+        }
+    }
+
+    private object InteropSnippet9 {
+        @Composable
+        fun MyScreen() {
+            NavHost(rememberNavController(), startDestination = "profile/{userId}") {
+                /* ... */
+                composable("profile/{userId}") { backStackEntry ->
+                    Greeting(backStackEntry.arguments?.getString("userId") ?: "")
+                }
+            }
+        }
+
+        @Composable
+        fun Greeting(userId: String) {
+            val greetingViewModel: GreetingViewModel = viewModel(
+                factory = GreetingViewModelFactory(userId)
+            )
+            val messageUser by greetingViewModel.message.observeAsState("")
+
+            Text(messageUser)
+        }
+    }
+
+    private object InteropSnippet10 {
         @Composable
         fun BackHandler(
             enabled: Boolean,
@@ -597,7 +657,7 @@ private object BetaSnippets {
         }
     }
 
-    private object InteropSnippet9 {
+    private object InteropSnippet11 {
         class CustomViewGroup @JvmOverloads constructor(
             context: Context,
             attrs: AttributeSet? = null,
@@ -634,7 +694,7 @@ private object BetaSnippets {
         }
     }
 
-    private object InteropSnippet10 {
+    private object InteropSnippet12 {
         @Composable
         fun LoginButton(
             onClick: () -> Unit,
@@ -668,7 +728,7 @@ private object BetaSnippets {
         }
     }
 
-    private object InteropSnippet11 {
+    private object InteropSnippet13 {
         @Composable
         fun SystemBroadcastReceiver(
             systemAction: String,
@@ -719,21 +779,26 @@ private object R {
     object layout {
         const val fragment_example = 1
     }
+
     object id {
         const val compose_view = 2
         const val compose_view_x = 3
     }
+
     object string {
         const val ok = 4
         const val plane_description = 5
         const val login = 6
     }
+
     object dimen {
         const val padding_small = 7
     }
+
     object drawable {
         const val ic_plane = 8
     }
+
     object color {
         const val Blue700 = 9
     }
@@ -745,12 +810,15 @@ private class CustomView(context: Context) : View(context) {
     val coordinator = Coord()
     lateinit var myView: View
 }
+
 private class DataExample(val title: String = "")
+
 private val data = DataExample()
 private fun startActivity(): Nothing = TODO()
 class ExampleViewModel : ViewModel() {
     val exampleLiveData = MutableLiveData(" ")
 }
+
 private fun ShowData(dataExample: State<String?>): Nothing = TODO()
 private class ExampleImageLoader {
     fun load(url: String): DummyInto = TODO()
@@ -759,21 +827,44 @@ private class ExampleImageLoader {
     open class Listener {
         open fun onSuccess(bitmap: Bitmap): Unit = TODO()
     }
+
     companion object {
         fun get() = ExampleImageLoader()
     }
 }
+
 private class DummyInto {
-    fun into(listener: ExampleImageLoader.Listener) { }
+    fun into(listener: ExampleImageLoader.Listener) {}
 }
-private fun ExampleComposable() { }
-@Composable private fun MdcTheme(content: @Composable () -> Unit) { }
-@Composable private fun AppCompatTheme(content: @Composable () -> Unit) { }
-@Composable private fun BlueTheme(content: @Composable () -> Unit) { }
-@Composable private fun PinkTheme(content: @Composable () -> Unit) { }
-@Composable private fun YourAppTheme(content: @Composable () -> Unit) { }
-@Composable private fun ProvideWindowInsets(content: @Composable () -> Unit) { }
-@Composable private fun Icon() { }
+
+private fun ExampleComposable() {}
+@Composable
+private fun MdcTheme(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun AppCompatTheme(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun BlueTheme(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun PinkTheme(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun YourAppTheme(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun ProvideWindowInsets(content: @Composable () -> Unit) {
+}
+
+@Composable
+private fun Icon() {
+}
 
 private open class Fragment {
 
@@ -785,16 +876,24 @@ private open class Fragment {
     ): View {
         TODO("not implemented")
     }
+
     fun requireContext(): Context = TODO()
 }
 
-private class AppCompatActivity {
-    val window: Any = Any()
-}
 private class WindowCompat {
     companion object {
-        fun setDecorFitsSystemWindows(window: Any, bool: Boolean) { }
+        fun setDecorFitsSystemWindows(window: Any, bool: Boolean) {}
     }
 }
 
 private fun Modifier.navigationBarsPadding(): Modifier = this
+
+private class GreetingViewModel : ViewModel() {
+    val _message = MutableLiveData("")
+    val message: LiveData<String> = _message
+}
+private class GreetingViewModelFactory(val userId: String) : ViewModelProvider.Factory {
+    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        TODO("Not yet implemented")
+    }
+}

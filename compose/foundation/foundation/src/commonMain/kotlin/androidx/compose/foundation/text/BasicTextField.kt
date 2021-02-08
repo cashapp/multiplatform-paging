@@ -24,7 +24,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.InternalTextApi
 import androidx.compose.ui.text.SoftwareKeyboardController
 import androidx.compose.ui.text.TextLayoutResult
@@ -83,6 +85,9 @@ import androidx.compose.ui.text.input.VisualTransformation
  * @param textStyle Style configuration that applies at character level such as color, font etc.
  * @param keyboardOptions software keyboard options that contains configuration such as
  * [KeyboardType] and [ImeAction].
+ * @param keyboardActions when the input service emits an IME action, the corresponding callback
+ * is called. Note that this IME action may be different from what you specified in
+ * [KeyboardOptions.imeAction].
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
@@ -90,9 +95,6 @@ import androidx.compose.ui.text.input.VisualTransformation
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
  * set to 1 if [singleLine] is set to true.
- * @param onImeActionPerformed Called when the input service requested an IME action. When the
- * input service emitted an IME action, this callback is called with the emitted IME action. Note
- * that this IME action may be different from what you specified in [KeyboardOptions.imeAction].
  * @param visualTransformation The visual transformation filter for changing the visual
  * representation of the input. By default no visual transformation is applied.
  * @param onTextLayout Callback that is executed when a new text layout is calculated.
@@ -104,7 +106,8 @@ import androidx.compose.ui.text.input.VisualTransformation
  * present on this TextField. You can create and pass in your own remembered [InteractionState]
  * if you want to read the [InteractionState] and customize the appearance / behavior of this
  * TextField in different [Interaction]s.
- * @param cursorColor Color of the cursor. If [Color.Unspecified], there will be no cursor drawn
+ * @param cursorBrush [Brush] to paint cursor with. If [SolidColor] with [Color.Unspecified]
+ * provided, there will be no cursor drawn
  * @param decorationBox Composable lambda that allows to add decorations around text field, such
  * as icon, placeholder, helper messages or similar, and automatically increase the hit target area
  * of the text field. To allow you to control the placement of the inner text field relative to your
@@ -121,14 +124,14 @@ fun BasicTextField(
     readOnly: Boolean = false,
     textStyle: TextStyle = TextStyle.Default,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onImeActionPerformed: (ImeAction) -> Unit = {},
     visualTransformation: VisualTransformation = VisualTransformation.None,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
     interactionState: InteractionState = remember { InteractionState() },
-    cursorColor: Color = Color.Black,
+    cursorBrush: Brush = SolidColor(Color.Black),
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
         @Composable { innerTextField -> innerTextField() }
 ) {
@@ -148,12 +151,12 @@ fun BasicTextField(
         readOnly = readOnly,
         textStyle = textStyle,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         maxLines = maxLines,
-        onImeActionPerformed = onImeActionPerformed,
         visualTransformation = visualTransformation,
         onTextLayout = onTextLayout,
         onTextInputStarted = onTextInputStarted,
-        cursorColor = cursorColor,
+        cursorBrush = cursorBrush,
         interactionState = interactionState,
         singleLine = singleLine,
         decorationBox = decorationBox
@@ -208,6 +211,9 @@ fun BasicTextField(
  * @param textStyle Style configuration that applies at character level such as color, font etc.
  * @param keyboardOptions software keyboard options that contains configuration such as
  * [KeyboardType] and [ImeAction].
+ * @param keyboardActions when the input service emits an IME action, the corresponding callback
+ * is called. Note that this IME action may be different from what you specified in
+ * [KeyboardOptions.imeAction].
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
@@ -215,9 +221,6 @@ fun BasicTextField(
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
  * set to 1 if [singleLine] is set to true.
- * @param onImeActionPerformed Called when the input service requested an IME action. When the
- * input service emitted an IME action, this callback is called with the emitted IME action. Note
- * that this IME action may be different from what you specified in [KeyboardOptions.imeAction].
  * @param visualTransformation The visual transformation filter for changing the visual
  * representation of the input. By default no visual transformation is applied.
  * @param onTextLayout Callback that is executed when a new text layout is calculated.
@@ -229,7 +232,8 @@ fun BasicTextField(
  * present on this TextField. You can create and pass in your own remembered [InteractionState]
  * if you want to read the [InteractionState] and customize the appearance / behavior of this
  * TextField in different [Interaction]s.
- * @param cursorColor Color of the cursor. If [Color.Unspecified], there will be no cursor drawn
+ * @param cursorBrush [Brush] to paint cursor with. If [SolidColor] with [Color.Unspecified]
+ * provided, there will be no cursor drawn
  * @param decorationBox Composable lambda that allows to add decorations around text field, such
  * as icon, placeholder, helper messages or similar, and automatically increase the hit target area
  * of the text field. To allow you to control the placement of the inner text field relative to your
@@ -247,14 +251,14 @@ fun BasicTextField(
     readOnly: Boolean = false,
     textStyle: TextStyle = TextStyle.Default,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onImeActionPerformed: (ImeAction) -> Unit = {},
     visualTransformation: VisualTransformation = VisualTransformation.None,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
     interactionState: InteractionState = remember { InteractionState() },
-    cursorColor: Color = Color.Black,
+    cursorBrush: Brush = SolidColor(Color.Black),
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
         @Composable { innerTextField -> innerTextField() }
 ) {
@@ -263,13 +267,13 @@ fun BasicTextField(
         onValueChange = onValueChange,
         modifier = modifier,
         textStyle = textStyle,
-        onImeActionPerformed = onImeActionPerformed,
         visualTransformation = visualTransformation,
         onTextLayout = onTextLayout,
         interactionState = interactionState,
         onTextInputStarted = onTextInputStarted,
-        cursorColor = cursorColor,
+        cursorBrush = cursorBrush,
         imeOptions = keyboardOptions.toImeOptions(singleLine = singleLine),
+        keyboardActions = keyboardActions,
         softWrap = !singleLine,
         maxLines = if (singleLine) 1 else maxLines,
         decorationBox = decorationBox,

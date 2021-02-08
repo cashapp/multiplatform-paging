@@ -23,6 +23,7 @@ import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -58,9 +59,11 @@ fun FancyScrollingDemo() {
         val scope = rememberCoroutineScope()
         val modifier = Modifier.draggable(
             orientation = Orientation.Horizontal,
-            onDrag = { delta: Float ->
+            state = rememberDraggableState { delta ->
                 // Snap to new drag position
-                animScroll.snapTo(animScroll.value + delta)
+                scope.launch {
+                    animScroll.snapTo(animScroll.value + delta)
+                }
             },
 
             onDragStopped = { velocity: Float ->

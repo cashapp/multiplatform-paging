@@ -17,7 +17,7 @@
 package androidx.compose.foundation.layout
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.Modifier
@@ -130,15 +130,15 @@ class PaddingTest : LayoutTest() {
     }
 
     /**
-     * Tests the top-level [padding] modifier factory with a single [androidx.compose.foundation.layout
-     * .PaddingValues] argument, checking that padding is applied to a child when plenty of space
+     * Tests the top-level [padding] modifier factory with a single [PaddingValues]
+     * argument, checking that padding is applied to a child when plenty of space
      * is available for both content and padding.
      */
     @Test
     fun paddingPaddingValuesAppliedToChild() = with(density) {
         val padding = PaddingValues(start = 1.dp, top = 3.dp, end = 6.dp, bottom = 10.dp)
         testPaddingWithDifferentInsetsImplementation(
-            padding.start, padding.top, padding.end, padding.bottom
+            1.dp, 3.dp, 6.dp, 10.dp
         ) { child: @Composable () -> Unit ->
             TestBox(modifier = Modifier.padding(padding), content = child)
         }
@@ -163,6 +163,21 @@ class PaddingTest : LayoutTest() {
             paddingBottom
         ) { child: @Composable () -> Unit ->
             TestBox(modifier = padding, content = child)
+        }
+    }
+
+    /**
+     * Tests the top-level [absolutePadding] modifier factory with a single [PaddingValues.Absolute]
+     * argument, checking that padding is applied to a child when plenty of space
+     * is available for both content and padding.
+     */
+    @Test
+    fun paddingAbsolutePaddingValuesAppliedToChild() = with(density) {
+        val padding = PaddingValues.Absolute(left = 1.dp, top = 3.dp, right = 6.dp, bottom = 10.dp)
+        testPaddingWithDifferentInsetsImplementation(
+            1.dp, 3.dp, 6.dp, 10.dp
+        ) { child: @Composable () -> Unit ->
+            TestBox(modifier = Modifier.padding(padding), content = child)
         }
     }
 
@@ -260,7 +275,7 @@ class PaddingTest : LayoutTest() {
         // ltr: P1 S P2 | S P3 | P1 S
         // rtl:    S P1 | P3 S | P2 S P1
         show {
-            Providers(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Row(Modifier.fillMaxSize()) {
                     Box(
                         Modifier.padding(start = padding1Dp, end = padding2Dp)
@@ -336,7 +351,7 @@ class PaddingTest : LayoutTest() {
         // ltr: P1 S P2 | S P3
         // rtl:    S P3 | P1 S P2
         show {
-            Providers(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Row(Modifier.fillMaxSize()) {
                     Box(
                         Modifier.absolutePadding(left = padding1Dp, right = padding2Dp)

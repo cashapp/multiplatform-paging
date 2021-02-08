@@ -21,7 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.InternalComposeApi
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.ControlledComposition
 import androidx.compose.runtime.currentComposer
@@ -95,12 +95,12 @@ internal class SuspendingGestureTestUtil(
     private suspend fun composeGesture(block: suspend SuspendingGestureTestUtil.() -> Unit) {
         withRunningRecomposer { recomposer ->
             compose(recomposer) {
-                Providers(
+                CompositionLocalProvider(
                     LocalDensity provides Density(1f),
                     LocalViewConfiguration provides TestViewConfiguration()
                 ) {
                     pointerInputFilter = currentComposer
-                        .materialize(Modifier.pointerInput(gestureDetector)) as
+                        .materialize(Modifier.pointerInput(Unit, gestureDetector)) as
                         PointerInputFilter
                 }
             }

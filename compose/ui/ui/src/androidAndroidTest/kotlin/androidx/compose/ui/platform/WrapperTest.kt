@@ -19,11 +19,11 @@ import android.widget.FrameLayout
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.currentRecomposeScope
-import androidx.compose.runtime.rememberCompositionReference
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.ui.test.TestActivity
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -156,8 +156,8 @@ class WrapperTest {
             val frameLayout = FrameLayout(it)
             it.setContent {
                 val compositionLocal = compositionLocalOf<Float>()
-                Providers(compositionLocal provides 1f) {
-                    val composition = rememberCompositionReference()
+                CompositionLocalProvider(compositionLocal provides 1f) {
+                    val composition = rememberCompositionContext()
 
                     AndroidView({ frameLayout })
                     SideEffect {

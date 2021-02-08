@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.defaultMinSizeConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
@@ -119,6 +121,9 @@ import kotlin.math.roundToInt
  * text field. By default no visual transformation is applied
  * @param keyboardOptions software keyboard options that contains configuration such as
  * [KeyboardType] and [ImeAction].
+ * @param keyboardActions when the input service emits an IME action, the corresponding callback
+ * is called. Note that this IME action may be different from what you specified in
+ * [KeyboardOptions.imeAction].
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
@@ -126,8 +131,6 @@ import kotlin.math.roundToInt
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
  * set to 1 if [singleLine] is set to true.
- * @param onImeActionPerformed is triggered when the input service performs an [ImeAction].
- * Note that the emitted IME action may be different from what you specified through the
  * [KeyboardOptions.imeAction] field. The callback also exposes a [SoftwareKeyboardController]
  * instance as a parameter that can be used to request to hide the software keyboard
  * @param onTextInputStarted a callback to be invoked when the connection with the platform's text
@@ -162,9 +165,9 @@ fun TextField(
     isErrorValue: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onImeActionPerformed: (ImeAction, SoftwareKeyboardController?) -> Unit = { _, _ -> },
     onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
     interactionState: InteractionState = remember { InteractionState() },
     activeColor: Color = MaterialTheme.colors.primary,
@@ -198,8 +201,8 @@ fun TextField(
         isErrorValue = isErrorValue,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         maxLines = maxLines,
-        onImeActionPerformed = onImeActionPerformed,
         onTextInputStarted = onTextInputStarted,
         interactionState = interactionState,
         activeColor = activeColor,
@@ -251,6 +254,9 @@ fun TextField(
  * text field. By default no visual transformation is applied
  * @param keyboardOptions software keyboard options that contains configuration such as
  * [KeyboardType] and [ImeAction].
+ * @param keyboardActions when the input service emits an IME action, the corresponding callback
+ * is called. Note that this IME action may be different from what you specified in
+ * [KeyboardOptions.imeAction].
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
@@ -258,8 +264,6 @@ fun TextField(
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
  * set to 1 if [singleLine] is set to true.
- * @param onImeActionPerformed is triggered when the input service performs an [ImeAction].
- * Note that the emitted IME action may be different from what you specified through the
  * [KeyboardOptions.imeAction] field. The callback also exposes a [SoftwareKeyboardController]
  * instance as a parameter that can be used to request to hide the software keyboard
  * @param onTextInputStarted a callback to be invoked when the connection with the platform's text
@@ -294,9 +298,9 @@ fun TextField(
     isErrorValue: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onImeActionPerformed: (ImeAction, SoftwareKeyboardController?) -> Unit = { _, _ -> },
     onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
     interactionState: InteractionState = remember { InteractionState() },
     activeColor: Color = MaterialTheme.colors.primary,
@@ -322,8 +326,8 @@ fun TextField(
         isErrorValue = isErrorValue,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         maxLines = maxLines,
-        onImeActionPerformed = onImeActionPerformed,
         onTextInputStarted = onTextInputStarted,
         interactionState = interactionState,
         activeColor = activeColor,
@@ -342,10 +346,10 @@ internal fun TextFieldLayout(
     enabled: Boolean,
     readOnly: Boolean,
     keyboardOptions: KeyboardOptions,
+    keyboardActions: KeyboardActions,
     textStyle: TextStyle,
     singleLine: Boolean,
     maxLines: Int = Int.MAX_VALUE,
-    onImeActionPerformed: (ImeAction) -> Unit = {},
     visualTransformation: VisualTransformation,
     onTextInputStarted: (SoftwareKeyboardController) -> Unit,
     interactionState: InteractionState,
@@ -375,11 +379,11 @@ internal fun TextFieldLayout(
         enabled = enabled,
         readOnly = readOnly,
         textStyle = textStyle,
-        cursorColor = cursorColor,
+        cursorBrush = SolidColor(cursorColor),
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         interactionState = interactionState,
-        onImeActionPerformed = onImeActionPerformed,
         onTextInputStarted = onTextInputStarted,
         singleLine = singleLine,
         maxLines = maxLines,

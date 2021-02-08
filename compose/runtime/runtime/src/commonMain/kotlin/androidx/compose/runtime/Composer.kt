@@ -23,6 +23,7 @@ package androidx.compose.runtime
 
 import androidx.compose.runtime.collection.IdentityScopeMap
 import androidx.compose.runtime.tooling.LocalInspectionTables
+import androidx.compose.runtime.tooling.CompositionData
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
 import kotlin.coroutines.CoroutineContext
@@ -249,7 +250,7 @@ internal enum class InvalidationResult {
 }
 
 /**
- * An instance to hold a value provided by [Providers] and is created by the
+ * An instance to hold a value provided by [CompositionLocalProvider] and is created by the
  * [ProvidableCompositionLocal.provides] infixed operator. If [canOverride] is `false`, the
  * provided value will not overwrite a potentially already existing value in the scope.
  */
@@ -805,7 +806,7 @@ interface Composer {
      * A Compose internal function. DO NOT call directly.
      *
      * Provide the given values for the associated [CompositionLocal] keys. This is the primitive
-     * function used to implement [Providers].
+     * function used to implement [CompositionLocalProvider].
      *
      * @param values an array of value to provider key pairs.
      */
@@ -867,12 +868,12 @@ interface Composer {
     /**
      * A Compose internal function. DO NOT call directly.
      *
-     * Build a composition reference that can be used to created a subcomposition. A composition
+     * Build a composition context that can be used to created a subcomposition. A composition
      * reference is used to communicate information from this composition to the subcompositions
      * such as the all the [CompositionLocal]s provided at the point the reference is created.
      */
     @InternalComposeApi
-    fun buildReference(): CompositionReference
+    fun buildContext(): CompositionContext
 
     /**
      * A Compose internal function. DO NOT call directly.
@@ -923,18 +924,6 @@ inline fun <T> Composer.cache(invalid: Boolean, block: () -> T): T {
 }
 
 /**
- * This a hash value used to coordinate map externally stored state to the composition. For
- * example, this is used by saved instance state to preserve state across activity lifetime
- * boundaries.
- *
- * This value is not likely to be unique but is not guaranteed unique. There are known cases,
- * such as for loops without a [key], where the runtime does not have enough information to
- * make the compound key hash unique.
- */
-@Composable
-fun currentCompositeKeyHash(): Int = currentComposer.compoundKeyHash
-
-/**
  * Implementation of a composer for a mutable tree.
  */
 internal class ComposerImpl(
@@ -946,7 +935,7 @@ internal class ComposerImpl(
     /**
      * Parent of this composition; a [Recomposer] for root-level compositions.
      */
-    private val parentReference: CompositionReference,
+    private val parentContext: CompositionContext,
 
     /**
      * The composition that owns this composer
@@ -964,7 +953,6 @@ internal class ComposerImpl(
     private var groupNodeCountStack = IntStack()
     private var nodeCountOverrides: IntArray? = null
     private var nodeCountVirtualOverrides: HashMap<Int, Int>? = null
-    private var collectKeySources = false
     private var collectParameterInformation = false
     private var nodeExpected = false
     private val observations = IdentityScopeMap<RecomposeScopeImpl>()
@@ -996,7 +984,7 @@ internal class ComposerImpl(
     private val insertFixups = mutableListOf<Change>()
 
     override val applyCoroutineContext: CoroutineContext
-        @TestOnly get() = parentReference.effectCoroutineContext
+        @TestOnly get() = parentContext.effectCoroutineContext
 
     /**
      * Inserts a "Replaceable Group" starting marker in the slot table at the current execution
@@ -1136,17 +1124,16 @@ internal class ComposerImpl(
         startGroup(rootKey)
 
         // parent reference management
-        parentReference.startComposing()
-        parentProvider = parentReference.getCompositionLocalScope()
+        parentContext.startComposing()
+        parentProvider = parentContext.getCompositionLocalScope()
         providersInvalidStack.push(providersInvalid.asInt())
         providersInvalid = changed(parentProvider)
-        collectKeySources = parentReference.collectingKeySources
-        collectParameterInformation = parentReference.collectingParameterInformation
+        collectParameterInformation = parentContext.collectingParameterInformation
         resolveCompositionLocal(LocalInspectionTables, parentProvider)?.let {
             it.add(slotTable)
-            parentReference.recordInspectionTable(it)
+            parentContext.recordInspectionTable(it)
         }
-        startGroup(parentReference.compoundHashKey)
+        startGroup(parentContext.compoundHashKey)
     }
 
     /**
@@ -1156,7 +1143,7 @@ internal class ComposerImpl(
     @OptIn(InternalComposeApi::class)
     private fun endRoot() {
         endGroup()
-        parentReference.doneComposing()
+        parentContext.doneComposing()
 
         endGroup()
         recordEndRoot()
@@ -1209,15 +1196,6 @@ internal class ComposerImpl(
     @InternalComposeApi
     override var compoundKeyHash: Int = 0
         private set
-
-    /**
-     * Start collecting key source information. This enables enables the tool API to be able to
-     * determine the source location of where groups and nodes are created.
-     */
-    @InternalComposeApi
-    fun collectKeySourceInformation() {
-        collectKeySources = true
-    }
 
     /**
      * Start collecting parameter information. This enables the tools API to always be able to
@@ -1448,7 +1426,7 @@ internal class ComposerImpl(
     @OptIn(InternalComposeApi::class)
     internal fun dispose() {
         trace("Compose:Composer.dispose") {
-            parentReference.unregisterComposer(this)
+            parentContext.unregisterComposer(this)
             invalidateStack.clear()
             invalidations.clear()
             changes.clear()
@@ -1798,37 +1776,6 @@ internal class ComposerImpl(
     }
 
     /**
-     * Return the [CompositionLocal] scope for the location provided. If this is while the
-     * composer is composing then this is a query from a sub-composition that is being recomposed
-     * by this compose which might be inserting the sub-composition. In that case the current scope
-     * is the correct scope.
-     */
-    private fun compositionLocalScopeAt(location: Int): CompositionLocalMap {
-        if (isComposing) {
-            // The sub-composer is being composed as part of a nested composition then use the
-            // current CompositionLocal scope as the one in the slot table might be out of date.
-            return currentCompositionLocalScope()
-        }
-
-        if (location >= 0) {
-            slotTable.read { reader ->
-                var current = location
-                while (current > 0) {
-                    if (reader.groupKey(current) == compositionLocalMapKey &&
-                        reader.groupObjectKey(current) == compositionLocalMap
-                    ) {
-                        @Suppress("UNCHECKED_CAST")
-                        return providerUpdates[current]
-                            ?: reader.groupAux(current) as CompositionLocalMap
-                    }
-                    current = reader.parent(current)
-                }
-            }
-        }
-        return parentProvider
-    }
-
-    /**
      * Update (or create) the slots to record the providers. The providers maps are first the
      * scope followed by the map used to augment the parent scope. Both are needed to detect
      * inserts, updates and deletes to the providers.
@@ -1909,25 +1856,22 @@ internal class ComposerImpl(
         resolveCompositionLocal(key, currentCompositionLocalScope())
 
     /**
-     * Create or use a memoized `CompositionReference` instance at this position in the slot table.
+     * Create or use a memoized [CompositionContext] instance at this position in the slot table.
      */
-    override fun buildReference(): CompositionReference {
+    override fun buildContext(): CompositionContext {
         startGroup(referenceKey, reference)
 
-        var ref = nextSlot() as? CompositionReferenceHolder
+        var ref = nextSlot() as? CompositionContextHolder
         if (ref == null) {
-            val scope = invalidateStack.peek()
-            scope.used = true
-            ref = CompositionReferenceHolder(
-                CompositionReferenceImpl(
-                    scope,
+            ref = CompositionContextHolder(
+                CompositionContextImpl(
                     compoundKeyHash,
-                    collectKeySources,
                     collectParameterInformation
                 )
             )
             updateValue(ref)
         }
+        ref.ref.updateCompositionLocalScope(currentCompositionLocalScope())
         endGroup()
 
         return ref.ref
@@ -1939,14 +1883,8 @@ internal class ComposerImpl(
     ): T = if (scope.contains(key)) {
         scope.getValueOf(key)
     } else {
-        parentReference.getCompositionLocal(key)
+        key.defaultValueHolder.value
     }
-
-    internal fun <T> parentCompositionLocal(key: CompositionLocal<T>): T =
-        resolveCompositionLocal(key, currentCompositionLocalScope())
-
-    private fun <T> parentCompositionLocal(key: CompositionLocal<T>, location: Int): T =
-        resolveCompositionLocal(key, compositionLocalScopeAt(location))
 
     /**
      * The number of changes that have been scheduled to be applied during [applyChanges].
@@ -1996,8 +1934,6 @@ internal class ComposerImpl(
         if (inserting) {
             reader.beginEmpty()
             val startIndex = writer.currentGroup
-            if (collectKeySources)
-                recordSourceKeyInfo(key)
             when {
                 isNode -> writer.startNode(Composer.Empty)
                 data != null -> writer.startData(key, objectKey ?: Composer.Empty, data)
@@ -2068,9 +2004,6 @@ internal class ComposerImpl(
                 // inserted into in the table.
                 reader.beginEmpty()
                 inserting = true
-                if (collectKeySources)
-                    recordSourceKeyInfo(key)
-
                 ensureWriter()
                 writer.beginInsert()
                 val startIndex = writer.currentGroup
@@ -2551,7 +2484,7 @@ internal class ComposerImpl(
             // composition.
             return InvalidationResult.IMMINENT
         }
-        parentReference.invalidate(composition)
+        parentContext.invalidate(composition)
         return if (isComposing) InvalidationResult.DEFERRED else InvalidationResult.SCHEDULED
     }
 
@@ -3028,13 +2961,13 @@ internal class ComposerImpl(
     }
 
     /**
-     * A holder that will dispose of its [CompositionReference] when it leaves the composition
+     * A holder that will dispose of its [CompositionContext] when it leaves the composition
      * that will not have its reference made visible to user code.
      */
     // This warning becomes an error if its advice is followed since Composer needs its type param
     @Suppress("RemoveRedundantQualifierName")
-    private class CompositionReferenceHolder(
-        val ref: ComposerImpl.CompositionReferenceImpl
+    private class CompositionContextHolder(
+        val ref: ComposerImpl.CompositionContextImpl
     ) : RememberObserver {
         override fun onRemembered() { }
         override fun onAbandoned() {
@@ -3045,12 +2978,10 @@ internal class ComposerImpl(
         }
     }
 
-    private inner class CompositionReferenceImpl(
-        val scope: RecomposeScopeImpl,
+    private inner class CompositionContextImpl(
         override val compoundHashKey: Int,
-        override val collectingKeySources: Boolean,
         override val collectingParameterInformation: Boolean
-    ) : CompositionReference() {
+    ) : CompositionContext() {
         var inspectionTables: MutableSet<MutableSet<CompositionData>>? = null
         val composers = mutableSetOf<ComposerImpl>()
 
@@ -3077,21 +3008,21 @@ internal class ComposerImpl(
         }
 
         override fun registerComposition(composition: ControlledComposition) {
-            parentReference.registerComposition(composition)
+            parentContext.registerComposition(composition)
         }
 
         override fun unregisterComposition(composition: ControlledComposition) {
-            parentReference.unregisterComposition(composition)
+            parentContext.unregisterComposition(composition)
         }
 
         override val effectCoroutineContext: CoroutineContext
-            get() = parentReference.effectCoroutineContext
+            get() = parentContext.effectCoroutineContext
 
         override fun composeInitial(
             composition: ControlledComposition,
             content: @Composable () -> Unit
         ) {
-            parentReference.composeInitial(composition, content)
+            parentContext.composeInitial(composition, content)
         }
 
         override fun invalidate(composition: ControlledComposition) {
@@ -3104,24 +3035,22 @@ internal class ComposerImpl(
             // This invalidation process could be made more efficient as it's currently N^2 with
             // subcomposition meta-tree depth thanks to the double recursive parent walk
             // performed here, but we currently assume a low N.
-            parentReference.invalidate(this@ComposerImpl.composition)
-            parentReference.invalidate(composition)
+            parentContext.invalidate(this@ComposerImpl.composition)
+            parentContext.invalidate(composition)
         }
 
-        override fun <T> getCompositionLocal(key: CompositionLocal<T>): T {
-            val anchor = scope.anchor
-            return if (anchor != null && anchor.valid) {
-                parentCompositionLocal(key, anchor.toIndexFor(slotTable))
-            } else {
-                // The composition is composing and the CompositionLocal has not landed in the slot
-                // table yet. This is a synchronous read from a sub-composition so the current
-                // CompositionLocal.
-                parentCompositionLocal(key)
-            }
-        }
+        // This is snapshot state not because we need it to be observable, but because
+        // we need changes made to it in composition to be visible for the rest of the current
+        // composition and not become visible outside of the composition process until composition
+        // succeeds.
+        private var compositionLocalScope by mutableStateOf<CompositionLocalMap>(
+            persistentHashMapOf()
+        )
 
-        override fun getCompositionLocalScope(): CompositionLocalMap {
-            return compositionLocalScopeAt(scope.anchor?.toIndexFor(slotTable) ?: 0)
+        override fun getCompositionLocalScope(): CompositionLocalMap = compositionLocalScope
+
+        fun updateCompositionLocalScope(scope: CompositionLocalMap) {
+            compositionLocalScope = scope
         }
 
         override fun recordInspectionTable(table: MutableSet<CompositionData>) {
@@ -3486,10 +3415,6 @@ private fun MutableList<Invalidation>.removeRange(start: Int, end: Int) {
 private fun Boolean.asInt() = if (this) 1 else 0
 private fun Int.asBool() = this != 0
 
-val currentComposer: Composer @Composable get() {
-    throw NotImplementedError("Implemented as an intrinsic")
-}
-
 internal fun invokeComposable(composer: Composer, composable: @Composable () -> Unit) {
     @Suppress("UNCHECKED_CAST")
     val realFn = composable as Function2<Composer, Int, Unit>
@@ -3570,40 +3495,34 @@ private const val nodeKey = 125
 internal const val invocationKey = 200
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val invocation = OpaqueKey("provider")
+internal val invocation: Any = OpaqueKey("provider")
 
 @PublishedApi
 internal const val providerKey = 201
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val provider = OpaqueKey("provider")
+internal val provider: Any = OpaqueKey("provider")
 
 @PublishedApi
 internal const val compositionLocalMapKey = 202
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val compositionLocalMap = OpaqueKey("compositionLocalMap")
+internal val compositionLocalMap: Any = OpaqueKey("compositionLocalMap")
 
 @PublishedApi
 internal const val providerValuesKey = 203
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val providerValues = OpaqueKey("providerValues")
+internal val providerValues: Any = OpaqueKey("providerValues")
 
 @PublishedApi
 internal const val providerMapsKey = 204
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val providerMaps = OpaqueKey("providers")
+internal val providerMaps: Any = OpaqueKey("providers")
 
 @PublishedApi
 internal const val referenceKey = 206
 
 @PublishedApi
-@Suppress("HiddenTypeParameter")
-internal val reference = OpaqueKey("reference")
+internal val reference: Any = OpaqueKey("reference")

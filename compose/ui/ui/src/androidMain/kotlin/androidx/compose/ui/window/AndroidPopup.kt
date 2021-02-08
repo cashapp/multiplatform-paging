@@ -28,17 +28,17 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionReference
+import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCompositionReference
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -171,7 +171,7 @@ fun Popup(
     val density = LocalDensity.current
     val testTag = LocalPopupTestTag.current
     val layoutDirection = LocalLayoutDirection.current
-    val parentComposition = rememberCompositionReference()
+    val parentComposition = rememberCompositionContext()
     val currentContent by rememberUpdatedState(content)
 
     val popupLayout = remember {
@@ -260,7 +260,7 @@ internal val LocalPopupTestTag = compositionLocalOf { "DEFAULT_TEST_TAG" }
 
 @Composable
 internal fun PopupTestTag(tag: String, content: @Composable () -> Unit) {
-    Providers(LocalPopupTestTag provides tag, content = content)
+    CompositionLocalProvider(LocalPopupTestTag provides tag, content = content)
 }
 
 // TODO(soboleva): Look at module dependencies so that we can get code reuse between
@@ -361,8 +361,8 @@ private class PopupLayout(
         windowManager.addView(this, params)
     }
 
-    fun setContent(parent: CompositionReference, content: @Composable () -> Unit) {
-        setParentCompositionReference(parent)
+    fun setContent(parent: CompositionContext, content: @Composable () -> Unit) {
+        setParentCompositionContext(parent)
         this.content = content
         shouldCreateCompositionOnAttachedToWindow = true
     }

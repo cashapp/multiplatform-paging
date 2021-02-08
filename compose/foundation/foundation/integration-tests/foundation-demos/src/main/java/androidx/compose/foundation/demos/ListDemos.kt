@@ -18,16 +18,13 @@ package androidx.compose.foundation.demos
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Interaction
-import androidx.compose.foundation.InteractionState
 import androidx.compose.foundation.animation.smoothScrollBy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayout
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -46,14 +43,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.samples.StickyHeaderSample
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.integration.demos.common.ComposableDemo
-import androidx.compose.material.LocalContentColor
+import androidx.compose.material.Button
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,6 +84,7 @@ val LazyListDemos = listOf(
     ComposableDemo("Reverse scroll direction") { ReverseLayout() },
     ComposableDemo("Nested lazy lists") { NestedLazyDemo() },
     ComposableDemo("LazyGrid") { LazyGridDemo() },
+    ComposableDemo("Custom keys") { ReorderWithCustomKeys() },
     PagingDemos
 )
 
@@ -99,13 +96,16 @@ private fun LazyColumnDemo() {
                 "Hello,", "World:", "It works!", "",
                 "this one is really long and spans a few lines for scrolling purposes",
                 "these", "are", "offscreen"
-            ) + (1..100).map { "$it" }
+            )
         ) {
             Text(text = it, fontSize = 80.sp)
 
             if (it.contains("works")) {
                 Text("You can even emit multiple components per item.")
             }
+        }
+        items(100) {
+            Text(text = "$it", fontSize = 80.sp)
         }
     }
 }
@@ -132,12 +132,10 @@ private fun ListAddRemoveItemsDemo() {
 @OptIn(ExperimentalLayout::class)
 @Composable
 private fun ListHoistedStateDemo() {
-    val interactionState = remember { InteractionState() }
-    val state = rememberLazyListState(interactionState = interactionState)
+    val state = rememberLazyListState()
     var lastScrollDescription: String by remember { mutableStateOf("") }
     Column {
-        @Suppress("DEPRECATION")
-        FlowRow {
+        Row {
             val buttonModifier = Modifier.padding(8.dp)
             val density = LocalDensity.current
             val coroutineScope = rememberCoroutineScope()
@@ -186,8 +184,8 @@ private fun ListHoistedStateDemo() {
                 fontSize = 20.sp
             )
             Text(
-                "Dragging: ${interactionState.contains(Interaction.Dragged)}, " +
-                    "Flinging: ${state.isAnimationRunning}",
+                "Dragging: ${state.interactionState.contains(Interaction.Dragged)}, " +
+                    "Flinging: ${state.isScrollInProgress}",
                 fontSize = 20.sp
             )
         }
@@ -199,18 +197,6 @@ private fun ListHoistedStateDemo() {
                 Text("$it", style = LocalTextStyle.current.copy(fontSize = 40.sp))
             }
         }
-    }
-}
-
-@Composable
-fun Button(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable () -> Unit) {
-    Box(
-        modifier
-            .clickable(onClick = onClick)
-            .background(Color(0xFF6200EE), RoundedCornerShape(4.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Providers(LocalContentColor provides Color.White, content = content)
     }
 }
 
@@ -253,7 +239,7 @@ private fun ListWithIndexSample() {
 
 @Composable
 private fun RtlListDemo() {
-    Providers(LocalLayoutDirection provides LayoutDirection.Rtl) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         LazyRow(Modifier.fillMaxWidth()) {
             items(100) {
                 Text(
@@ -527,6 +513,33 @@ private fun LazyGridForMode(mode: GridCells) {
                     .background(Color.Gray.copy(alpha = (it % 10) / 10f))
                     .padding(8.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun ReorderWithCustomKeys() {
+    var names by remember { mutableStateOf(listOf("John", "Sara", "Dan")) }
+    Column {
+        Button(onClick = { names = names.shuffled() }) {
+            Text("Shuffle")
+        }
+        LazyColumn {
+            item {
+                var counter by rememberSaveable { mutableStateOf(0) }
+                Button(onClick = { counter++ }) {
+                    Text("Header has $counter")
+                }
+            }
+            items(
+                items = names,
+                key = { it }
+            ) {
+                var counter by rememberSaveable { mutableStateOf(0) }
+                Button(onClick = { counter++ }) {
+                    Text("$it has $counter")
+                }
+            }
         }
     }
 }

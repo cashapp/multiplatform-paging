@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.defaultMinSizeConstraints
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.InternalTextApi
 import androidx.compose.ui.text.SoftwareKeyboardController
@@ -100,12 +102,10 @@ private fun MyTextField(data: ImeOptionsData) {
         modifier = demoTextFieldModifiers.defaultMinSizeConstraints(100.dp),
         value = state.value,
         keyboardOptions = data.keyboardOptions,
+        keyboardActions = KeyboardActions { controller.value?.hideSoftwareKeyboard() },
         onValueChange = { state.value = it },
         textStyle = TextStyle(fontSize = fontSize8),
         onTextInputStarted = { controller.value = it },
-        onImeActionPerformed = {
-            controller.value?.hideSoftwareKeyboard()
-        },
-        cursorColor = Color.Red
+        cursorBrush = SolidColor(Color.Red)
     )
 }

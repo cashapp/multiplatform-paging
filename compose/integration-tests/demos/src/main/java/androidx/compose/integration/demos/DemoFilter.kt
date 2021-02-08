@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.integration.demos.common.Demo
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.ListItem
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -116,7 +118,7 @@ private fun FilterField(
         value = filterText,
         onValueChange = onFilter,
         textStyle = LocalTextStyle.current,
-        cursorColor = LocalContentColor.current
+        cursorBrush = SolidColor(LocalContentColor.current)
     )
     DisposableEffect(focusRequester) {
         focusRequester.requestFocus()
@@ -128,6 +130,7 @@ private fun FilterField(
  * [ListItem] that displays a [demo] and highlights any matches for [filterText] inside [Demo.title]
  */
 @Composable
+@OptIn(ExperimentalMaterialApi::class)
 private fun FilteredDemoListItem(
     demo: Demo,
     filterText: String,

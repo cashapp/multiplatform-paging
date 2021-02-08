@@ -70,7 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
+import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import kotlinx.coroutines.runBlocking
@@ -82,7 +82,7 @@ import org.junit.runner.RunWith
 @Suppress("unused")
 private fun topLevelFunction() {}
 
-@LargeTest
+@SmallTest
 @RunWith(AndroidJUnit4::class)
 class ParameterFactoryTest {
     private val factory = ParameterFactory(InlineClassConverter())
@@ -379,7 +379,11 @@ class ParameterFactoryTest {
     @Test
     fun testPaddingValues() {
         validate(factory.create(node, "padding", PaddingValues(2.0.dp, 0.5.dp, 2.5.dp, 0.7.dp))!!) {
-            parameter("padding", ParameterType.String, PaddingValues::class.java.simpleName) {
+            parameter(
+                "padding",
+                ParameterType.String,
+                "PaddingValuesImpl"
+            ) {
                 parameter("bottom", ParameterType.DimensionDp, 0.7f)
                 parameter("end", ParameterType.DimensionDp, 2.5f)
                 parameter("start", ParameterType.DimensionDp, 2.0f)

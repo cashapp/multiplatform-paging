@@ -24,10 +24,7 @@ import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.Recomposer
-import androidx.compose.ui.node.UiApplier
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +79,7 @@ class RobolectricComposeTester internal constructor(
         scheduler.pause()
         val controller = Robolectric.buildActivity(TestActivity::class.java)
         val activity = controller.create().get()
-        val root = activity.root
+//        val root = activity.root
         scheduler.advanceToLastPostedRunnable()
 
         val startProviders = Composer::class.java.methods.first {
@@ -96,26 +93,24 @@ class RobolectricComposeTester internal constructor(
         endProviders.isAccessible = true
         setContentMethod.isAccessible = true
 
-        val realComposable: (Composer, Int) -> Unit = { composer, _ ->
-            startProviders.invoke(
-                composer,
-                listOf(LocalContext provides root.context).toTypedArray()
-            )
-            composable(composer, 0)
-            endProviders.invoke(composer)
-        }
+//        val realComposable: (Composer, Int) -> Unit = { composer, _ ->
+//            startProviders.invoke(
+//                composer,
+//                listOf(LocalContext provides root.context).toTypedArray()
+//            )
+//            composable(composer, 0)
+//            endProviders.invoke(composer)
+//        }
 
-        @Suppress("DEPRECATION")
-        @OptIn(ExperimentalComposeApi::class)
-        val composition = Composition(root, UiApplier(root), recomposer)
-        fun setContent() {
-            setContentMethod.invoke(composition, realComposable)
-        }
+//        val composition = Composition(UiApplier(root), recomposer)
+//        fun setContent() {
+//            setContentMethod.invoke(composition, realComposable)
+//        }
         scheduler.advanceToLastPostedRunnable()
-        setContent()
+//        setContent()
         scheduler.advanceToLastPostedRunnable()
         block(activity)
-        val advanceFn = advance ?: { setContent() }
+        val advanceFn = advance ?: { /* setContent() */ }
         return ActiveTest(activity, advanceFn)
     }
 

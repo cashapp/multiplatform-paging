@@ -88,7 +88,7 @@ internal lateinit var kspVersion: String
 val KSP_VERSION get() = kspVersion
 val KOTLIN_KSP_API get() = "com.google.devtools.ksp:symbol-processing-api:$KSP_VERSION"
 val KOTLIN_KSP get() = "com.google.devtools.ksp:symbol-processing:$KSP_VERSION"
-const val KOTLIN_GRADLE_PLUGIN = "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21-2"
+const val KOTLIN_GRADLE_PLUGIN = "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30"
 
 const val KOTLIN_METADATA = "me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0"
 const val KOTLIN_METADATA_JVM = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.1.0"
@@ -106,7 +106,7 @@ const val PLAY_CORE = "com.google.android.play:core:1.8.0"
 const val REACTIVE_STREAMS = "org.reactivestreams:reactive-streams:1.0.0"
 const val RX_JAVA = "io.reactivex.rxjava2:rxjava:2.2.9"
 const val RX_JAVA3 = "io.reactivex.rxjava3:rxjava:3.0.0"
-val SKIKO_VERSION = System.getenv("SKIKO_VERSION") ?: "0.2.4"
+val SKIKO_VERSION = System.getenv("SKIKO_VERSION") ?: "0.2.6"
 val SKIKO = "org.jetbrains.skiko:skiko-jvm:$SKIKO_VERSION"
 val SKIKO_LINUX_X64 = "org.jetbrains.skiko:skiko-jvm-runtime-linux-x64:$SKIKO_VERSION"
 val SKIKO_MACOS_X64 = "org.jetbrains.skiko:skiko-jvm-runtime-macos-x64:$SKIKO_VERSION"

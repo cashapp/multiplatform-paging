@@ -20,48 +20,35 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.text.InternalTextApi
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 
-@OptIn(InternalTextApi::class)
 @Suppress("ModifierInspectorInfo")
 internal fun Modifier.cursor(
     state: TextFieldState,
     value: TextFieldValue,
     offsetMapping: OffsetMapping,
-    cursorColor: Color,
+    cursorBrush: Brush,
     enabled: Boolean
 ) = if (enabled) composed {
     // this should be a disposable clock, but it's not available in this module
     // however, we only launch one animation and guarantee that we stop it (via snap) in dispose
     val cursorAlpha = remember { Animatable(0f) }
-    val coroutineScope = rememberCoroutineScope()
-
-    if (state.hasFocus && value.selection.collapsed && cursorColor.isSpecified) {
-        DisposableEffect(cursorColor, value.annotatedString) {
-            if (@Suppress("DEPRECATION_ERROR") blinkingCursorEnabled) {
-                coroutineScope.launch {
-                    cursorAlpha.animateTo(0f, cursorAnimationSpec)
-                }
-            } else {
-                cursorAlpha.snapTo(1f)
-            }
-            onDispose {
-                cursorAlpha.snapTo(0f)
-            }
+    val isBrushSpecified = !(cursorBrush is SolidColor && cursorBrush.value.isUnspecified)
+    if (state.hasFocus && value.selection.collapsed && isBrushSpecified) {
+        LaunchedEffect(cursorBrush, value.annotatedString) {
+            cursorAlpha.animateTo(0f, cursorAnimationSpec)
         }
         drawWithContent {
             this.drawContent()
@@ -76,7 +63,7 @@ internal fun Modifier.cursor(
                     .coerceAtMost(size.width - cursorWidth / 2)
 
                 drawLine(
-                    cursorColor,
+                    cursorBrush,
                     Offset(cursorX, cursorRect.top),
                     Offset(cursorX, cursorRect.bottom),
                     alpha = cursorAlphaValue,
@@ -101,11 +88,3 @@ private val cursorAnimationSpec: AnimationSpec<Float>
     )
 
 internal val DefaultCursorThickness = 2.dp
-
-// TODO(b/151940543): Remove this variable when we have a solution for idling animations
-/** @suppress */
-@InternalTextApi // Used by Testing infra
-@Deprecated(level = DeprecationLevel.ERROR, message = "This is internal API and should not be used")
-var blinkingCursorEnabled: Boolean = true
-/*@VisibleForTesting
-set*/
