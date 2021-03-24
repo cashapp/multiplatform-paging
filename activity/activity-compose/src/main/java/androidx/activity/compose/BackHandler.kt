@@ -21,9 +21,10 @@ import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
@@ -42,9 +43,14 @@ public object LocalOnBackPressedDispatcherOwner {
             ?: findOwner<OnBackPressedDispatcherOwner>(LocalContext.current)
             ?: error("No Back Dispatcher provided")
 
-    public fun asProvidableCompositionLocal():
-        ProvidableCompositionLocal<OnBackPressedDispatcherOwner?> =
-            LocalOnBackPressedDispatcherOwner
+    /**
+     * Associates a [LocalOnBackPressedDispatcherOwner] key to a value in a call to
+     * [CompositionLocalProvider].
+     */
+    public infix fun provides(dispatcherOwner: OnBackPressedDispatcherOwner):
+        ProvidedValue<OnBackPressedDispatcherOwner?> {
+            return LocalOnBackPressedDispatcherOwner.provides(dispatcherOwner)
+        }
 }
 
 /**
@@ -66,7 +72,7 @@ public object LocalOnBackPressedDispatcherOwner {
 @Composable
 public fun BackHandler(enabled: Boolean = true, onBack: () -> Unit) {
     // Safely update the current `onBack` lambda when a new one is provided
-    val currentOnBack = rememberUpdatedState(onBack).value
+    val currentOnBack by rememberUpdatedState(onBack)
     // Remember in Composition a back callback that calls the `onBack` lambda
     val backCallback = remember {
         object : OnBackPressedCallback(enabled) {

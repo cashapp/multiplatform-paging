@@ -20,13 +20,17 @@ import androidx.compose.ui.inspection.rules.ComposeInspectionRule
 import androidx.compose.ui.inspection.rules.sendCommand
 import androidx.compose.ui.inspection.testdata.ParametersTestActivity
 import androidx.compose.ui.inspection.util.GetComposablesCommand
+import androidx.compose.ui.inspection.util.GetParameterDetailsCommand
 import androidx.compose.ui.inspection.util.GetParametersCommand
 import androidx.compose.ui.inspection.util.toMap
 import androidx.test.filters.LargeTest
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
+import layoutinspector.compose.inspection.LayoutInspectorComposeProtocol.ComposableNode
+import layoutinspector.compose.inspection.LayoutInspectorComposeProtocol.GetComposablesResponse
 import layoutinspector.compose.inspection.LayoutInspectorComposeProtocol.GetParametersResponse
 import layoutinspector.compose.inspection.LayoutInspectorComposeProtocol.Parameter
+import layoutinspector.compose.inspection.LayoutInspectorComposeProtocol.StringEntry
 import org.junit.Rule
 import org.junit.Test
 
@@ -36,18 +40,35 @@ class ParametersTest {
     val rule = ComposeInspectionRule(ParametersTestActivity::class)
 
     @Test
+    fun resource(): Unit = runBlocking {
+        val composables = rule.inspectorTester.sendCommand(GetComposablesCommand(rule.rootId))
+            .getComposablesResponse
+
+        val text = composables.filter("Text").first()
+        val params = rule.inspectorTester.sendCommand(GetParametersCommand(rule.rootId, text.id))
+            .getParametersResponse
+
+        val resourceValue = params.find("fontFamily")!!.resourceValue
+        assertThat(resourceValue.type.resolve(params)).isEqualTo("font")
+        assertThat(resourceValue.namespace.resolve(params))
+            .isEqualTo("androidx.compose.ui.inspection.test")
+        assertThat(resourceValue.name.resolve(params)).isEqualTo("samplefont")
+    }
+
+    @Test
     fun lambda(): Unit = runBlocking {
         val composables = rule.inspectorTester.sendCommand(GetComposablesCommand(rule.rootId))
             .getComposablesResponse
-        // first button's id
-        val buttonId = composables.rootsList[0]!!.nodesList[0]!!.childrenList[0]!!.id
+
+        val buttons = composables.filter("Button")
+        val buttonId = buttons.first().id
         val params = rule.inspectorTester.sendCommand(GetParametersCommand(rule.rootId, buttonId))
             .getParametersResponse
 
         val lambdaValue = params.find("onClick")!!.lambdaValue
         assertThat(lambdaValue.fileName.resolve(params)).isEqualTo("ParametersTestActivity.kt")
-        assertThat(lambdaValue.startLineNumber).isEqualTo(29)
-        assertThat(lambdaValue.endLineNumber).isEqualTo(29)
+        assertThat(lambdaValue.startLineNumber).isEqualTo(48)
+        assertThat(lambdaValue.endLineNumber).isEqualTo(48)
         assertThat(lambdaValue.packageName.resolve(params))
             .isEqualTo("androidx.compose.ui.inspection.testdata")
     }
@@ -57,18 +78,56 @@ class ParametersTest {
         val composables = rule.inspectorTester.sendCommand(GetComposablesCommand(rule.rootId))
             .getComposablesResponse
 
-        // second's button id
-        val buttonId = composables.rootsList[0]!!.nodesList[0]!!.childrenList[1]!!.id
+        val buttons = composables.filter("Button")
+        val buttonId = buttons.last().id
         val params = rule.inspectorTester.sendCommand(GetParametersCommand(rule.rootId, buttonId))
             .getParametersResponse
 
         val lambdaValue = params.find("onClick")!!.lambdaValue
         assertThat(lambdaValue.fileName.resolve(params)).isEqualTo("ParametersTestActivity.kt")
-        assertThat(lambdaValue.startLineNumber).isEqualTo(32)
-        assertThat(lambdaValue.endLineNumber).isEqualTo(32)
+        assertThat(lambdaValue.startLineNumber).isEqualTo(51)
+        assertThat(lambdaValue.endLineNumber).isEqualTo(51)
         assertThat(lambdaValue.functionName.resolve(params)).isEqualTo("testClickHandler")
         assertThat(lambdaValue.packageName.resolve(params))
             .isEqualTo("androidx.compose.ui.inspection.testdata")
+    }
+
+    @Test
+    fun intArray(): Unit = runBlocking {
+        val tester = rule.inspectorTester
+        val nodes = tester.sendCommand(GetComposablesCommand(rule.rootId)).getComposablesResponse
+
+        val function = nodes.filter("FunctionWithIntArray").single()
+        val params = tester.sendCommand(GetParametersCommand(rule.rootId, function.id))
+            .getParametersResponse
+
+        val intArray = params.find("intArray")!!
+        var strings = params.stringsList
+
+        checkStringParam(strings, intArray, "intArray", "IntArray[8]", 0)
+        assertThat(intArray.elementsCount).isEqualTo(5)
+        checkIntParam(strings, intArray.elementsList[0], "[0]", 10, 0)
+        checkIntParam(strings, intArray.elementsList[1], "[1]", 11, 1)
+        checkIntParam(strings, intArray.elementsList[2], "[2]", 12, 2)
+        checkIntParam(strings, intArray.elementsList[3], "[3]", 13, 3)
+        checkIntParam(strings, intArray.elementsList[4], "[4]", 14, 4)
+
+        val expanded =
+            tester.sendCommand(
+                GetParameterDetailsCommand(
+                    rule.rootId,
+                    intArray.reference,
+                    startIndex = 5,
+                    maxElements = 5
+                )
+            ).getParameterDetailsResponse
+        val intArray2 = expanded.parameter
+        strings = expanded.stringsList
+        checkStringParam(strings, intArray, "intArray", "IntArray[8]", 0)
+        assertThat(intArray2.elementsCount).isEqualTo(3)
+        checkIntParam(strings, intArray2.elementsList[0], "[5]", 15, 5)
+        checkIntParam(strings, intArray2.elementsList[1], "[6]", 16, 6)
+        checkIntParam(strings, intArray2.elementsList[2], "[7]", 17, 7)
     }
 }
 
@@ -81,4 +140,39 @@ private fun GetParametersResponse.find(name: String): Parameter? {
     return parameterGroup.parameterList.find {
         strings[it.name] == name
     }
+}
+
+private fun GetComposablesResponse.filter(name: String): List<ComposableNode> {
+    val strings = stringsList.toMap()
+    return rootsList.flatMap { it.nodesList }.flatMap { it.flatten() }.filter {
+        strings[it.name] == name
+    }
+}
+
+private fun ComposableNode.flatten(): List<ComposableNode> =
+    listOf(this).plus(this.childrenList.flatMap { it.flatten() })
+
+@Suppress("SameParameterValue")
+private fun checkStringParam(
+    stringList: List<StringEntry>,
+    param: Parameter,
+    name: String,
+    value: String,
+    index: Int = 0
+) {
+    assertThat(stringList.toMap()[param.name]).isEqualTo(name)
+    assertThat(stringList.toMap()[param.int32Value]).isEqualTo(value)
+    assertThat(param.index).isEqualTo(index)
+}
+
+private fun checkIntParam(
+    stringList: List<StringEntry>,
+    param: Parameter,
+    name: String,
+    value: Int,
+    index: Int = 0
+) {
+    assertThat(stringList.toMap()[param.name]).isEqualTo(name)
+    assertThat(param.int32Value).isEqualTo(value)
+    assertThat(param.index).isEqualTo(index)
 }

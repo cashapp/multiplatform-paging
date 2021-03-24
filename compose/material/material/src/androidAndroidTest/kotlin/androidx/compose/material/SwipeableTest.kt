@@ -16,15 +16,15 @@
 
 package androidx.compose.material
 
-import androidx.compose.animation.core.AnimationEndReason
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.animation.scrollBy
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.preferredSize
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -33,8 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.gesture.nestedscroll.nestedScroll
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
@@ -58,6 +57,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -403,7 +403,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_fixed_small() = runBlocking {
+    fun swipeable_thresholds_fixed_small() = runBlocking(AutoTestFrameClock()) {
         rule.mainClock.autoAdvance = false
         lateinit var state: SwipeableState<String>
         val offsetDp = with(rule.density) { 35.toDp() }
@@ -459,7 +459,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_fixed_large() = runBlocking {
+    fun swipeable_thresholds_fixed_large() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         val offsetDp = with(rule.density) { 65.toDp() }
         setSwipeableContent {
@@ -514,7 +514,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_fractional_half() = runBlocking {
+    fun swipeable_thresholds_fractional_half() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -568,7 +568,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_fractional_quarter() = runBlocking {
+    fun swipeable_thresholds_fractional_quarter() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -622,7 +622,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_fractional_threeQuarters() = runBlocking {
+    fun swipeable_thresholds_fractional_threeQuarters() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -676,7 +676,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_mixed() = runBlocking {
+    fun swipeable_thresholds_mixed() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         val offsetDp = with(rule.density) { 35.toDp() }
         setSwipeableContent {
@@ -737,7 +737,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_thresholds_custom() = runBlocking {
+    fun swipeable_thresholds_custom() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -997,7 +997,7 @@ class SwipeableTest {
      */
     @Test
     @LargeTest
-    fun swipeable_targetValue() = runBlocking {
+    fun swipeable_targetValue() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -1297,7 +1297,7 @@ class SwipeableTest {
      * Tests that 'snapTo' updates the state and offset immediately.
      */
     @Test
-    fun swipeable_snapTo() = runBlocking {
+    fun swipeable_snapTo() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -1326,7 +1326,7 @@ class SwipeableTest {
      * Tests that 'animateTo' starts an animation which updates the state and offset.
      */
     @Test
-    fun swipeable_animateTo() = runBlocking {
+    fun swipeable_animateTo() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -1358,7 +1358,7 @@ class SwipeableTest {
      * Tests that the 'onEnd' callback of 'animateTo' is invoked and with the correct end value.
      */
     @Test
-    fun swipeable_animateTo_onEnd() = runBlocking {
+    fun swipeable_animateTo_onEnd() = runBlocking(AutoTestFrameClock()) {
         lateinit var state: SwipeableState<String>
         setSwipeableContent {
             state = rememberSwipeableState("A")
@@ -1370,9 +1370,15 @@ class SwipeableTest {
             )
         }
 
-        val endValue = state.animateTo("B")
+        var result: Boolean?
+        try {
+            state.animateTo("B")
+            result = true
+        } catch (c: CancellationException) {
+            result = false
+        }
         advanceClock()
-        assertThat(endValue).isEqualTo(AnimationEndReason.Finished)
+        assertThat(result).isEqualTo(true)
     }
 
     /**
@@ -1402,15 +1408,14 @@ class SwipeableTest {
             up()
         }
         advanceClock()
-        val endReason = job.await()
-        assertThat(endReason).isEqualTo(AnimationEndReason.Interrupted)
+        job.await()
     }
 
     /**
      * Tests that the [SwipeableState] is restored, when created with [rememberSwipeableState].
      */
     @Test
-    fun swipeable_restoreSwipeableState() = runBlocking {
+    fun swipeable_restoreSwipeableState() = runBlocking(AutoTestFrameClock()) {
         val restorationTester = StateRestorationTester(rule)
         var state: SwipeableState<String>? = null
 
@@ -1553,7 +1558,7 @@ class SwipeableTest {
                 "orientation",
                 "enabled",
                 "reverseDirection",
-                "interactionState",
+                "interactionSource",
                 "thresholds",
                 "resistance",
                 "velocityThreshold"
@@ -1572,7 +1577,7 @@ class SwipeableTest {
             scrollState = rememberScrollState()
             Box(
                 Modifier
-                    .preferredSize(300.dp)
+                    .size(300.dp)
                     .nestedScroll(swipeableState.PreUpPostDownNestedScrollConnection)
                     .swipeable(
                         state = swipeableState,
@@ -1585,7 +1590,7 @@ class SwipeableTest {
                     Modifier.fillMaxWidth().testTag(swipeableTag).verticalScroll(scrollState)
                 ) {
                     repeat(100) {
-                        Text(text = it.toString(), modifier = Modifier.height(50.dp))
+                        Text(text = it.toString(), modifier = Modifier.requiredHeight(50.dp))
                     }
                 }
             }
@@ -1603,7 +1608,7 @@ class SwipeableTest {
         advanceClock()
 
         assertThat(swipeableState.currentValue).isEqualTo("B")
-        assertThat(scrollState.value).isGreaterThan(0f)
+        assertThat(scrollState.value).isGreaterThan(0)
 
         rule.onNodeWithTag(swipeableTag)
             .performGesture {
@@ -1615,7 +1620,7 @@ class SwipeableTest {
         advanceClock()
 
         assertThat(swipeableState.currentValue).isEqualTo("A")
-        assertThat(scrollState.value).isEqualTo(0f)
+        assertThat(scrollState.value).isEqualTo(0)
     }
 
     @Test
@@ -1629,7 +1634,7 @@ class SwipeableTest {
             scrollState = rememberScrollState()
             Box(
                 Modifier
-                    .preferredSize(300.dp)
+                    .size(300.dp)
                     .nestedScroll(swipeableState.PreUpPostDownNestedScrollConnection)
                     .swipeable(
                         state = swipeableState,
@@ -1642,7 +1647,7 @@ class SwipeableTest {
                     Modifier.fillMaxWidth().testTag(swipeableTag).verticalScroll(scrollState)
                 ) {
                     repeat(100) {
-                        Text(text = it.toString(), modifier = Modifier.height(50.dp))
+                        Text(text = it.toString(), modifier = Modifier.requiredHeight(50.dp))
                     }
                 }
             }
@@ -1665,7 +1670,7 @@ class SwipeableTest {
         rule.runOnIdle {
             assertThat(swipeableState.currentValue).isEqualTo("B")
             // should eat all velocity, no internal scroll
-            assertThat(scrollState.value).isEqualTo(0f)
+            assertThat(scrollState.value).isEqualTo(0)
         }
 
         rule.onNodeWithTag(swipeableTag)
@@ -1680,22 +1685,22 @@ class SwipeableTest {
 
         rule.runOnIdle {
             assertThat(swipeableState.currentValue).isEqualTo("A")
-            assertThat(scrollState.value).isEqualTo(0f)
+            assertThat(scrollState.value).isEqualTo(0)
         }
     }
 
     @Test
-    fun swipeable_nestedScroll_postFlings() = runBlocking {
+    fun swipeable_nestedScroll_postFlings() = runBlocking(AutoTestFrameClock()) {
         lateinit var swipeableState: SwipeableState<String>
         lateinit var anchors: MutableState<Map<Float, String>>
         lateinit var scrollState: ScrollState
         rule.setContent {
             swipeableState = rememberSwipeableState("B")
             anchors = remember { mutableStateOf(mapOf(0f to "A", -1000f to "B")) }
-            scrollState = rememberScrollState(initial = 5000f)
+            scrollState = rememberScrollState(initial = 5000)
             Box(
                 Modifier
-                    .preferredSize(300.dp)
+                    .size(300.dp)
                     .nestedScroll(swipeableState.PreUpPostDownNestedScrollConnection)
                     .swipeable(
                         state = swipeableState,
@@ -1708,7 +1713,7 @@ class SwipeableTest {
                     Modifier.fillMaxWidth().testTag(swipeableTag).verticalScroll(scrollState)
                 ) {
                     repeat(100) {
-                        Text(text = it.toString(), modifier = Modifier.height(50.dp))
+                        Text(text = it.toString(), modifier = Modifier.requiredHeight(50.dp))
                     }
                 }
             }
@@ -1716,7 +1721,7 @@ class SwipeableTest {
 
         rule.awaitIdle()
         assertThat(swipeableState.currentValue).isEqualTo("B")
-        assertThat(scrollState.value).isEqualTo(5000f)
+        assertThat(scrollState.value).isEqualTo(5000)
 
         rule.onNodeWithTag(swipeableTag)
             .performGesture {
@@ -1732,13 +1737,13 @@ class SwipeableTest {
 
         rule.awaitIdle()
         assertThat(swipeableState.currentValue).isEqualTo("B")
-        assertThat(scrollState.value).isEqualTo(0f)
+        assertThat(scrollState.value).isEqualTo(0)
         // set value again to test overshoot
         scrollState.scrollBy(500f)
 
         rule.runOnIdle {
             assertThat(swipeableState.currentValue).isEqualTo("B")
-            assertThat(scrollState.value).isEqualTo(500f)
+            assertThat(scrollState.value).isEqualTo(500)
         }
 
         rule.onNodeWithTag(swipeableTag)
@@ -1754,7 +1759,7 @@ class SwipeableTest {
 
         rule.runOnIdle {
             assertThat(swipeableState.currentValue).isEqualTo("A")
-            assertThat(scrollState.value).isEqualTo(0f)
+            assertThat(scrollState.value).isEqualTo(0)
         }
     }
 

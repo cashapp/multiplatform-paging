@@ -28,6 +28,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 
 private val defaultAnimation = spring<Float>()
 
@@ -35,7 +37,7 @@ private val defaultAnimation = spring<Float>()
  * Fire-and-forget animation function for [Float]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateFloatAsState] returns a [State] object. The value of the state object will continuously
@@ -67,28 +69,20 @@ fun animateFloatAsState(
         } else {
             animationSpec
         }
-    val animationState: AnimationState<Float, AnimationVector1D> = remember {
-        AnimationState(targetValue)
-    }
-
-    val currentEndListener by rememberUpdatedState(finishedListener)
-    LaunchedEffect(targetValue, animationSpec) {
-        animationState.animateTo(
-            targetValue,
-            resolvedAnimSpec,
-            // If the previous animation was interrupted (i.e. not finished), make it sequential.
-            !animationState.isFinished
-        )
-        currentEndListener?.invoke(animationState.value)
-    }
-    return animationState
+    return animateValueAsState(
+        targetValue,
+        Float.VectorConverter,
+        resolvedAnimSpec,
+        visibilityThreshold,
+        finishedListener
+    )
 }
 
 /**
  * Fire-and-forget animation function for [Dp]. This Composable function is overloaded for
  * different parameter types such as [Float], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateDpAsState] returns a [State] object. The value of the state object will continuously be
@@ -125,7 +119,7 @@ private val dpDefaultSpring = spring<Dp>(visibilityThreshold = Dp.VisibilityThre
  * Fire-and-forget animation function for [Size]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateSizeAsState] returns a [State] object. The value of the state object will continuously be
@@ -163,7 +157,7 @@ private val sizeDefaultSpring = spring(visibilityThreshold = Size.VisibilityThre
  * Fire-and-forget animation function for [Offset]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Float],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateOffsetAsState] returns a [State] object. The value of the state object will
@@ -197,7 +191,7 @@ private val offsetDefaultSpring = spring(visibilityThreshold = Offset.Visibility
  * Fire-and-forget animation function for [Rect]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateRectAsState] returns a [State] object. The value of the state object will continuously be
@@ -232,7 +226,7 @@ private val rectDefaultSpring = spring(visibilityThreshold = Rect.VisibilityThre
  * Fire-and-forget animation function for [Int]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateIntAsState] returns a [State] object. The value of the state object will continuously be
@@ -264,7 +258,7 @@ private val intDefaultSpring = spring(visibilityThreshold = Int.VisibilityThresh
  * Fire-and-forget animation function for [IntOffset]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateIntOffsetAsState] returns a [State] object. The value of the state object will
@@ -298,7 +292,7 @@ private val intOffsetDefaultSpring = spring(visibilityThreshold = IntOffset.Visi
  * Fire-and-forget animation function for [IntSize]. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateIntSizeAsState] returns a [State] object. The value of the state object will continuously
@@ -330,7 +324,7 @@ private val intSizeDefaultSpring = spring(visibilityThreshold = IntSize.Visibili
  * Fire-and-forget animation function for any value. This Composable function is overloaded for
  * different parameter types such as [Dp], [Color][androidx.compose.ui.graphics.Color], [Offset],
  * etc. When the provided [targetValue] is changed, the animation will run automatically. If there
- * is already an animation in-flight whe [targetValue] changes, the on-going animation will adjust
+ * is already an animation in-flight when [targetValue] changes, the on-going animation will adjust
  * course to animate towards the new target value.
  *
  * [animateValueAsState] returns a [State] object. The value of the state object will continuously be
@@ -361,19 +355,26 @@ fun <T, V : AnimationVector> animateValueAsState(
     visibilityThreshold: T? = null,
     finishedListener: ((T) -> Unit)? = null
 ): State<T> {
-    val animationState: AnimationState<T, V> = remember(typeConverter) {
-        AnimationState(typeConverter, targetValue)
-    }
 
+    val animatable = remember { Animatable(targetValue, typeConverter) }
     val listener by rememberUpdatedState(finishedListener)
-    LaunchedEffect(targetValue, animationSpec) {
-        animationState.animateTo(
-            targetValue,
-            animationSpec,
-            // If the previous animation was interrupted (i.e. not finished), make it sequential.
-            !animationState.isFinished
-        )
-        listener?.invoke(animationState.value)
+    val channel = remember { Channel<T>(Channel.CONFLATED) }
+    channel.offer(targetValue)
+    LaunchedEffect(channel) {
+        for (target in channel) {
+            // This additional poll is needed because when the channel suspends on receive and
+            // two values are produced before consumers' dispatcher resumes, only the first value
+            // will be received.
+            // It may not be an issue elsewhere, but in animation we want to avoid being one
+            // frame late.
+            val newTarget = channel.poll() ?: target
+            launch {
+                if (newTarget != animatable.targetValue) {
+                    animatable.animateTo(newTarget, animationSpec)
+                    listener?.invoke(animatable.value)
+                }
+            }
+        }
     }
-    return animationState
+    return animatable.asState()
 }

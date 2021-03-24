@@ -79,7 +79,6 @@ abstract class AbstractCodegenTest : AbstractCompilerTest() {
         val loader = classLoader(
             """
            @file:OptIn(
-             ExperimentalComposeApi::class,
              InternalComposeApi::class,
              ComposeCompilerApi::class
            )
@@ -88,6 +87,8 @@ abstract class AbstractCodegenTest : AbstractCompilerTest() {
            import androidx.compose.runtime.*
 
            $src
+
+            fun used(x: Any?) {}
         """,
             fileName, dumpClasses
         )

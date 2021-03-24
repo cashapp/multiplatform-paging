@@ -26,10 +26,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.preferredHeight
-import androidx.compose.foundation.layout.preferredWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -134,7 +135,11 @@ fun TabRow(
     },
     tabs: @Composable () -> Unit
 ) {
-    Surface(modifier = modifier, color = backgroundColor, contentColor = contentColor) {
+    Surface(
+        modifier = modifier.selectableGroup(),
+        color = backgroundColor,
+        contentColor = contentColor
+    ) {
         SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
             val tabRowWidth = constraints.maxWidth
             val tabMeasurables = subcompose(TabSlots.Tabs, tabs)
@@ -215,13 +220,16 @@ fun ScrollableTabRow(
     },
     tabs: @Composable () -> Unit
 ) {
-    Surface(modifier = modifier, color = backgroundColor, contentColor = contentColor) {
+    Surface(
+        modifier = modifier.selectableGroup(),
+        color = backgroundColor,
+        contentColor = contentColor
+    ) {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
-        val scrollableTabData = remember(scrollState) {
+        val scrollableTabData = remember(scrollState, coroutineScope) {
             ScrollableTabData(
                 scrollState = scrollState,
-                selectedTab = selectedTabIndex,
                 coroutineScope = coroutineScope
             )
         }
@@ -355,7 +363,7 @@ object TabRowDefaults {
         Box(
             modifier
                 .fillMaxWidth()
-                .preferredHeight(height)
+                .height(height)
                 .background(color = color)
         )
     }
@@ -385,7 +393,7 @@ object TabRowDefaults {
         fillMaxWidth()
             .wrapContentSize(Alignment.BottomStart)
             .offset(x = indicatorOffset)
-            .preferredWidth(currentTabWidth)
+            .width(currentTabWidth)
     }
 
     /**
@@ -420,15 +428,18 @@ private enum class TabSlots {
  */
 private class ScrollableTabData(
     private val scrollState: ScrollState,
-    private var selectedTab: Int,
     private val coroutineScope: CoroutineScope
 ) {
+    private var selectedTab: Int? = null
+
     fun onLaidOut(
         density: Density,
         edgeOffset: Int,
         tabPositions: List<TabPosition>,
         selectedTab: Int
     ) {
+        // Animate if the new tab is different from the old tab, or this is called for the first
+        // time (i.e selectedTab is `null`).
         if (this.selectedTab != selectedTab) {
             this.selectedTab = selectedTab
             tabPositions.getOrNull(selectedTab)?.let {
@@ -436,9 +447,9 @@ private class ScrollableTabData(
                 // screen or as close to the center as possible.
                 val calculatedOffset = it.calculateTabOffset(density, edgeOffset, tabPositions)
                 coroutineScope.launch {
-                    scrollState.smoothScrollTo(
+                    scrollState.animateScrollTo(
                         calculatedOffset,
-                        spec = ScrollableTabRowScrollSpec
+                        animationSpec = ScrollableTabRowScrollSpec
                     )
                 }
             }
@@ -454,9 +465,9 @@ private class ScrollableTabData(
         density: Density,
         edgeOffset: Int,
         tabPositions: List<TabPosition>
-    ): Float = with(density) {
+    ): Int = with(density) {
         val totalTabRowWidth = tabPositions.last().right.roundToPx() + edgeOffset
-        val visibleWidth = totalTabRowWidth - scrollState.maxValue.toInt()
+        val visibleWidth = totalTabRowWidth - scrollState.maxValue
         val tabOffset = left.roundToPx()
         val scrollerCenter = visibleWidth / 2
         val tabWidth = width.roundToPx()
@@ -464,7 +475,7 @@ private class ScrollableTabData(
         // How much space we have to scroll. If the visible width is <= to the total width, then
         // we have no space to scroll as everything is always visible.
         val availableSpace = (totalTabRowWidth - visibleWidth).coerceAtLeast(0)
-        return centeredTabOffset.coerceIn(0, availableSpace).toFloat()
+        return centeredTabOffset.coerceIn(0, availableSpace)
     }
 }
 

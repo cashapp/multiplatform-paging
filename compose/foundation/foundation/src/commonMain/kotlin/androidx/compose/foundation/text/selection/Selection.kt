@@ -17,7 +17,6 @@
 package androidx.compose.foundation.text.selection
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.ResolvedTextDirection
 
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.style.ResolvedTextDirection
  * Information about the current Selection.
  */
 @Immutable
-@OptIn(ExperimentalTextApi::class)
 internal data class Selection(
     /**
      * Information about the start of the selection.
@@ -64,9 +62,9 @@ internal data class Selection(
         val offset: Int,
 
         /**
-         * The [Selectable] which contains this [Selection] Anchor.
+         * The id of the [Selectable] which contains this [Selection] Anchor.
          */
-        val selectable: Selectable
+        val selectableId: Long
     )
 
     fun merge(other: Selection?): Selection {

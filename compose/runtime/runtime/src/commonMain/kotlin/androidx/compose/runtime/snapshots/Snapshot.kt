@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-@file:OptIn(InternalComposeApi::class, ExperimentalComposeApi::class)
+@file:OptIn(InternalComposeApi::class)
 
 package androidx.compose.runtime.snapshots
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.InternalComposeApi
-import androidx.compose.runtime.ThreadLocal
+import androidx.compose.runtime.SnapshotThreadLocal
 import androidx.compose.runtime.synchronized
 
 /**
@@ -165,9 +164,9 @@ sealed class Snapshot(
     /**
      * Notify the snapshot that all objects created in this snapshot to this point should be
      * considered initialized. If any state object is are modified passed this point it will
-     * appear as modified in the snapshot and any applicable [SnapshotWriteObserver] will be
+     * appear as modified in the snapshot and any applicable snapshot write observer will be
      * called for the object and the object will be part of the a set of mutated objects sent to
-     * any applicable [SnapshotApplyObserver].
+     * any applicable snapshot apply observer.
      *
      * Unless [notifyObjectsInitialized] is called, state objects created in a snapshot are not
      * considered modified by the snapshot even if they are modified after construction.
@@ -200,7 +199,7 @@ sealed class Snapshot(
          * [Snapshot.dispose] is called on the result.
          *
          * The [readObserver] parameter can be used to track when all state objects are read when in
-         * [Snapshot.enter]. A [SnapshotApplyObserver] can be registered using
+         * [Snapshot.enter]. A snapshot apply observer can be registered using
          * [Snapshot.registerApplyObserver] to observe modification of state objects.
          *
          * An active snapshot (after it is created but before [Snapshot.dispose] is called) requires
@@ -224,7 +223,6 @@ sealed class Snapshot(
          *
          * @see Snapshot
          * @see Snapshot.registerApplyObserver
-         * @see SnapshotApplyObserver
          */
         fun takeSnapshot(
             readObserver: ((Any) -> Unit)? = null
@@ -328,7 +326,8 @@ sealed class Snapshot(
          * Prior to returning, any changes made to snapshot state (e.g. state holders returned by
          * [androidx.compose.runtime.mutableStateOf] are not visible to other threads. When
          * [withMutableSnapshot] returns successfully those changes will be made visible to other
-         * threads  and any snapshot observers (e.g. [snapshotFlow]) will be notified of changes.
+         * threads  and any snapshot observers (e.g. [androidx.compose.runtime.snapshotFlow]) will
+         * be notified of changes.
          *
          * [block] must not suspend if [withMutableSnapshot] is called from a suspend function.
          */
@@ -432,9 +431,9 @@ sealed class Snapshot(
         /**
          * Notify the snapshot that all objects created in this snapshot to this point should be
          * considered initialized. If any state object is are modified passed this point it will
-         * appear as modified in the snapshot and any applicable [SnapshotWriteObserver] will be
+         * appear as modified in the snapshot and any applicable snapshot write observer will be
          * called for the object and the object will be part of the a set of mutated objects sent to
-         * any applicable [SnapshotApplyObserver].
+         * any applicable snapshot apply observer.
          *
          * Unless [notifyObjectsInitialized] is called, state objects created in a snapshot are not
          * considered modified by the snapshot even if they are modified after construction.
@@ -496,7 +495,7 @@ sealed class Snapshot(
  * Snapshots can be nested by calling [takeNestedSnapshot] or
  * [MutableSnapshot.takeNestedMutableSnapshot].
  *
- * @see takeMutableSnapshot
+ * @see Snapshot.takeMutableSnapshot
  * @see androidx.compose.runtime.mutableStateOf
  * @see androidx.compose.runtime.mutableStateListOf
  * @see androidx.compose.runtime.mutableStateMapOf
@@ -589,7 +588,7 @@ open class MutableSnapshot internal constructor(
                 takeNewGlobalSnapshot(previousGlobalSnapshot, emptyLambda)
                 val globalModified = previousGlobalSnapshot.modified
                 if (globalModified != null && globalModified.isNotEmpty())
-                    applyObservers.toList() to globalModified
+                    applyObservers.toMutableList() to globalModified
                 else
                     emptyList<(Set<Any>, Snapshot) -> Unit>() to null
             } else {
@@ -610,7 +609,7 @@ open class MutableSnapshot internal constructor(
                 this.modified = null
                 previousGlobalSnapshot.modified = null
 
-                applyObservers.toList() to globalModified
+                applyObservers.toMutableList() to globalModified
             }
         }
 
@@ -647,13 +646,18 @@ open class MutableSnapshot internal constructor(
     override fun takeNestedSnapshot(readObserver: ((Any) -> Unit)?): Snapshot {
         validateNotDisposed()
         validateNotApplied()
+        val previousId = id
         return advance {
             sync {
                 val readonlyId = nextSnapshotId++
                 openSnapshots = openSnapshots.set(readonlyId)
+                var currentInvalid = invalid
+                for (invalidId in previousId + 1 until readonlyId) {
+                    currentInvalid = currentInvalid.set(invalidId)
+                }
                 NestedReadonlySnapshot(
                     readonlyId,
-                    invalid,
+                    currentInvalid,
                     readObserver,
                     this
                 )
@@ -1071,9 +1075,8 @@ internal class NestedReadonlySnapshot(
     init { parent.nestedActivated(this) }
     override val readOnly get() = true
     override val root: Snapshot get() = parent.root
-    @OptIn(ExperimentalComposeApi::class)
     override fun takeNestedSnapshot(readObserver: ((Any) -> Unit)?) =
-        parent.takeNestedSnapshot(readObserver)
+        NestedReadonlySnapshot(id, invalid, readObserver, parent)
     override fun notifyObjectsInitialized() {
         // Nothing to do for read-only snapshots
     }
@@ -1101,7 +1104,6 @@ internal class NestedReadonlySnapshot(
 
     override val modified: HashSet<StateObject>? get() = null
     override val writeObserver: ((Any) -> Unit)? get() = null
-    @OptIn(ExperimentalComposeApi::class)
     override fun recordModified(state: StateObject) = parent.recordModified(state)
 
     override fun nestedDeactivated(snapshot: Snapshot) = unsupported()
@@ -1127,7 +1129,7 @@ internal class GlobalSnapshot(id: Int, invalid: SnapshotIdSet) :
                 } else null
                 )?.let {
                 it.firstOrNull() ?: { state: Any ->
-                    it.forEach { it(state) }
+                    it.fastForEach { it(state) }
                 }
             }
         }
@@ -1280,7 +1282,6 @@ internal class TransparentObserverMutableSnapshot(
         @Suppress("UNUSED_PARAMETER")
         set(value) { unsupported() }
 
-    @OptIn(ExperimentalComposeApi::class)
     override var invalid get() = currentSnapshot.invalid
         @Suppress("UNUSED_PARAMETER")
         set(value) = unsupported()
@@ -1298,7 +1299,6 @@ internal class TransparentObserverMutableSnapshot(
     override fun apply(): SnapshotApplyResult =
         currentSnapshot.apply()
 
-    @OptIn(ExperimentalComposeApi::class)
     override fun recordModified(state: StateObject) =
         currentSnapshot.recordModified(state)
 
@@ -1313,7 +1313,6 @@ internal class TransparentObserverMutableSnapshot(
         mergedWriteObserver(writeObserver, this.writeObserver)
     )
 
-    @OptIn(ExperimentalComposeApi::class)
     override fun notifyObjectsInitialized() = currentSnapshot.notifyObjectsInitialized()
 
     // The following should never be called.
@@ -1356,7 +1355,10 @@ private fun mergedWriteObserver(
  */
 private const val INVALID_SNAPSHOT = 0
 
-private val threadSnapshot = ThreadLocal<Snapshot>()
+/**
+ * Current thread snapshot
+ */
+private val threadSnapshot = SnapshotThreadLocal<Snapshot>()
 
 // A global synchronization object. This synchronization object should be taken before modifying any
 // of the fields below.
@@ -1427,8 +1429,8 @@ private fun <T> advanceGlobalSnapshot(block: (invalid: SnapshotIdSet) -> T): T {
     // observers.
     val modified = previousGlobalSnapshot.modified
     if (modified != null) {
-        val observers = sync { applyObservers.toList() }
-        for (observer in observers) {
+        val observers: List<(Set<Any>, Snapshot) -> Unit> = sync { applyObservers.toMutableList() }
+        observers.fastForEach { observer ->
             observer(modified, previousGlobalSnapshot)
         }
     }
@@ -1569,8 +1571,28 @@ internal fun <T : StateRecord> T.writableRecord(state: StateObject, snapshot: Sn
 
     // Otherwise, make a copy of the readable data and mark it as born in this snapshot, making it
     // writable.
-    @OptIn(ExperimentalComposeApi::class)
     val newData = newWritableRecord(state, snapshot)
+
+    snapshot.recordModified(state)
+
+    return newData
+}
+
+internal fun <T : StateRecord> T.overwritableRecord(
+    state: StateObject,
+    snapshot: Snapshot,
+    candidate: T
+): T {
+    if (snapshot.readOnly) {
+        // If the snapshot is read-only, use the snapshot recordModified to report it.
+        snapshot.recordModified(state)
+    }
+    val id = snapshot.id
+
+    if (candidate.snapshotId == id) return candidate
+
+    val newData = newOverwritableRecord(state, snapshot)
+    newData.snapshotId = id
 
     snapshot.recordModified(state)
 
@@ -1590,16 +1612,32 @@ internal fun <T : StateRecord> T.newWritableRecord(state: StateObject, snapshot:
     // cache the result of readable() as the mutating thread calls to writable() can change the
     // result of readable().
     @Suppress("UNCHECKED_CAST")
-    val newData = (used(state, snapshot.id, openSnapshots) as T?)?.apply {
+    val newData = newOverwritableRecord(state, snapshot)
+    newData.assign(this)
+    newData.snapshotId = snapshot.id
+    return newData
+}
+
+internal fun <T : StateRecord> T.newOverwritableRecord(state: StateObject, snapshot: Snapshot): T {
+    // Calling used() on a state object might return the same record for each thread calling
+    // used() therefore selecting the record to reuse should be guarded.
+
+    // Note: setting the snapshotId to Int.MAX_VALUE will make it invalid for all snapshots.
+    // This means the lock can be released as used() will no longer select it. Using id could
+    // also be used but it puts the object into a state where the reused value appears to be
+    // the current valid value for the snapshot. This is not an issue if the snapshot is only
+    // being read from a single thread but using Int.MAX_VALUE allows multiple readers,
+    // single writer, of a snapshot. Note that threads reading a mutating snapshot should not
+    // cache the result of readable() as the mutating thread calls to writable() can change the
+    // result of readable().
+    @Suppress("UNCHECKED_CAST")
+    return (used(state, snapshot.id, openSnapshots) as T?)?.apply {
         snapshotId = Int.MAX_VALUE
     } ?: create().apply {
         snapshotId = Int.MAX_VALUE
         this.next = state.firstStateRecord
         state.prependStateRecord(this as T)
     } as T
-    newData.assign(this)
-    newData.snapshotId = snapshot.id
-    return newData
 }
 
 @PublishedApi
@@ -1642,6 +1680,34 @@ inline fun <T : StateRecord, R> T.writable(state: StateObject, block: T.() -> R)
     return sync {
         snapshot = Snapshot.current
         this.writableRecord(state, snapshot).block()
+    }.also {
+        notifyWrite(snapshot, state)
+    }
+}
+
+/**
+ * Call [block] with a writable state record for the given record. It is assumed that this is
+ * called for the first state record in a state object. A record is writable if it was created in
+ * the current mutable snapshot. This should only be used when the record will be overwritten in
+ * its entirety (such as having only one field and that field is written to).
+ *
+ * WARNING: If the caller doesn't overwrite all the fields in the state record the object will be
+ * inconsistent and the fields not written are almost guaranteed to be incorrect. If it is
+ * possible that [block] will not write to all the fields use [writable] instead.
+ *
+ * @param state The object that has this record in its record list.
+ * @param candidate The current for the snapshot record returned by [withCurrent]
+ * @param block The block that will mutate all the field of the record.
+ */
+internal inline fun <T : StateRecord, R> T.overwritable(
+    state: StateObject,
+    candidate: T,
+    block: T.() -> R
+): R {
+    var snapshot: Snapshot = snapshotInitializer
+    return sync {
+        snapshot = Snapshot.current
+        this.overwritableRecord(state, snapshot, candidate).block()
     }.also {
         notifyWrite(snapshot, state)
     }

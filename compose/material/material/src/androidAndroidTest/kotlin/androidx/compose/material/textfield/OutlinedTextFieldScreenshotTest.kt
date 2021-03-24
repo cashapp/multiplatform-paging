@@ -18,8 +18,8 @@ package androidx.compose.material.textfield
 
 import android.os.Build
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.material.GOLDEN_MATERIAL
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.OutlinedTextField
@@ -82,7 +82,7 @@ class OutlinedTextFieldScreenshotTest {
                     value = "Text",
                     onValueChange = {},
                     label = { Text("Label") },
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -98,7 +98,7 @@ class OutlinedTextFieldScreenshotTest {
                     value = "",
                     onValueChange = {},
                     label = { Text("Label") },
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -106,7 +106,6 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_not_focused")
     }
 
-    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_focused() {
         rule.setMaterialContent {
@@ -115,7 +114,7 @@ class OutlinedTextFieldScreenshotTest {
                     value = "",
                     onValueChange = {},
                     label = { Text("Label") },
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -125,7 +124,6 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_focused")
     }
 
-    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_focused_rtl() {
         rule.setMaterialContent {
@@ -135,7 +133,7 @@ class OutlinedTextFieldScreenshotTest {
                         value = "",
                         onValueChange = {},
                         label = { Text("Label") },
-                        modifier = Modifier.width(280.dp)
+                        modifier = Modifier.requiredWidth(280.dp)
                     )
                 }
             }
@@ -146,7 +144,6 @@ class OutlinedTextFieldScreenshotTest {
         assertAgainstGolden("outlined_textField_focused_rtl")
     }
 
-    @FlakyTest(bugId = 179292401)
     @Test
     fun outlinedTextField_error_focused() {
         rule.setMaterialContent {
@@ -155,8 +152,8 @@ class OutlinedTextFieldScreenshotTest {
                     value = "Input",
                     onValueChange = {},
                     label = { Text("Label") },
-                    isErrorValue = true,
-                    modifier = Modifier.width(280.dp)
+                    isError = true,
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -174,8 +171,8 @@ class OutlinedTextFieldScreenshotTest {
                     value = "",
                     onValueChange = {},
                     label = { Text("Label") },
-                    isErrorValue = true,
-                    modifier = Modifier.width(280.dp)
+                    isError = true,
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -190,7 +187,7 @@ class OutlinedTextFieldScreenshotTest {
                 OutlinedTextField(
                     value = "Hello, world!",
                     onValueChange = {},
-                    modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                    modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
                 )
             }
         }
@@ -205,7 +202,9 @@ class OutlinedTextFieldScreenshotTest {
                 value = "Text",
                 onValueChange = {},
                 label = { Text("Label") },
-                modifier = Modifier.height(300.dp).width(280.dp).testTag(TextFieldTag)
+                modifier = Modifier.requiredHeight(300.dp)
+                    .requiredWidth(280.dp)
+                    .testTag(TextFieldTag)
             )
         }
 
@@ -218,7 +217,9 @@ class OutlinedTextFieldScreenshotTest {
             OutlinedTextField(
                 value = "Text",
                 onValueChange = {},
-                modifier = Modifier.height(300.dp).width(280.dp).testTag(TextFieldTag)
+                modifier = Modifier.requiredHeight(300.dp)
+                    .requiredWidth(280.dp)
+                    .testTag(TextFieldTag)
             )
         }
 
@@ -233,7 +234,9 @@ class OutlinedTextFieldScreenshotTest {
                 onValueChange = {},
                 label = { Text("Label") },
                 placeholder = { Text("placeholder") },
-                modifier = Modifier.height(300.dp).width(280.dp).testTag(TextFieldTag)
+                modifier = Modifier.requiredHeight(300.dp)
+                    .requiredWidth(280.dp)
+                    .testTag(TextFieldTag)
             )
         }
 
@@ -249,7 +252,9 @@ class OutlinedTextFieldScreenshotTest {
                 value = "",
                 onValueChange = {},
                 placeholder = { Text("placeholder") },
-                modifier = Modifier.height(300.dp).width(280.dp).testTag(TextFieldTag)
+                modifier = Modifier.requiredHeight(300.dp)
+                    .requiredWidth(280.dp)
+                    .testTag(TextFieldTag)
             )
         }
 
@@ -265,7 +270,9 @@ class OutlinedTextFieldScreenshotTest {
                 value = "",
                 onValueChange = {},
                 label = { Text("Label") },
-                modifier = Modifier.height(300.dp).width(280.dp).testTag(TextFieldTag)
+                modifier = Modifier.requiredHeight(300.dp)
+                    .requiredWidth(280.dp)
+                    .testTag(TextFieldTag)
             )
         }
 
@@ -280,7 +287,7 @@ class OutlinedTextFieldScreenshotTest {
                 onValueChange = {},
                 singleLine = true,
                 label = { Text("Label") },
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
             )
         }
 
@@ -294,7 +301,7 @@ class OutlinedTextFieldScreenshotTest {
                 value = "Text",
                 onValueChange = {},
                 singleLine = true,
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
             )
         }
 
@@ -310,7 +317,7 @@ class OutlinedTextFieldScreenshotTest {
                 placeholder = { Text("placeholder") },
                 label = { Text("Label") },
                 singleLine = true,
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
             )
         }
 
@@ -327,7 +334,7 @@ class OutlinedTextFieldScreenshotTest {
                 onValueChange = {},
                 placeholder = { Text("placeholder") },
                 singleLine = true,
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
             )
         }
 
@@ -345,7 +352,7 @@ class OutlinedTextFieldScreenshotTest {
                 value = "",
                 onValueChange = {},
                 label = { Text("Label") },
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp)
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp)
             )
         }
 
@@ -361,7 +368,7 @@ class OutlinedTextFieldScreenshotTest {
                     onValueChange = {},
                     singleLine = true,
                     enabled = false,
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -378,7 +385,7 @@ class OutlinedTextFieldScreenshotTest {
                     onValueChange = {},
                     singleLine = true,
                     enabled = false,
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier.requiredWidth(280.dp)
                 )
             }
         }
@@ -396,7 +403,7 @@ class OutlinedTextFieldScreenshotTest {
                     value = longText,
                     onValueChange = { },
                     singleLine = true,
-                    modifier = Modifier.width(300.dp),
+                    modifier = Modifier.requiredWidth(300.dp),
                     enabled = false
                 )
             }
@@ -419,7 +426,7 @@ class OutlinedTextFieldScreenshotTest {
             OutlinedTextField(
                 value = TextFieldValue("Text"),
                 onValueChange = {},
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp),
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp),
                 enabled = true,
                 readOnly = true
             )
@@ -434,7 +441,7 @@ class OutlinedTextFieldScreenshotTest {
             OutlinedTextField(
                 value = TextFieldValue("Text"),
                 onValueChange = {},
-                modifier = Modifier.testTag(TextFieldTag).width(280.dp),
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(280.dp),
                 enabled = true,
                 readOnly = true
             )
@@ -452,7 +459,7 @@ class OutlinedTextFieldScreenshotTest {
             OutlinedTextField(
                 value = longText,
                 onValueChange = { },
-                modifier = Modifier.testTag(TextFieldTag).width(300.dp),
+                modifier = Modifier.testTag(TextFieldTag).requiredWidth(300.dp),
                 singleLine = true,
                 enabled = true,
                 readOnly = true

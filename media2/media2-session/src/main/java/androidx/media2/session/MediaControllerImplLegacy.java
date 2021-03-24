@@ -20,9 +20,15 @@ import static android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION
 import static android.support.v4.media.MediaMetadataCompat.METADATA_KEY_MEDIA_ID;
 
 import static androidx.media2.common.BaseResult.RESULT_ERROR_BAD_VALUE;
+import static androidx.media2.common.BaseResult.RESULT_ERROR_INVALID_STATE;
+import static androidx.media2.common.BaseResult.RESULT_INFO_SKIPPED;
 import static androidx.media2.common.SessionPlayer.BUFFERING_STATE_UNKNOWN;
 import static androidx.media2.common.SessionPlayer.PLAYER_STATE_IDLE;
 import static androidx.media2.common.SessionPlayer.UNKNOWN_TIME;
+import static androidx.media2.session.MediaConstants.MEDIA_URI_QUERY_ID;
+import static androidx.media2.session.MediaConstants.MEDIA_URI_QUERY_QUERY;
+import static androidx.media2.session.MediaConstants.MEDIA_URI_QUERY_URI;
+import static androidx.media2.session.MediaConstants.MEDIA_URI_SET_MEDIA_URI_PREFIX;
 import static androidx.media2.session.SessionResult.RESULT_ERROR_NOT_SUPPORTED;
 import static androidx.media2.session.SessionResult.RESULT_ERROR_SESSION_DISCONNECTED;
 import static androidx.media2.session.SessionResult.RESULT_SUCCESS;
@@ -164,6 +170,9 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
     @SuppressWarnings("WeakerAccess") /* synthetic access */
     boolean mConnected;
 
+    @GuardedBy("mLock")
+    private SetMediaUriRequest mPendingSetMediaUriRequest;
+
     MediaControllerImplLegacy(@NonNull Context context, @NonNull MediaController instance,
             @NonNull SessionToken token) {
         mContext = context;
@@ -230,13 +239,17 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
     }
 
     private ListenableFuture<SessionResult> createFutureWithResult(int resultCode) {
+        ResolvableFuture<SessionResult> result = ResolvableFuture.create();
+        setFutureResult(result, resultCode);
+        return result;
+    }
+
+    private void setFutureResult(ResolvableFuture<SessionResult> result, int resultCode) {
         final MediaItem item;
         synchronized (mLock) {
             item = mCurrentMediaItem;
         }
-        ResolvableFuture<SessionResult> result = ResolvableFuture.create();
         result.set(new SessionResult(resultCode, null, item));
-        return result;
     }
 
     @Override
@@ -253,7 +266,36 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
                 Log.w(TAG, "Session isn't active", new IllegalStateException());
                 return createFutureWithResult(RESULT_ERROR_SESSION_DISCONNECTED);
             }
-            mControllerCompat.getTransportControls().play();
+            if (mPendingSetMediaUriRequest == null) {
+                mControllerCompat.getTransportControls().play();
+            } else {
+                switch (mPendingSetMediaUriRequest.type) {
+                    case MEDIA_URI_QUERY_ID:
+                        mControllerCompat.getTransportControls()
+                                .playFromMediaId(
+                                        mPendingSetMediaUriRequest.value,
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    case MEDIA_URI_QUERY_QUERY:
+                        mControllerCompat.getTransportControls()
+                                .playFromSearch(
+                                        mPendingSetMediaUriRequest.value,
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    case MEDIA_URI_QUERY_URI:
+                        mControllerCompat.getTransportControls()
+                                .playFromUri(
+                                        Uri.parse(mPendingSetMediaUriRequest.value),
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    default:
+                        // Impossible.
+                        mPendingSetMediaUriRequest = null;
+                        return createFutureWithResult(RESULT_ERROR_INVALID_STATE);
+                }
+                setFutureResult(mPendingSetMediaUriRequest.result, RESULT_SUCCESS);
+                mPendingSetMediaUriRequest = null;
+            }
         }
         return createFutureWithResult(RESULT_SUCCESS);
     }
@@ -277,7 +319,36 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
                 Log.w(TAG, "Session isn't active", new IllegalStateException());
                 return createFutureWithResult(RESULT_ERROR_SESSION_DISCONNECTED);
             }
-            mControllerCompat.getTransportControls().prepare();
+            if (mPendingSetMediaUriRequest == null) {
+                mControllerCompat.getTransportControls().prepare();
+            } else {
+                switch (mPendingSetMediaUriRequest.type) {
+                    case MEDIA_URI_QUERY_ID:
+                        mControllerCompat.getTransportControls()
+                                .prepareFromMediaId(
+                                        mPendingSetMediaUriRequest.value,
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    case MEDIA_URI_QUERY_QUERY:
+                        mControllerCompat.getTransportControls()
+                                .prepareFromSearch(
+                                        mPendingSetMediaUriRequest.value,
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    case MEDIA_URI_QUERY_URI:
+                        mControllerCompat.getTransportControls()
+                                .prepareFromUri(
+                                        Uri.parse(mPendingSetMediaUriRequest.value),
+                                        mPendingSetMediaUriRequest.extras);
+                        break;
+                    default:
+                        // Impossible.
+                        mPendingSetMediaUriRequest = null;
+                        return createFutureWithResult(RESULT_ERROR_INVALID_STATE);
+                }
+                setFutureResult(mPendingSetMediaUriRequest.result, RESULT_SUCCESS);
+                mPendingSetMediaUriRequest = null;
+            }
         }
         return createFutureWithResult(RESULT_SUCCESS);
     }
@@ -534,7 +605,39 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
     @Override
     public ListenableFuture<SessionResult> setMediaUri(@NonNull Uri uri,
             @Nullable Bundle extras) {
-        return createFutureWithResult(RESULT_ERROR_NOT_SUPPORTED);
+        synchronized (mLock) {
+            if (!mConnected) {
+                Log.w(TAG, "Session isn't active", new IllegalStateException());
+                return createFutureWithResult(RESULT_ERROR_SESSION_DISCONNECTED);
+            }
+
+            if (mPendingSetMediaUriRequest != null) {
+                Log.w(TAG, "SetMediaUri() is called multiple times without prepare() nor play()."
+                        + " Previous call will be skipped.");
+                setFutureResult(mPendingSetMediaUriRequest.result, RESULT_INFO_SKIPPED);
+                mPendingSetMediaUriRequest = null;
+            }
+            ResolvableFuture<SessionResult> result = ResolvableFuture.create();
+            if (uri.toString().startsWith(MEDIA_URI_SET_MEDIA_URI_PREFIX)
+                    && uri.getQueryParameterNames().size() == 1) {
+                String queryParameterName = uri.getQueryParameterNames().iterator().next();
+                if (TextUtils.equals(queryParameterName, MEDIA_URI_QUERY_ID)
+                        || TextUtils.equals(queryParameterName, MEDIA_URI_QUERY_QUERY)
+                        || TextUtils.equals(queryParameterName, MEDIA_URI_QUERY_URI)) {
+                    mPendingSetMediaUriRequest =
+                            new SetMediaUriRequest(
+                                    queryParameterName,
+                                    uri.getQueryParameter(queryParameterName),
+                                    extras,
+                                    result);
+                }
+            }
+            if (mPendingSetMediaUriRequest == null) {
+                mPendingSetMediaUriRequest =
+                        new SetMediaUriRequest(MEDIA_URI_QUERY_URI, uri.toString(), extras, result);
+            }
+            return result;
+        }
     }
 
     @Override
@@ -883,6 +986,7 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
     @SuppressWarnings({"GuardedBy", "WeakerAccess"}) /* WeakerAccess for synthetic access */
     void setCurrentMediaItemLocked(MediaMetadataCompat metadata) {
         mMediaMetadataCompat = metadata;
+        int ratingType = mControllerCompat.getRatingType();
         if (metadata == null) {
             mCurrentMediaItemIndex = -1;
             mCurrentMediaItem = null;
@@ -891,7 +995,7 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
 
         if (mQueue == null) {
             mCurrentMediaItemIndex = -1;
-            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata);
+            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata, ratingType);
             return;
         }
 
@@ -901,7 +1005,7 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
             for (int i = 0; i < mQueue.size(); ++i) {
                 QueueItem item = mQueue.get(i);
                 if (item.getQueueId() == queueId) {
-                    mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata);
+                    mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata, ratingType);
                     mCurrentMediaItemIndex = i;
                     return;
                 }
@@ -911,7 +1015,7 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
         String mediaId = metadata.getString(METADATA_KEY_MEDIA_ID);
         if (mediaId == null) {
             mCurrentMediaItemIndex = -1;
-            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata);
+            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata, ratingType);
             return;
         }
 
@@ -921,7 +1025,7 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
                 && TextUtils.equals(mediaId,
                         mQueue.get(mSkipToPlaylistIndex).getDescription().getMediaId())) {
             // metadata changed after skipToPlaylistIItem() was called.
-            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata);
+            mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata, ratingType);
             mCurrentMediaItemIndex = mSkipToPlaylistIndex;
             mSkipToPlaylistIndex = -1;
             return;
@@ -932,14 +1036,14 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
             QueueItem item = mQueue.get(i);
             if (TextUtils.equals(mediaId, item.getDescription().getMediaId())) {
                 mCurrentMediaItemIndex = i;
-                mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata);
+                mCurrentMediaItem = MediaUtils.convertToMediaItem(metadata, ratingType);
                 return;
             }
         }
 
         // Failed to find media item from the playlist.
         mCurrentMediaItemIndex = -1;
-        mCurrentMediaItem = MediaUtils.convertToMediaItem(mMediaMetadataCompat);
+        mCurrentMediaItem = MediaUtils.convertToMediaItem(mMediaMetadataCompat, ratingType);
     }
 
     private class ConnectionCallback extends MediaBrowserCompat.ConnectionCallback {
@@ -1310,6 +1414,24 @@ class MediaControllerImplLegacy implements MediaController.MediaControllerImpl {
                     callback.onShuffleModeChanged(mInstance, shuffleMode);
                 }
             });
+        }
+    }
+
+    private static final class SetMediaUriRequest {
+        public final String type;
+        public final String value;
+        public final Bundle extras;
+        public final ResolvableFuture<SessionResult> result;
+
+        SetMediaUriRequest(
+                @NonNull String type,
+                @NonNull String value,
+                @Nullable Bundle extras,
+                @NonNull ResolvableFuture<SessionResult> result) {
+            this.type = type;
+            this.value = value;
+            this.extras = extras;
+            this.result = result;
         }
     }
 }

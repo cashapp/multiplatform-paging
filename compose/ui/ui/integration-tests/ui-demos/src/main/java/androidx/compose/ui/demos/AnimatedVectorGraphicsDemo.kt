@@ -28,7 +28,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.preferredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +61,7 @@ fun AnimatedVectorGraphicsDemo() {
         Image(
             painter = image.painterFor(atEnd),
             contentDescription = "AnimatedImageVector",
-            modifier = Modifier.preferredSize(200.dp).clickable {
+            modifier = Modifier.size(200.dp).clickable {
                 atEnd = !atEnd
             },
             contentScale = ContentScale.Crop
@@ -71,7 +71,7 @@ fun AnimatedVectorGraphicsDemo() {
         Image(
             painter = createSampleVectorPainter(toggle),
             contentDescription = "Transition with vector graphics",
-            modifier = Modifier.preferredSize(200.dp).clickable {
+            modifier = Modifier.size(200.dp).clickable {
                 toggle = !toggle
             },
             contentScale = ContentScale.Crop
@@ -117,6 +117,7 @@ fun createSampleVectorPainter(toggle: Boolean): Painter {
         ) { state ->
             if (state) 360f else 0f
         }
+        @Suppress("UnusedTransitionTargetStateParameter")
         val translationX by transition.animateFloat(
             transitionSpec = {
                 if (targetState) {
@@ -135,6 +136,7 @@ fun createSampleVectorPainter(toggle: Boolean): Painter {
                 }
             }
         ) { 0f }
+        @Suppress("UnusedTransitionTargetStateParameter")
         val translationY by transition.animateFloat(
             transitionSpec = {
                 if (targetState) {

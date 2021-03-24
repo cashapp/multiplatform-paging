@@ -33,11 +33,13 @@ import android.util.Log;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.util.ObjectsCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.MediaSessionManager.RemoteUserInfo;
 import androidx.media2.common.MediaItem;
 import androidx.media2.common.MediaMetadata;
+import androidx.media2.common.SessionPlayer;
 import androidx.media2.common.SessionPlayer.PlayerResult;
 import androidx.media2.common.SessionPlayer.TrackInfo;
 import androidx.media2.common.SubtitleData;
@@ -326,6 +328,7 @@ class MediaLibraryServiceLegacyStub extends MediaSessionServiceLegacyStub {
         final ControllerInfo controller = getCurrentController();
         mLibrarySessionImpl.getCallbackExecutor().execute(new Runnable() {
             @Override
+            @SuppressWarnings("ObjectToString")
             public void run() {
                 SessionCommand command = new SessionCommand(action, null);
                 if (!getConnectedControllersManager().isAllowedCommand(controller, command)) {
@@ -397,6 +400,16 @@ class MediaLibraryServiceLegacyStub extends MediaSessionServiceLegacyStub {
         @Override
         void onLibraryResult(int seq, LibraryResult result) throws RemoteException {
             // No-op. BrowserCompat doesn't understand Browser features.
+        }
+
+        @Override
+        void onPlayerChanged(int seq,
+                @Nullable SessionPlayer oldPlayer,
+                @Nullable MediaController.PlaybackInfo oldPlaybackInfo,
+                @NonNull SessionPlayer player,
+                @NonNull MediaController.PlaybackInfo playbackInfo)
+                throws RemoteException {
+            // No-op. BrowserCompat doesn't understand Controller features.
         }
 
         @Override
@@ -539,6 +552,7 @@ class MediaLibraryServiceLegacyStub extends MediaSessionServiceLegacyStub {
         }
 
         @Override
+        @SuppressWarnings("ObjectToString")
         void onSearchResultChanged(int seq, @NonNull String query, int itemCount,
                 LibraryParams params) throws RemoteException {
             // In MediaLibrarySession/MediaBrowser, we have two different APIs for getting size of

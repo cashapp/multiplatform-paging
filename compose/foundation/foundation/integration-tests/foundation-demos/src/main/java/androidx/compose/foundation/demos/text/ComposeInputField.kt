@@ -28,12 +28,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.SoftwareKeyboardController
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,6 +74,7 @@ fun InputFieldDemo() {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun EditLine(
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -81,7 +82,7 @@ internal fun EditLine(
     singleLine: Boolean = false,
     text: String = ""
 ) {
-    val controller = remember { mutableStateOf<SoftwareKeyboardController?>(null) }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val state = rememberSaveable { mutableStateOf(text) }
     BasicTextField(
         modifier = demoTextFieldModifiers,
@@ -91,10 +92,9 @@ internal fun EditLine(
             keyboardType = keyboardType,
             imeAction = imeAction
         ),
-        keyboardActions = KeyboardActions { controller.value?.hideSoftwareKeyboard() },
+        keyboardActions = KeyboardActions { keyboardController?.hide() },
         onValueChange = { state.value = it },
         textStyle = TextStyle(fontSize = fontSize8),
-        onTextInputStarted = { controller.value = it },
     )
 }
 

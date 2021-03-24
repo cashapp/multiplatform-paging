@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 import static androidx.build.dependencies.DependenciesKt.*
 
 plugins {
@@ -66,9 +68,10 @@ dependencies {
     implementation(project(":camera:camera-core"))
     implementation(project(":camera:camera-lifecycle"))
     implementation(project(":appcompat:appcompat"))
-    implementation(project(":activity:activity"))
-    implementation(project(":fragment:fragment"))
-    implementation("androidx.concurrent:concurrent-futures:1.0.0")
+    implementation("androidx.activity:activity:1.2.0")
+    implementation("androidx.fragment:fragment:1.3.0")
+    // Needed because AGP enforces same version between main and androidTest classpaths
+    implementation(project(":concurrent:concurrent-futures"))
 
     // Android Support Library
     api(CONSTRAINT_LAYOUT, { transitive = true })
@@ -96,9 +99,16 @@ dependencies {
     androidTestImplementation(project(":camera:camera-testing"))
     androidTestImplementation(project(":concurrent:concurrent-futures"))
     androidTestImplementation(project(":concurrent:concurrent-futures-ktx"))
-    androidTestImplementation(project(':internal-testutils-runtime'))
+    androidTestImplementation(project(":internal-testutils-runtime"))
+    androidTestImplementation(project(":lifecycle:lifecycle-runtime-testing"))
 
     testImplementation(JUNIT)
     testImplementation(TRUTH)
 }
 
+// Allow usage of Kotlin's @OptIn.
+tasks.withType(KotlinCompile).configureEach {
+    kotlinOptions {
+        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+    }
+}

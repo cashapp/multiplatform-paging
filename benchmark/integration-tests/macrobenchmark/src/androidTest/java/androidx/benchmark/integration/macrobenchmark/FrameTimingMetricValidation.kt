@@ -17,6 +17,7 @@
 package androidx.benchmark.integration.macrobenchmark
 
 import android.content.Intent
+import android.graphics.Point
 import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
@@ -24,7 +25,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import org.junit.Before
 import org.junit.Rule
@@ -59,14 +59,15 @@ class FrameTimingMetricValidation(
             setupBlock = {
                 val intent = Intent()
                 intent.action = ACTION
-                launchIntentAndWait(intent)
+                startActivityAndWait(intent)
             }
         ) {
             val recycler = device.findObject(By.res(PACKAGE_NAME, RESOURCE_ID))
             // Setting a gesture margin is important otherwise gesture nav is triggered.
             recycler.setGestureMargin(device.displayWidth / 5)
             for (i in 1..10) {
-                recycler.scroll(Direction.DOWN, 2f)
+                // From center we scroll 2/3 of it which is 1/3 of the screen.
+                recycler.drag(Point(0, recycler.visibleCenter.y / 3))
                 device.waitForIdle()
             }
         }

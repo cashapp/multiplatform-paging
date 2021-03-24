@@ -1,8 +1,11 @@
 // Signature format: 4.0
 package androidx.compose.ui.text {
 
+  public final class ActualAtomicReferenceJvmKt {
+  }
+
   @androidx.compose.runtime.Immutable public final class AnnotatedString implements java.lang.CharSequence {
-    ctor public AnnotatedString(String text, java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.SpanStyle>> spanStyles, java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.ParagraphStyle>> paragraphStyles);
+    ctor public AnnotatedString(String text, optional java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.SpanStyle>> spanStyles, optional java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.ParagraphStyle>> paragraphStyles);
     method public operator char get(int index);
     method public int getLength();
     method public java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.ParagraphStyle>> getParagraphStyles();
@@ -21,8 +24,7 @@ package androidx.compose.ui.text {
   }
 
   public static final class AnnotatedString.Builder {
-    ctor public AnnotatedString.Builder(int capacity);
-    ctor public AnnotatedString.Builder();
+    ctor public AnnotatedString.Builder(optional int capacity);
     ctor public AnnotatedString.Builder(String text);
     ctor public AnnotatedString.Builder(androidx.compose.ui.text.AnnotatedString text);
     method public void addStringAnnotation(String tag, String annotation, int start, int end);
@@ -72,23 +74,15 @@ package androidx.compose.ui.text {
     method public static inline <R> R withStyle(androidx.compose.ui.text.AnnotatedString.Builder, androidx.compose.ui.text.ParagraphStyle style, kotlin.jvm.functions.Function1<? super androidx.compose.ui.text.AnnotatedString.Builder,? extends R> block);
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level, message="This is an experimental text API that may change without warning.") @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget}) public @interface ExperimentalTextApi {
+  public final class JvmAnnotatedString_jvmKt {
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level, message="This is internal API that may change frequently and without warning.") @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget}) public @interface InternalTextApi {
-  }
-
-  public final class JvmAnnotatedStringKt {
-  }
-
-  public final class JvmCharHelpersKt {
-    method @androidx.compose.ui.text.InternalTextApi public static int findFollowingBreak(String, int index);
-    method @androidx.compose.ui.text.InternalTextApi public static int findPrecedingBreak(String, int index);
+  public final class JvmCharHelpers_jvmKt {
   }
 
   public final class MultiParagraph {
-    ctor public MultiParagraph(androidx.compose.ui.text.MultiParagraphIntrinsics intrinsics, int maxLines, boolean ellipsis, float width);
-    ctor public MultiParagraph(androidx.compose.ui.text.AnnotatedString annotatedString, androidx.compose.ui.text.TextStyle style, java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.Placeholder>> placeholders, int maxLines, boolean ellipsis, float width, androidx.compose.ui.unit.Density density, androidx.compose.ui.text.font.Font.ResourceLoader resourceLoader);
+    ctor public MultiParagraph(androidx.compose.ui.text.MultiParagraphIntrinsics intrinsics, optional int maxLines, optional boolean ellipsis, float width);
+    ctor public MultiParagraph(androidx.compose.ui.text.AnnotatedString annotatedString, androidx.compose.ui.text.TextStyle style, optional java.util.List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.Placeholder>> placeholders, optional int maxLines, optional boolean ellipsis, float width, androidx.compose.ui.unit.Density density, androidx.compose.ui.text.font.Font.ResourceLoader resourceLoader);
     method public androidx.compose.ui.text.style.ResolvedTextDirection getBidiRunDirection(int offset);
     method public androidx.compose.ui.geometry.Rect getBoundingBox(int offset);
     method public androidx.compose.ui.geometry.Rect getCursorRect(int offset);
@@ -248,13 +242,6 @@ package androidx.compose.ui.text {
     enum_constant public static final androidx.compose.ui.text.PlaceholderVerticalAlign Top;
   }
 
-  public final class SoftwareKeyboardController {
-    ctor public SoftwareKeyboardController(androidx.compose.ui.text.input.TextInputService textInputService, int token);
-    method public void hideSoftwareKeyboard();
-    method public void notifyFocusedRect(androidx.compose.ui.geometry.Rect rect);
-    method public void showSoftwareKeyboard();
-  }
-
   @androidx.compose.runtime.Immutable public final class SpanStyle {
     method public androidx.compose.ui.text.SpanStyle copy-D5kMcog(optional long color, optional long fontSize, optional androidx.compose.ui.text.font.FontWeight? fontWeight, optional androidx.compose.ui.text.font.FontStyle? fontStyle, optional androidx.compose.ui.text.font.FontSynthesis? fontSynthesis, optional androidx.compose.ui.text.font.FontFamily? fontFamily, optional String? fontFeatureSettings, optional long letterSpacing, optional androidx.compose.ui.text.style.BaselineShift? baselineShift, optional androidx.compose.ui.text.style.TextGeometricTransform? textGeometricTransform, optional androidx.compose.ui.text.intl.LocaleList? localeList, optional long background, optional androidx.compose.ui.text.style.TextDecoration? textDecoration, optional androidx.compose.ui.graphics.Shadow? shadow);
     method public operator boolean equals(Object? other);
@@ -305,7 +292,7 @@ package androidx.compose.ui.text {
     method public static String toUpperCase(String, androidx.compose.ui.text.intl.LocaleList localeList);
   }
 
-  public final class TextLayoutHelperKt {
+  public final class TempListUtilsKt {
   }
 
   public final class TextLayoutInput {
@@ -355,6 +342,7 @@ package androidx.compose.ui.text {
     method public float getLineRight(int lineIndex);
     method public int getLineStart(int lineIndex);
     method public float getLineTop(int lineIndex);
+    method public androidx.compose.ui.text.MultiParagraph getMultiParagraph();
     method public int getOffsetForPosition-k-4lQ0M(long position);
     method public androidx.compose.ui.text.style.ResolvedTextDirection getParagraphDirection(int offset);
     method public androidx.compose.ui.graphics.Path getPathForRange(int start, int end);
@@ -369,6 +357,7 @@ package androidx.compose.ui.text {
     property public final float lastBaseline;
     property public final androidx.compose.ui.text.TextLayoutInput layoutInput;
     property public final int lineCount;
+    property public final androidx.compose.ui.text.MultiParagraph multiParagraph;
     property public final java.util.List<androidx.compose.ui.geometry.Rect> placeholderRects;
     property public final long size;
   }
@@ -384,8 +373,6 @@ package androidx.compose.ui.text {
 
   @androidx.compose.runtime.Immutable public final inline class TextRange {
     ctor public TextRange();
-    method public static long constructor-impl(long packedValue);
-    method public static long constructor-impl(int start, int end);
     method public static operator boolean contains-5zc-tL8(long $this, long other);
     method public static operator boolean contains-impl(long $this, int offset);
     method @androidx.compose.runtime.Immutable public static inline boolean equals-impl(long p, Object? p1);
@@ -395,13 +382,11 @@ package androidx.compose.ui.text {
     method public static int getLength-impl(long $this);
     method public static int getMax-impl(long $this);
     method public static int getMin-impl(long $this);
-    method public long getPackedValue();
     method public static boolean getReversed-impl(long $this);
     method public static int getStart-impl(long $this);
     method @androidx.compose.runtime.Immutable public static inline int hashCode-impl(long p);
     method public static boolean intersects-5zc-tL8(long $this, long other);
     method public static String toString-impl(long $this);
-    property public final long packedValue;
     field public static final androidx.compose.ui.text.TextRange.Companion Companion;
   }
 
@@ -411,6 +396,7 @@ package androidx.compose.ui.text {
   }
 
   public final class TextRangeKt {
+    method public static long TextRange(int start, int end);
     method public static long TextRange(int index);
     method public static String substring-cWlJSyE(CharSequence, long range);
   }
@@ -487,9 +473,6 @@ package androidx.compose.ui.text {
 
 package androidx.compose.ui.text.android {
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level, message="This is internal API that may change frequently and without warning.") @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget, kotlin.annotation.AnnotationTarget}) public @interface InternalPlatformTextApi {
-  }
-
   public final class LayoutCompatKt {
   }
 
@@ -499,15 +482,15 @@ package androidx.compose.ui.text.android {
   public final class LayoutIntrinsicsKt {
   }
 
+  public final class TempListUtilsKt {
+  }
+
   public final class TextLayoutKt {
   }
 
 }
 
 package androidx.compose.ui.text.android.style {
-
-  public final class FontWeightStyleSpanKt {
-  }
 
   public final class PlaceholderSpanKt {
   }
@@ -516,7 +499,7 @@ package androidx.compose.ui.text.android.style {
 
 package androidx.compose.ui.text.font {
 
-  public final class AndroidTypefaceKt {
+  public final class AndroidTypeface_androidKt {
     method public static androidx.compose.ui.text.font.FontFamily FontFamily(android.graphics.Typeface typeface);
     method public static androidx.compose.ui.text.font.Typeface Typeface(android.content.Context context, androidx.compose.ui.text.font.FontFamily fontFamily, optional java.util.List<? extends kotlin.Pair<androidx.compose.ui.text.font.FontWeight,? extends androidx.compose.ui.text.font.FontStyle>>? styles);
     method public static androidx.compose.ui.text.font.Typeface Typeface(android.graphics.Typeface typeface);
@@ -724,6 +707,13 @@ package androidx.compose.ui.text.input {
   public final class EditCommandKt {
   }
 
+  public final class EditProcessor {
+    ctor public EditProcessor();
+    method public androidx.compose.ui.text.input.TextFieldValue apply(java.util.List<? extends androidx.compose.ui.text.input.EditCommand> editCommands);
+    method public void reset(androidx.compose.ui.text.input.TextFieldValue value, androidx.compose.ui.text.input.TextInputSession? textInputSession);
+    method public androidx.compose.ui.text.input.TextFieldValue toTextFieldValue();
+  }
+
   public final class EditingBuffer {
   }
 
@@ -747,8 +737,7 @@ package androidx.compose.ui.text.input {
   }
 
   @androidx.compose.runtime.Immutable public final class ImeOptions {
-    ctor public ImeOptions(boolean singleLine, androidx.compose.ui.text.input.KeyboardCapitalization capitalization, boolean autoCorrect, androidx.compose.ui.text.input.KeyboardType keyboardType, androidx.compose.ui.text.input.ImeAction imeAction);
-    ctor public ImeOptions();
+    ctor public ImeOptions(optional boolean singleLine, optional androidx.compose.ui.text.input.KeyboardCapitalization capitalization, optional boolean autoCorrect, optional androidx.compose.ui.text.input.KeyboardType keyboardType, optional androidx.compose.ui.text.input.ImeAction imeAction);
     method public androidx.compose.ui.text.input.ImeOptions copy(optional boolean singleLine, optional androidx.compose.ui.text.input.KeyboardCapitalization capitalization, optional boolean autoCorrect, optional androidx.compose.ui.text.input.KeyboardType keyboardType, optional androidx.compose.ui.text.input.ImeAction imeAction);
     method public boolean getAutoCorrect();
     method public androidx.compose.ui.text.input.KeyboardCapitalization getCapitalization();
@@ -810,8 +799,7 @@ package androidx.compose.ui.text.input {
   }
 
   public final class PasswordVisualTransformation implements androidx.compose.ui.text.input.VisualTransformation {
-    ctor public PasswordVisualTransformation(char mask);
-    ctor public PasswordVisualTransformation();
+    ctor public PasswordVisualTransformation(optional char mask);
     method public androidx.compose.ui.text.input.TransformedText filter(androidx.compose.ui.text.AnnotatedString text);
     method public char getMask();
     property public final char mask;
@@ -857,10 +845,8 @@ package androidx.compose.ui.text.input {
   }
 
   @androidx.compose.runtime.Immutable public final class TextFieldValue {
-    method public androidx.compose.ui.text.input.TextFieldValue commitComposition();
-    method public androidx.compose.ui.text.input.TextFieldValue copy-5zc-tL8(optional long selection);
-    method public androidx.compose.ui.text.input.TextFieldValue copy-bLOX0OE(optional androidx.compose.ui.text.AnnotatedString annotatedString, optional long selection);
-    method public androidx.compose.ui.text.input.TextFieldValue copy-rJy5ZHU(String text, optional long selection);
+    method public androidx.compose.ui.text.input.TextFieldValue copy-Dr2r1M0(String text, optional long selection, optional androidx.compose.ui.text.TextRange? composition);
+    method public androidx.compose.ui.text.input.TextFieldValue copy-ec4yWi8(optional androidx.compose.ui.text.AnnotatedString annotatedString, optional long selection, optional androidx.compose.ui.text.TextRange? composition);
     method public androidx.compose.ui.text.AnnotatedString getAnnotatedString();
     method public androidx.compose.ui.text.TextRange? getComposition-MzsxiRA();
     method public long getSelection-d9O1mEE();
@@ -885,17 +871,21 @@ package androidx.compose.ui.text.input {
 
   public class TextInputService {
     ctor public TextInputService(androidx.compose.ui.text.input.PlatformTextInputService platformTextInputService);
-    method public void hideSoftwareKeyboard(int token);
-    method public void notifyFocusedRect(int token, androidx.compose.ui.geometry.Rect rect);
-    method public void showSoftwareKeyboard(int token);
-    method public int startInput(androidx.compose.ui.text.input.TextFieldValue value, androidx.compose.ui.text.input.ImeOptions imeOptions, kotlin.jvm.functions.Function1<? super java.util.List<? extends androidx.compose.ui.text.input.EditCommand>,kotlin.Unit> onEditCommand, kotlin.jvm.functions.Function1<? super androidx.compose.ui.text.input.ImeAction,kotlin.Unit> onImeActionPerformed);
-    method public void stopInput(int token);
-    method public void updateState(int token, androidx.compose.ui.text.input.TextFieldValue? oldValue, androidx.compose.ui.text.input.TextFieldValue newValue);
+    method public final void hideSoftwareKeyboard();
+    method public final void showSoftwareKeyboard();
+    method public androidx.compose.ui.text.input.TextInputSession startInput(androidx.compose.ui.text.input.TextFieldValue value, androidx.compose.ui.text.input.ImeOptions imeOptions, kotlin.jvm.functions.Function1<? super java.util.List<? extends androidx.compose.ui.text.input.EditCommand>,kotlin.Unit> onEditCommand, kotlin.jvm.functions.Function1<? super androidx.compose.ui.text.input.ImeAction,kotlin.Unit> onImeActionPerformed);
+    method public void stopInput(androidx.compose.ui.text.input.TextInputSession session);
   }
 
-  public final class TextInputServiceKt {
-    field public static final int INVALID_SESSION = -1; // 0xffffffff
-    field public static final int NO_SESSION = 0; // 0x0
+  public final class TextInputSession {
+    ctor public TextInputSession(androidx.compose.ui.text.input.TextInputService textInputService, androidx.compose.ui.text.input.PlatformTextInputService platformTextInputService);
+    method public void dispose();
+    method public boolean hideSoftwareKeyboard();
+    method public boolean isOpen();
+    method public boolean notifyFocusedRect(androidx.compose.ui.geometry.Rect rect);
+    method public boolean showSoftwareKeyboard();
+    method public boolean updateState(androidx.compose.ui.text.input.TextFieldValue? oldValue, androidx.compose.ui.text.input.TextFieldValue newValue);
+    property public final boolean isOpen;
   }
 
   public final class TransformedText {
@@ -920,7 +910,7 @@ package androidx.compose.ui.text.input {
 
 package androidx.compose.ui.text.intl {
 
-  public final class AndroidPlatformLocaleKt {
+  public final class AndroidPlatformLocale_androidKt {
   }
 
   @androidx.compose.runtime.Immutable public final class Locale {
@@ -968,39 +958,38 @@ package androidx.compose.ui.text.intl {
 
 package androidx.compose.ui.text.platform {
 
-  public final class AndroidAccessibilitySpannableStringKt {
-    method @androidx.compose.ui.text.InternalTextApi public static android.text.SpannableString toAccessibilitySpannableString(androidx.compose.ui.text.AnnotatedString, androidx.compose.ui.unit.Density density, androidx.compose.ui.text.font.Font.ResourceLoader resourceLoader);
+  public final class AndroidAccessibilitySpannableString_androidKt {
   }
 
-  public final class AndroidParagraphHelperKt {
+  public final class AndroidParagraphHelper_androidKt {
   }
 
-  public final class AndroidParagraphIntrinsicsKt {
+  public final class AndroidParagraphIntrinsics_androidKt {
   }
 
-  public final class AndroidParagraphKt {
+  public final class AndroidParagraph_androidKt {
   }
 
-  public final class AndroidStringDelegateKt {
+  public final class AndroidStringDelegate_androidKt {
   }
 
 }
 
 package androidx.compose.ui.text.platform.extensions {
 
-  public final class LocaleExtensionsKt {
+  public final class LocaleExtensions_androidKt {
   }
 
-  public final class PlaceholderExtensionsKt {
+  public final class PlaceholderExtensions_androidKt {
   }
 
-  public final class SpannableExtensionsKt {
+  public final class SpannableExtensions_androidKt {
   }
 
-  public final class TextPaintExtensionsKt {
+  public final class TextPaintExtensions_androidKt {
   }
 
-  public final class TtsAnnotationExtensionsKt {
+  public final class TtsAnnotationExtensions_androidKt {
     method public static android.text.style.TtsSpan toSpan(androidx.compose.ui.text.TtsAnnotation);
     method public static android.text.style.TtsSpan toSpan(androidx.compose.ui.text.VerbatimTtsAnnotation);
   }
@@ -1076,8 +1065,7 @@ package androidx.compose.ui.text.style {
   }
 
   @androidx.compose.runtime.Immutable public final class TextGeometricTransform {
-    ctor public TextGeometricTransform(float scaleX, float skewX);
-    ctor public TextGeometricTransform();
+    ctor public TextGeometricTransform(optional float scaleX, optional float skewX);
     method public androidx.compose.ui.text.style.TextGeometricTransform copy(optional float scaleX, optional float skewX);
     method public operator boolean equals(Object? other);
     method public float getScaleX();
@@ -1116,6 +1104,7 @@ package androidx.compose.ui.text.style {
   public enum TextOverflow {
     enum_constant public static final androidx.compose.ui.text.style.TextOverflow Clip;
     enum_constant public static final androidx.compose.ui.text.style.TextOverflow Ellipsis;
+    enum_constant public static final androidx.compose.ui.text.style.TextOverflow Visible;
   }
 
 }

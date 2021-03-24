@@ -16,17 +16,16 @@
 
 package androidx.compose.ui.test.gesturescope
 
-import androidx.compose.animation.core.FloatExponentialDecaySpec
-import androidx.compose.animation.core.generateDecayAnimationSpec
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.testutils.expectError
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,8 +33,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.bottomCenter
 import androidx.compose.ui.test.bottomRight
+import androidx.compose.ui.test.centerX
+import androidx.compose.ui.test.centerY
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.moveTo
@@ -56,7 +58,6 @@ import androidx.compose.ui.test.util.assertIncreasing
 import androidx.compose.ui.test.util.assertOnlyLastEventIsUp
 import androidx.compose.ui.test.util.assertSame
 import androidx.compose.ui.test.util.assertTimestampsAreIncreasing
-import androidx.compose.ui.test.util.isAlmostEqualTo
 import androidx.compose.ui.test.util.verify
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -64,6 +65,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.roundToInt
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
@@ -137,6 +139,106 @@ class SendSwipeTest {
     }
 
     @Test
+    fun swipeUp_withParameters() {
+        rule.setContent { Ui(Alignment.TopStart) }
+        @OptIn(ExperimentalTestApi::class)
+        rule.onNodeWithTag(tag).performGesture { swipeUp(endY = centerY) }
+        rule.runOnIdle {
+            recorder.run {
+                assertTimestampsAreIncreasing()
+                assertOnlyLastEventIsUp()
+                assertSwipeIsUp()
+            }
+        }
+    }
+
+    @Test
+    fun swipeDown_withParameters() {
+        rule.setContent { Ui(Alignment.TopEnd) }
+        @OptIn(ExperimentalTestApi::class)
+        rule.onNodeWithTag(tag).performGesture { swipeDown(endY = centerY) }
+        rule.runOnIdle {
+            recorder.run {
+                assertTimestampsAreIncreasing()
+                assertOnlyLastEventIsUp()
+                assertSwipeIsDown()
+            }
+        }
+    }
+
+    @Test
+    fun swipeLeft_withParameters() {
+        rule.setContent { Ui(Alignment.BottomEnd) }
+        @OptIn(ExperimentalTestApi::class)
+        rule.onNodeWithTag(tag).performGesture { swipeLeft(endX = centerX) }
+        rule.runOnIdle {
+            recorder.run {
+                assertTimestampsAreIncreasing()
+                assertOnlyLastEventIsUp()
+                assertSwipeIsLeft()
+            }
+        }
+    }
+
+    @Test
+    fun swipeRight_withParameters() {
+        rule.setContent { Ui(Alignment.BottomStart) }
+        @OptIn(ExperimentalTestApi::class)
+        rule.onNodeWithTag(tag).performGesture { swipeRight(endX = centerX) }
+        rule.runOnIdle {
+            recorder.run {
+                assertTimestampsAreIncreasing()
+                assertOnlyLastEventIsUp()
+                assertSwipeIsRight()
+            }
+        }
+    }
+
+    @Test
+    fun swipeUp_wrongParameters() {
+        rule.setContent { Ui(Alignment.TopStart) }
+        expectError<IllegalArgumentException>(
+            expectedMessage = "startY=0.0 needs to be greater than or equal to endY=1.0"
+        ) {
+            @OptIn(ExperimentalTestApi::class)
+            rule.onNodeWithTag(tag).performGesture { swipeUp(startY = 0f, endY = 1f) }
+        }
+    }
+
+    @Test
+    fun swipeDown_wrongParameters() {
+        rule.setContent { Ui(Alignment.TopEnd) }
+        expectError<IllegalArgumentException>(
+            expectedMessage = "startY=1.0 needs to be less than or equal to endY=0.0"
+        ) {
+            @OptIn(ExperimentalTestApi::class)
+            rule.onNodeWithTag(tag).performGesture { swipeDown(startY = 1f, endY = 0f) }
+        }
+    }
+
+    @Test
+    fun swipeLeft_wrongParameters() {
+        rule.setContent { Ui(Alignment.BottomEnd) }
+        expectError<IllegalArgumentException>(
+            expectedMessage = "startX=0.0 needs to be greater than or equal to endX=1.0"
+        ) {
+            @OptIn(ExperimentalTestApi::class)
+            rule.onNodeWithTag(tag).performGesture { swipeLeft(startX = 0f, endX = 1f) }
+        }
+    }
+
+    @Test
+    fun swipeRight_wrongParameters() {
+        rule.setContent { Ui(Alignment.BottomStart) }
+        expectError<IllegalArgumentException>(
+            expectedMessage = "startX=1.0 needs to be less than or equal to endX=0.0"
+        ) {
+            @OptIn(ExperimentalTestApi::class)
+            rule.onNodeWithTag(tag).performGesture { swipeRight(startX = 1f, endX = 0f) }
+        }
+    }
+
+    @Test
     fun swipeShort() {
         rule.setContent { Ui(Alignment.Center) }
         rule.onNodeWithTag(tag).performGesture { swipe(topLeft, bottomRight, 1) }
@@ -165,7 +267,7 @@ class SendSwipeTest {
     @Test
     fun swipeScrollable() {
         val touchSlop = TestTouchSlop
-        val scrollState = ScrollState(initial = 0f)
+        val scrollState = ScrollState(initial = 0)
         rule.setContent {
             CompositionLocalProvider(LocalViewConfiguration provides FakeViewConfiguration) {
                 with(LocalDensity.current) {
@@ -173,12 +275,8 @@ class SendSwipeTest {
                     Column(
                         Modifier
                             .testTag("scrollable")
-                            .size(100.toDp(), 1000.toDp())
-                            .verticalScroll(
-                                scrollState,
-                                flingSpec = FloatExponentialDecaySpec()
-                                    .generateDecayAnimationSpec()
-                            )
+                            .requiredSize(100.toDp(), 1000.toDp())
+                            .verticalScroll(scrollState)
                     ) {
                         repeat(100) {
                             ClickableTestBox()
@@ -188,9 +286,9 @@ class SendSwipeTest {
             }
         }
 
-        assertThat(scrollState.value).isEqualTo(0f)
+        assertThat(scrollState.value).isEqualTo(0)
         // numBoxes * boxHeight - viewportHeight = 100 * 100 - 1000
-        assertThat(scrollState.maxValue).isEqualTo(9000f)
+        assertThat(scrollState.maxValue).isEqualTo(9000)
 
         val swipeDistance = 800f - touchSlop
         rule.onNodeWithTag("scrollable").performGesture {
@@ -204,8 +302,8 @@ class SendSwipeTest {
             up()
         }
 
-        assertThat(scrollState.value).isAlmostEqualTo(swipeDistance, 1e-3f)
-        assertThat(scrollState.maxValue).isEqualTo(9000f)
+        assertThat(scrollState.value).isEqualTo(swipeDistance.roundToInt())
+        assertThat(scrollState.maxValue).isEqualTo(9000)
     }
 
     private fun SinglePointerInputRecorder.assertSwipeIsUp() {

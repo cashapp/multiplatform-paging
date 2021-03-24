@@ -31,6 +31,7 @@ import androidx.wear.complications.ComplicationBounds
 import androidx.wear.complications.DefaultComplicationProviderPolicy
 import androidx.wear.complications.SystemProviders
 import androidx.wear.complications.data.ComplicationType
+import androidx.wear.watchface.CanvasComplicationDrawable
 import androidx.wear.watchface.Complication
 import androidx.wear.watchface.ComplicationsManager
 import androidx.wear.watchface.DrawMode
@@ -114,7 +115,7 @@ fun createExampleOpenGLWatchFaceBuilder(
         listOf(
             Complication.createRoundRectComplicationBuilder(
                 EXAMPLE_OPENGL_COMPLICATION_ID,
-                watchFaceStyle.getComplicationDrawableRenderer(context, watchState),
+                CanvasComplicationDrawable(watchFaceStyle.getDrawable(context)!!, watchState),
                 listOf(
                     ComplicationType.RANGED_VALUE,
                     ComplicationType.LONG_TEXT,
@@ -136,6 +137,7 @@ fun createExampleOpenGLWatchFaceBuilder(
         colorStyleSetting,
         complicationsManager[EXAMPLE_OPENGL_COMPLICATION_ID]!!
     )
+    renderer.initOpenGlContext()
     return WatchFace(
         WatchFaceType.ANALOG,
         userStyleRepository,
@@ -326,7 +328,8 @@ class ExampleOpenGLRenderer(
             complication.renderer,
             128,
             128,
-            GLES20.GL_TEXTURE_2D
+            GLES20.GL_TEXTURE_2D,
+            EXAMPLE_OPENGL_COMPLICATION_ID
         )
     }
 

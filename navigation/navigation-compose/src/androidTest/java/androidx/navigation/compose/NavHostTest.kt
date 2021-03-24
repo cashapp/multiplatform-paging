@@ -17,6 +17,7 @@
 package androidx.navigation.compose
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
@@ -29,13 +30,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.testing.TestNavHostController
+import androidx.savedstate.SavedStateRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.internal.runner.junit4.statement.UiThreadStatement.runOnUiThread
@@ -197,6 +203,89 @@ class NavHostTest {
     }
 
     @Test
+    fun testSameControllerAfterDisposingNavHost() {
+        lateinit var navController: TestNavHostController
+        lateinit var state: MutableState<Int>
+        composeTestRule.setContent {
+            val context = LocalContext.current
+            state = remember { mutableStateOf(0) }
+            navController = remember { TestNavHostController(context) }
+            if (state.value == 0) {
+                NavHost(navController, startDestination = "first") {
+                    test("first")
+                }
+            }
+        }
+
+        runOnUiThread {
+            // dispose the NavHost
+            state.value = 1
+        }
+
+        // wait for recompose without NavHost then recompose with the NavHost
+        composeTestRule.runOnIdle {
+            state.value = 0
+        }
+
+        composeTestRule.runOnIdle {
+            assertWithMessage("First destination should be current")
+                .that(
+                    navController.currentDestination?.hasDeepLink(createRoute("first").toUri())
+                ).isTrue()
+        }
+    }
+
+    @Test
+    fun testViewModelSavedAfterConfigChange() {
+        lateinit var navController: NavHostController
+        lateinit var state: MutableState<Int>
+        lateinit var viewModel: TestViewModel
+        var savedState: Bundle? = null
+        composeTestRule.setContent {
+            val context = LocalContext.current
+            state = remember { mutableStateOf(0) }
+            navController = if (savedState == null) {
+                rememberNavController()
+            } else {
+                NavHostController(context).apply {
+                    restoreState(savedState)
+                    setViewModelStore(LocalViewModelStoreOwner.current!!.viewModelStore)
+                    navigatorProvider.addNavigator(ComposeNavigator())
+                }
+            }
+            if (state.value == 0) {
+                NavHost(navController, startDestination = "first") {
+                    composable("first") {
+                        val provider = ViewModelProvider(it)
+                        viewModel = provider.get("key", TestViewModel::class.java)
+                    }
+                }
+            }
+        }
+        val savedViewModel: TestViewModel = viewModel
+        savedViewModel.value = "testing"
+        savedState = navController.saveState()
+
+        runOnUiThread {
+            // dispose the NavHost
+            state.value = 1
+        }
+
+        // wait for recompose without NavHost then recompose with the NavHost
+        composeTestRule.runOnIdle {
+            state.value = 0
+        }
+
+        composeTestRule.runOnIdle {
+            assertWithMessage("First destination should be current")
+                .that(
+                    navController.currentDestination?.hasDeepLink(createRoute("first").toUri())
+                ).isTrue()
+            assertThat(savedViewModel.value).isEqualTo(viewModel.value)
+        }
+    }
+
+    @Test
     fun testStateOfInactiveScreenIsRestoredWhenWeGoBackToIt() {
         var increment = 0
         var numberOnScreen1 = -1
@@ -270,8 +359,41 @@ class NavHostTest {
                 .isEqualTo(1)
         }
     }
+
+    @Test
+    fun savedStateRegistryOwnerTest() {
+        lateinit var registry1: SavedStateRegistry
+        lateinit var registry2: SavedStateRegistry
+        lateinit var navController: NavHostController
+        composeTestRule.setContent {
+            navController = rememberNavController()
+
+            NavHost(navController, startDestination = "First") {
+                composable("First") {
+                    registry1 = LocalSavedStateRegistryOwner.current.savedStateRegistry
+                }
+                composable("Second") {
+                    registry2 = LocalSavedStateRegistryOwner.current.savedStateRegistry
+                }
+            }
+        }
+
+        composeTestRule.runOnIdle {
+            navController.navigate("Second")
+        }
+
+        composeTestRule.runOnIdle {
+            assertWithMessage("Each entry should have its own SavedStateRegistry")
+                .that(registry1)
+                .isNotEqualTo(registry2)
+        }
+    }
 }
 
 operator fun NavGraph.contains(
     route: String
 ): Boolean = findNode(createRoute(route).hashCode()) != null
+
+class TestViewModel : ViewModel() {
+    var value: String = "nothing"
+}

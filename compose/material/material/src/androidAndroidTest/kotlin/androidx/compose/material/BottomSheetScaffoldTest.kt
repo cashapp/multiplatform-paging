@@ -22,11 +22,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.preferredHeight
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +51,7 @@ import androidx.compose.ui.test.performGesture
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -103,7 +106,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = rememberBottomSheetState(BottomSheetValue.Expanded)
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight
             ) {
@@ -123,7 +126,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight
             ) {
@@ -150,7 +153,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = rememberBottomSheetState(BottomSheetValue.Expanded)
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight
             ) {
@@ -170,7 +173,32 @@ class BottomSheetScaffoldTest {
     }
 
     @Test
-    fun backdropScaffold_revealAndConceal_manually(): Unit = runBlocking {
+    fun bottomSheetScaffold_testNoCollapseExpandAction_whenPeekHeightIsSheetHeight() {
+        rule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
+                BottomSheetScaffold(
+                    scaffoldState = rememberBottomSheetScaffoldState(
+                        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+                    ),
+                    sheetContent = {
+                        Box(
+                            Modifier.fillMaxWidth().requiredHeight(peekHeight).testTag(sheetContent)
+                        )
+                    },
+                    sheetPeekHeight = peekHeight
+                ) {
+                    Text("Content")
+                }
+            }
+        }
+
+        rule.onNodeWithTag(sheetContent).onParent()
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.Expand))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.Collapse))
+    }
+
+    @Test
+    fun backdropScaffold_revealAndConceal_manually(): Unit = runBlocking(AutoTestFrameClock()) {
         lateinit var bottomSheetState: BottomSheetState
         rule.setContent {
             bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
@@ -179,7 +207,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = bottomSheetState
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight,
                 content = { Text("Content") }
@@ -214,7 +242,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = bottomSheetState
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetPeekHeight = peekHeight,
                 content = { Text("Content") }
@@ -254,7 +282,7 @@ class BottomSheetScaffoldTest {
                     bottomSheetState = bottomSheetState
                 ),
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetGesturesEnabled = false,
                 sheetPeekHeight = peekHeight,
@@ -287,16 +315,16 @@ class BottomSheetScaffoldTest {
                 BottomSheetScaffold(
                     scaffoldState = scaffoldState,
                     sheetContent = {
-                        Box(Modifier.fillMaxWidth().height(100.dp))
+                        Box(Modifier.fillMaxWidth().requiredHeight(100.dp))
                     },
                     drawerContent = {
                         Box(
                             Modifier
                                 .onGloballyPositioned { positioned: LayoutCoordinates ->
-                                    drawerChildPosition = positioned.positionInParent
+                                    drawerChildPosition = positioned.positionInParent()
                                 }
                                 .fillMaxWidth()
-                                .preferredHeight(50.dp)
+                                .height(50.dp)
                                 .background(color = Color.Blue)
                         )
                     }
@@ -304,7 +332,7 @@ class BottomSheetScaffoldTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(50.dp)
+                            .height(50.dp)
                             .background(color = Color.Blue)
                     )
                 }
@@ -332,19 +360,19 @@ class BottomSheetScaffoldTest {
                                 appbarSize = positioned.size
                             }
                             .fillMaxWidth()
-                            .preferredHeight(50.dp)
+                            .height(50.dp)
                             .background(color = Color.Red)
                     )
                 },
                 sheetContent = {
-                    Box(Modifier.size(10.dp))
+                    Box(Modifier.requiredSize(10.dp))
                 }
             ) {
                 Box(
                     Modifier
                         .onGloballyPositioned { contentPosition = it.localToWindow(Offset.Zero) }
                         .fillMaxWidth()
-                        .preferredHeight(50.dp)
+                        .height(50.dp)
                         .background(Color.Blue)
                 )
             }
@@ -354,7 +382,7 @@ class BottomSheetScaffoldTest {
     }
 
     @Test
-    fun bottomSheetScaffold_fab_position(): Unit = runBlocking {
+    fun bottomSheetScaffold_fab_position(): Unit = runBlocking(AutoTestFrameClock()) {
         val fabTag = "fab"
         var fabSize: IntSize = IntSize.Zero
         lateinit var scaffoldState: BottomSheetScaffoldState
@@ -363,7 +391,7 @@ class BottomSheetScaffoldTest {
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(300.dp).testTag(sheetContent))
+                    Box(Modifier.fillMaxWidth().requiredHeight(300.dp).testTag(sheetContent))
                 },
                 sheetGesturesEnabled = false,
                 sheetPeekHeight = peekHeight,
@@ -402,25 +430,25 @@ class BottomSheetScaffoldTest {
         rule.setContent {
             Box(
                 Modifier
-                    .size(10.dp, 20.dp)
+                    .requiredSize(10.dp, 20.dp)
                     .semantics(mergeDescendants = true) {}
                     .testTag("Scaffold")
             ) {
                 BottomSheetScaffold(
                     topBar = {
                         Box(
-                            Modifier.size(10.dp)
+                            Modifier.requiredSize(10.dp)
                                 .shadow(4.dp)
                                 .zIndex(4f)
                                 .background(color = Color.White)
                         )
                     },
                     sheetContent = {
-                        Box(Modifier.size(0.dp))
+                        Box(Modifier.requiredSize(0.dp))
                     }
                 ) {
                     Box(
-                        Modifier.size(10.dp)
+                        Modifier.requiredSize(10.dp)
                             .background(color = Color.White)
                     )
                 }
@@ -444,7 +472,7 @@ class BottomSheetScaffoldTest {
         rule.setContent {
             BottomSheetScaffold(
                 sheetContent = {
-                    Box(Modifier.fillMaxWidth().height(100.dp))
+                    Box(Modifier.fillMaxWidth().requiredHeight(100.dp))
                 },
                 sheetPeekHeight = peekHeight
             ) {

@@ -22,7 +22,7 @@ class ConfigBuilder {
     var isBenchmark: Boolean = false
     var isPostsubmit: Boolean = true
     lateinit var minSdk: String
-    var runFullTests: Boolean = true
+    var runAllTests: Boolean = true
     val tags: MutableList<String> = mutableListOf()
     lateinit var testApkName: String
     lateinit var testRunner: String
@@ -32,7 +32,7 @@ class ConfigBuilder {
     fun isBenchmark(isBenchmark: Boolean) = apply { this.isBenchmark = isBenchmark }
     fun isPostsubmit(isPostsubmit: Boolean) = apply { this.isPostsubmit = isPostsubmit }
     fun minSdk(minSdk: String) = apply { this.minSdk = minSdk }
-    fun runFullTests(runFullTests: Boolean) = apply { this.runFullTests = runFullTests }
+    fun runAllTests(runAllTests: Boolean) = apply { this.runAllTests = runAllTests }
     fun tag(tag: String) = apply { this.tags.add(tag) }
     fun testApkName(testApkName: String) = apply { this.testApkName = testApkName }
     fun testRunner(testRunner: String) = apply { this.testRunner = testRunner }
@@ -59,31 +59,29 @@ class ConfigBuilder {
             .append(APK_INSTALL_OPTION.replace("APK_NAME", testApkName))
         if (!appApkName.isNullOrEmpty())
             sb.append(APK_INSTALL_OPTION.replace("APK_NAME", appApkName!!))
+        // Temporary hardcoded hack for b/181810492
+        else if (applicationId == "androidx.benchmark.macro.test") {
+            sb.append(
+                APK_INSTALL_OPTION.replace(
+                    "APK_NAME",
+                    /* ktlint-disable max-line-length */
+                    "benchmark-integration-tests-macrobenchmark-target_macrobenchmark-target-release.apk"
+                    /* ktlint-enable max-line-length */
+                )
+            )
+        }
         sb.append(TARGET_PREPARER_CLOSE)
             .append(TEST_BLOCK_OPEN)
             .append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
             .append(PACKAGE_OPTION.replace("APPLICATION_ID", applicationId))
-        if (runFullTests) {
-            if (!isPostsubmit) {
-                sb.append(FLAKY_TEST_OPTION)
-            }
-            sb.append(TEST_BLOCK_CLOSE)
-        } else {
-            if (!isPostsubmit) {
-                sb.append(FLAKY_TEST_OPTION)
-            }
-            sb.append(SMALL_TEST_OPTIONS)
-                .append(TEST_BLOCK_CLOSE)
-                .append(TEST_BLOCK_OPEN)
-            if (!isPostsubmit) {
-                sb.append(FLAKY_TEST_OPTION)
-            }
-            sb.append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
-                .append(PACKAGE_OPTION.replace("APPLICATION_ID", applicationId))
-                .append(MEDIUM_TEST_OPTIONS)
-                .append(TEST_BLOCK_CLOSE)
+        if (!isPostsubmit) {
+            sb.append(FLAKY_TEST_OPTION)
         }
-        sb.append(CONFIGURATION_CLOSE)
+        if (!runAllTests) {
+            sb.append(SMALL_AND_MEDIUM_TEST_OPTIONS)
+        }
+        sb.append(TEST_BLOCK_CLOSE)
+            .append(CONFIGURATION_CLOSE)
         return sb.toString()
     }
 }
@@ -95,7 +93,7 @@ class MediaConfigBuilder {
     var isPostsubmit: Boolean = true
     var isServicePrevious: Boolean = true
     lateinit var minSdk: String
-    var runFullTests: Boolean = true
+    var runAllTests: Boolean = true
     lateinit var serviceApkName: String
     lateinit var serviceApplicationId: String
     var tags: MutableList<String> = mutableListOf()
@@ -112,7 +110,7 @@ class MediaConfigBuilder {
         this.isServicePrevious = isServicePrevious
     }
     fun minSdk(minSdk: String) = apply { this.minSdk = minSdk }
-    fun runFullTests(runFullTests: Boolean) = apply { this.runFullTests = runFullTests }
+    fun runAllTests(runAllTests: Boolean) = apply { this.runAllTests = runAllTests }
     fun serviceApkName(serviceApkName: String) = apply { this.serviceApkName = serviceApkName }
     fun serviceApplicationId(serviceApplicationId: String) =
         apply { this.serviceApplicationId = serviceApplicationId }
@@ -150,7 +148,7 @@ class MediaConfigBuilder {
         )
             .append(WIFI_DISABLE_OPTION)
             .append(SETUP_INCLUDE)
-            .append(TARGET_PREPARER_OPEN)
+            .append(MEDIA_TARGET_PREPARER_OPEN)
             .append(APK_INSTALL_OPTION.replace("APK_NAME", clientApkName))
             .append(APK_INSTALL_OPTION.replace("APK_NAME", serviceApkName))
         sb.append(TARGET_PREPARER_CLOSE)
@@ -158,7 +156,7 @@ class MediaConfigBuilder {
             .append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
             .append(PACKAGE_OPTION.replace("APPLICATION_ID", clientApplicationId))
             .append(mediaInstrumentationArgs())
-        if (runFullTests) {
+        if (runAllTests) {
             if (!isPostsubmit) {
                 sb.append(FLAKY_TEST_OPTION)
             }
@@ -176,31 +174,13 @@ class MediaConfigBuilder {
             if (!isPostsubmit) {
                 sb.append(FLAKY_TEST_OPTION)
             }
-            sb.append(SMALL_TEST_OPTIONS)
+            sb.append(SMALL_AND_MEDIUM_TEST_OPTIONS)
                 .append(TEST_BLOCK_CLOSE)
                 .append(TEST_BLOCK_OPEN)
                 .append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
-                .append(PACKAGE_OPTION.replace("APPLICATION_ID", clientApplicationId))
-                .append(mediaInstrumentationArgs())
-                .append(MEDIUM_TEST_OPTIONS)
-            if (!isPostsubmit) {
-                sb.append(FLAKY_TEST_OPTION)
-            }
-            sb.append(TEST_BLOCK_CLOSE)
-                .append(TEST_BLOCK_OPEN)
-                .append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
                 .append(PACKAGE_OPTION.replace("APPLICATION_ID", serviceApplicationId))
                 .append(mediaInstrumentationArgs())
-                .append(SMALL_TEST_OPTIONS)
-            if (!isPostsubmit) {
-                sb.append(FLAKY_TEST_OPTION)
-            }
-            sb.append(TEST_BLOCK_CLOSE)
-                .append(TEST_BLOCK_OPEN)
-                .append(RUNNER_OPTION.replace("TEST_RUNNER", testRunner))
-                .append(PACKAGE_OPTION.replace("APPLICATION_ID", serviceApplicationId))
-                .append(mediaInstrumentationArgs())
-                .append(MEDIUM_TEST_OPTIONS)
+                .append(SMALL_AND_MEDIUM_TEST_OPTIONS)
             if (!isPostsubmit) {
                 sb.append(FLAKY_TEST_OPTION)
             }
@@ -270,7 +250,17 @@ private val SETUP_INCLUDE = """
 
 """.trimIndent()
 
+/**
+ * We can't remove the apk on API < 27 due to a platform crash that occurs
+ * when handling a PACKAGE_CHANGED broadcast after the package has been removed. b/37264334
+ */
 private val TARGET_PREPARER_OPEN = """
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+    <option name="cleanup-apks" value="false" />
+
+""".trimIndent()
+
+private val MEDIA_TARGET_PREPARER_OPEN = """
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
     <option name="cleanup-apks" value="true" />
 
@@ -322,14 +312,9 @@ private val FLAKY_TEST_OPTION = """
 
 """.trimIndent()
 
-private val SMALL_TEST_OPTIONS = """
+private val SMALL_AND_MEDIUM_TEST_OPTIONS = """
     <option name="size" value="small" />
-
-""".trimIndent()
-
-private val MEDIUM_TEST_OPTIONS = """
     <option name="size" value="medium" />
-
 """.trimIndent()
 
 private val CLIENT_PREVIOUS = """

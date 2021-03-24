@@ -19,7 +19,8 @@ package androidx.benchmark.macro.junit4
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.benchmark.InstrumentationResults
+import androidx.benchmark.Outputs
+import androidx.benchmark.Outputs.dateToFileName
 import androidx.benchmark.macro.perfetto.PerfettoCapture
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -51,7 +52,9 @@ class PerfettoRule : TestRule {
     override fun apply(base: Statement, description: Description) = object : Statement() {
         override fun evaluate() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val traceName = "${description.className}_${description.methodName}.perfetto-trace"
+                val prefix = "${description.className}_${description.methodName}"
+                val suffix = dateToFileName()
+                val traceName = "${prefix}_$suffix.perfetto-trace"
                 PerfettoCapture().recordAndReportFile(traceName) {
                     base.evaluate()
                 }
@@ -73,10 +76,11 @@ internal fun PerfettoCapture.recordAndReportFile(traceName: String, block: () ->
         Log.d(PerfettoRule.TAG, "Recording perfetto trace $traceName")
         start()
         block()
-        val destinationPath = destinationPath(traceName)
-        stop(destinationPath)
-        Log.d(PerfettoRule.TAG, "Finished recording to $destinationPath")
-        InstrumentationResults.reportAdditionalFileToCopy("perfetto_trace", destinationPath)
+        Outputs.writeFile(fileName = traceName, reportKey = "perfetto_trace") {
+            val destinationPath = it.absolutePath
+            stop(destinationPath)
+            Log.d(PerfettoRule.TAG, "Finished recording to $destinationPath")
+        }
     } finally {
         cancel()
     }

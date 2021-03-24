@@ -21,11 +21,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.preferredHeight
-import androidx.compose.foundation.layout.preferredWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -202,21 +201,16 @@ fun BottomAppBar(
     } else {
         RectangleShape
     }
+    // TODO: b/150609566 clarify emphasis for children
     AppBar(
         backgroundColor,
         contentColor,
         elevation,
         contentPadding,
         shape,
-        modifier
-    ) {
-        // TODO: b/150609566 clarify emphasis for children
-        Row(
-            Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content
-        )
-    }
+        modifier,
+        content
+    )
 }
 
 /**
@@ -501,8 +495,9 @@ private fun AppBar(
         Row(
             Modifier.fillMaxWidth()
                 .padding(contentPadding)
-                .preferredHeight(AppBarHeight),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .height(AppBarHeight),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
             content = content
         )
     }
@@ -512,10 +507,10 @@ private val AppBarHeight = 56.dp
 // TODO: this should probably be part of the touch target of the start and end icons, clarify this
 private val AppBarHorizontalPadding = 4.dp
 // Start inset for the title when there is no navigation icon provided
-private val TitleInsetWithoutIcon = Modifier.preferredWidth(16.dp - AppBarHorizontalPadding)
+private val TitleInsetWithoutIcon = Modifier.width(16.dp - AppBarHorizontalPadding)
 // Start inset for the title when there is a navigation icon provided
 private val TitleIconModifier = Modifier.fillMaxHeight()
-    .preferredWidth(72.dp - AppBarHorizontalPadding)
+    .width(72.dp - AppBarHorizontalPadding)
 
 // The gap on all sides between the FAB and the cutout
 private val BottomAppBarCutoutOffset = 8.dp

@@ -16,6 +16,7 @@
 
 package androidx.build
 
+import androidx.build.AndroidXPlugin.Companion.ZIP_CONSTRAINED_TEST_CONFIGS_WITH_APKS_TASK
 import androidx.build.AndroidXPlugin.Companion.ZIP_TEST_CONFIGS_WITH_APKS_TASK
 import androidx.build.dependencyTracker.AffectedModuleDetector
 import androidx.build.gradle.isRoot
@@ -28,6 +29,7 @@ import com.android.build.gradle.api.AndroidBasePlugin
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.component.ModuleComponentSelector
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.bundling.Zip
@@ -79,12 +81,11 @@ class AndroidXRootPlugin : Plugin<Project> {
         if (partiallyDejetifyArchiveTask != null)
             buildOnServerTask.dependsOn(partiallyDejetifyArchiveTask)
 
-        val projectModules = ConcurrentHashMap<String, String>()
-        extra.set("projects", projectModules)
+        extra.set("projects", ConcurrentHashMap<String, String>())
         buildOnServerTask.dependsOn(tasks.named(CheckExternalDependencyLicensesTask.TASK_NAME))
-        // Anchor task that invokes running all subprojects :properties tasks which ensure that
+        // Anchor task that invokes running all subprojects :validateProperties tasks which ensure that
         // Android Studio sync is able to succeed.
-        val allProperties = tasks.register("allProperties")
+        val validateAllProperties = tasks.register("validateAllProperties")
         subprojects { project ->
             // Add a method for each sub project where they can declare an optional
             // dependency on a project or its latest snapshot artifact.
@@ -111,7 +112,11 @@ class AndroidXRootPlugin : Plugin<Project> {
                 buildOnServerTask.dependsOn("${project.path}:jar")
             }
 
-            allProperties.dependsOn("${project.path}:properties")
+            val validateProperties = project.tasks.register(
+                "validateProperties",
+                ValidatePropertiesTask::class.java
+            )
+            validateAllProperties.dependsOn(validateProperties)
         }
 
         if (partiallyDejetifyArchiveTask != null) {
@@ -138,16 +143,24 @@ class AndroidXRootPlugin : Plugin<Project> {
 
         val zipTestConfigsWithApks = project.tasks.register(
             ZIP_TEST_CONFIGS_WITH_APKS_TASK, Zip::class.java
-        )
-        // can't chain this, or a kotlin.Unit gets added as dependency below instead of the task
-        zipTestConfigsWithApks.configure {
+        ) {
             it.destinationDirectory.set(project.getDistributionDirectory())
             it.archiveFileName.set("androidTest.zip")
             it.from(project.getTestConfigDirectory())
             // We're mostly zipping a bunch of .apk files that are already compressed
             it.entryCompression = ZipEntryCompression.STORED
         }
+        val zipConstrainedTestConfigsWithApks = project.tasks.register(
+            ZIP_CONSTRAINED_TEST_CONFIGS_WITH_APKS_TASK, Zip::class.java
+        ) {
+            it.destinationDirectory.set(project.getDistributionDirectory())
+            it.archiveFileName.set("constrainedAndroidTest.zip")
+            it.from(project.getConstrainedTestConfigDirectory())
+            // We're mostly zipping a bunch of .apk files that are already compressed
+            it.entryCompression = ZipEntryCompression.STORED
+        }
         buildOnServerTask.dependsOn(zipTestConfigsWithApks)
+        buildOnServerTask.dependsOn(zipConstrainedTestConfigsWithApks)
 
         AffectedModuleDetector.configure(gradle, this)
 
@@ -156,7 +169,11 @@ class AndroidXRootPlugin : Plugin<Project> {
         if (project.usingMaxDepVersions()) {
             // This requires evaluating all sub-projects to create the module:project map
             // and project dependencies.
-            evaluationDependsOnChildren()
+            allprojects { project2 ->
+                // evaluationDependsOnChildren isn't transitive so we must call it on each project
+                project2.evaluationDependsOnChildren()
+            }
+            val projectModules = getProjectsMap()
             subprojects { subproject ->
                 // TODO(153485458) remove most of these exceptions
                 if (!subproject.name.contains("hilt") &&
@@ -175,8 +192,14 @@ class AndroidXRootPlugin : Plugin<Project> {
                 ) {
                     subproject.configurations.all { configuration ->
                         configuration.resolutionStrategy.dependencySubstitution.apply {
-                            for (e in projectModules) {
-                                substitute(module(e.key)).with(project(e.value))
+                            all { dep ->
+                                val requested = dep.getRequested()
+                                if (requested is ModuleComponentSelector) {
+                                    val module = requested.group + ":" + requested.module
+                                    if (projectModules.containsKey(module)) {
+                                        dep.useTarget(project(projectModules[module]!!))
+                                    }
+                                }
                             }
                         }
                     }

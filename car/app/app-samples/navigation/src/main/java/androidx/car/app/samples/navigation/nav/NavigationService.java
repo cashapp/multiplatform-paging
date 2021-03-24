@@ -223,12 +223,16 @@ public class NavigationService extends Service {
                                                 instruction.getStepTravelEstimate();
                                         Trip.Builder tripBuilder = new Trip.Builder();
                                         tripBuilder
-                                                .setCurrentRoad(instruction.getRoad())
                                                 .addStep(mSteps.get(0), stepTravelEstimate)
                                                 .addDestination(
                                                         mDestinations.get(0),
                                                         destinationTravelEstimate)
                                                 .setLoading(false);
+
+                                        String road = instruction.getRoad();
+                                        if (road != null) {
+                                            tripBuilder.setCurrentRoad(road);
+                                        }
                                         mNavigationManager.updateTrip(tripBuilder.build());
 
                                         if (++mStepsSent % 10 == 0) {
@@ -263,7 +267,6 @@ public class NavigationService extends Service {
                                                 instruction.getDestinationTravelEstimate();
                                         Trip.Builder tripBuilder = new Trip.Builder();
                                         tripBuilder
-                                                .setCurrentRoad(instruction.getRoad())
                                                 .addDestination(
                                                         mDestinations.get(0),
                                                         destinationTravelEstimate)
@@ -520,7 +523,8 @@ public class NavigationService extends Service {
 
                         // Set the notification's background color on the car screen.
                         .setColor(
-                                getResources().getColor(R.color.nav_notification_background_color))
+                                getResources().getColor(R.color.nav_notification_background_color,
+                                        null))
                         .setColorized(true)
                         .setSmallIcon(R.drawable.ic_launcher)
                         .setLargeIcon(

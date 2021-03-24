@@ -62,6 +62,12 @@ class ComposeErrorMessages : DefaultErrorMessages.Extension {
         )
 
         MAP.put(
+            ComposeErrors.NONREADONLY_CALL_IN_READONLY_COMPOSABLE,
+            "Composables marked with @ReadOnlyComposable can only call other @ReadOnlyComposable " +
+                "composables"
+        )
+
+        MAP.put(
             ComposeErrors.COMPOSABLE_PROPERTY_BACKING_FIELD,
             "Composable properties are not able to have backing fields"
         )
@@ -83,10 +89,8 @@ class ComposeErrorMessages : DefaultErrorMessages.Extension {
             "Composable properties are not able to have backing fields"
         )
         MAP.put(
-            ComposeErrors.ILLEGAL_ASSIGN_TO_UNIONTYPE,
-            "Value of type {0} can't be assigned to union type {1}.",
-            Renderers.RENDER_COLLECTION_OF_TYPES,
-            Renderers.RENDER_COLLECTION_OF_TYPES
+            ComposeErrors.COMPOSABLE_FUN_MAIN,
+            "Composable main functions are not currently supported"
         )
         MAP.put(
             ComposeErrors.ILLEGAL_TRY_CATCH_AROUND_COMPOSABLE,
@@ -98,11 +102,6 @@ class ComposeErrorMessages : DefaultErrorMessages.Extension {
                 " was expected",
             RENDER_TYPE_WITH_ANNOTATIONS,
             RENDER_TYPE_WITH_ANNOTATIONS
-        )
-        MAP.put(
-            ComposeErrors.DEPRECATED_COMPOSABLE_PROPERTY,
-            "@Composable properties should be declared with the @Composable annotation " +
-                "on the getter, and not the property itself."
         )
     }
 }

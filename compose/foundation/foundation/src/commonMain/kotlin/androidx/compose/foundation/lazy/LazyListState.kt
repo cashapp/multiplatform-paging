@@ -17,11 +17,11 @@
 package androidx.compose.foundation.lazy
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Interaction
-import androidx.compose.foundation.InteractionState
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.layout.Remeasurement
 import androidx.compose.ui.layout.RemeasurementModifier
+import androidx.compose.ui.unit.Density
 import kotlin.math.abs
 
 /**
@@ -96,11 +97,13 @@ class LazyListState constructor(
     val layoutInfo: LazyListLayoutInfo get() = layoutInfoState.value
 
     /**
-     * interactionState [InteractionState] that will be updated when component with this
-     * state is being scrolled by dragging, using [Interaction.Dragged]. If you want to know whether
-     * the fling (or smooth scroll) is in progress, use [isScrollInProgress].
+     * [InteractionSource] that will be used to dispatch drag events when this
+     * list is being dragged. If you want to know whether the fling (or animated scroll) is in
+     * progress, use [isScrollInProgress].
      */
-    val interactionState: InteractionState = InteractionState()
+    val interactionSource: InteractionSource get() = internalInteractionSource
+
+    internal val internalInteractionSource: MutableInteractionSource = MutableInteractionSource()
 
     /**
      * The amount of scroll to be consumed in the next layout pass.  Scrolling forward is negative
@@ -118,6 +121,16 @@ class LazyListState constructor(
      * The same as [firstVisibleItemScrollOffset] but the read will not trigger remeasure.
      */
     internal val firstVisibleItemScrollOffsetNonObservable: Int get() = scrollPosition.scrollOffset
+
+    /**
+     * Non-observable way of getting the last visible item index.
+     */
+    internal var lastVisibleItemIndexNonObservable: DataIndex = DataIndex(0)
+
+    /**
+     * Needed for [animateScrollToItem].  Updated on every measure.
+     */
+    internal var density: Density = Density(1f, 1f)
 
     /**
      * The ScrollableController instance. We keep it as we need to call stopAnimation on it once
@@ -159,12 +172,16 @@ class LazyListState constructor(
      * not be negative.
      */
     @OptIn(ExperimentalFoundationApi::class)
-    suspend fun snapToItemIndex(
+    suspend fun scrollToItem(
         /*@IntRange(from = 0)*/
         index: Int,
         /*@IntRange(from = 0)*/
         scrollOffset: Int = 0
     ) = scrollableState.scroll {
+        snapToItemIndexInternal(index, scrollOffset)
+    }
+
+    internal fun snapToItemIndexInternal(index: Int, scrollOffset: Int) {
         scrollPosition.update(
             index = DataIndex(index),
             scrollOffset = scrollOffset,
@@ -233,6 +250,24 @@ class LazyListState constructor(
     }
 
     /**
+     * Animate (smooth scroll) to the given item.
+     *
+     * @param index the index to which to scroll
+     * @param scrollOffset the offset that the item should end up after the scroll (same as
+     * [scrollToItem]) - note that positive offset refers to forward scroll, so in a
+     * top-to-bottom list, positive offset will scroll the item further upward (taking it partly
+     * offscreen)
+     */
+    suspend fun animateScrollToItem(
+        /*@IntRange(from = 0)*/
+        index: Int,
+        /*@IntRange(from = 0)*/
+        scrollOffset: Int = 0
+    ) {
+        doSmoothScrollToItem(index, scrollOffset)
+    }
+
+    /**
      *  Updates the state with the new calculated scroll position and consumed scroll.
      */
     internal fun applyMeasureResult(measureResult: LazyListMeasureResult) {
@@ -240,6 +275,9 @@ class LazyListState constructor(
             index = measureResult.firstVisibleItemIndex,
             scrollOffset = measureResult.firstVisibleItemScrollOffset,
             canScrollForward = measureResult.canScrollForward
+        )
+        lastVisibleItemIndexNonObservable = DataIndex(
+            measureResult.visibleItemsInfo.lastOrNull()?.index ?: 0
         )
         scrollToBeConsumed -= measureResult.consumedScroll
         layoutInfoState.value = measureResult
@@ -300,10 +338,14 @@ private class ItemRelativeScrollPosition(
     fun update(index: DataIndex, scrollOffset: Int, canScrollForward: Boolean) {
         require(index.value >= 0f) { "Index should be non-negative (${index.value})" }
         require(scrollOffset >= 0f) { "scrollOffset should be non-negative ($scrollOffset)" }
-        this.index = index
-        indexState.value = index.value
-        this.scrollOffset = scrollOffset
-        scrollOffsetState.value = scrollOffset
+        if (index != this.index) {
+            this.index = index
+            indexState.value = index.value
+        }
+        if (scrollOffset != this.scrollOffset) {
+            this.scrollOffset = scrollOffset
+            scrollOffsetState.value = scrollOffset
+        }
         this.canScrollForward = canScrollForward
     }
 }

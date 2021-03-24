@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("DEPRECATION_ERROR")
 
 package androidx.compose.foundation.text
 
-import androidx.compose.foundation.Interaction
-import androidx.compose.foundation.InteractionState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.interaction.Interaction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.SimpleLayout
 import androidx.compose.foundation.text.selection.TextFieldSelectionHandle
 import androidx.compose.foundation.text.selection.TextFieldSelectionManager
 import androidx.compose.foundation.text.selection.isSelectionHandleInVisibleBound
@@ -36,12 +38,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.isFocused
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.input.pointer.MouseTemporaryApi
-import androidx.compose.ui.input.pointer.isMouseInput
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
@@ -54,10 +55,6 @@ import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalTextInputService
 import androidx.compose.ui.platform.LocalTextToolbar
-import androidx.compose.foundation.text.selection.LocalTextSelectionColors
-import androidx.compose.foundation.text.selection.SimpleLayout
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.copyText
 import androidx.compose.ui.semantics.cutText
 import androidx.compose.ui.semantics.disabled
@@ -73,10 +70,6 @@ import androidx.compose.ui.semantics.setSelection
 import androidx.compose.ui.semantics.setText
 import androidx.compose.ui.semantics.textSelectionRange
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.InternalTextApi
-import androidx.compose.ui.text.SoftwareKeyboardController
-import androidx.compose.ui.text.TextDelegate
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -84,11 +77,11 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.input.EditProcessor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.ImeOptions
-import androidx.compose.ui.text.input.NO_SESSION
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TextInputService
+import androidx.compose.ui.text.input.TextInputSession
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Density
 import kotlin.math.max
@@ -123,20 +116,13 @@ import kotlin.math.roundToInt
  * @param onValueChange Called when the input service updates the values in [TextFieldValue].
  * @param modifier optional [Modifier] for this text field.
  * @param textStyle Style configuration that applies at character level such as color, font etc.
- * @param onImeActionPerformed Called when the input service requested an IME action. When the
- * input service emitted an IME action, this callback is called with the emitted IME action. Note
- * that this IME action may be different from what you specified in [imeAction].
  * @param visualTransformation The visual transformation filter for changing the visual
  * representation of the input. By default no visual transformation is applied.
  * @param onTextLayout Callback that is executed when a new text layout is calculated.
- * @param onTextInputStarted Callback that is executed when the initialization has done for
- * communicating with platform text input service, e.g. software keyboard on Android. Called with
- * [SoftwareKeyboardController] instance which can be used for requesting input show/hide software
- * keyboard.
- * @param interactionState The [InteractionState] representing the different [Interaction]s
- * present on this TextField. You can create and pass in your own remembered [InteractionState]
- * if you want to read the [InteractionState] and customize the appearance / behavior of this
- * TextField in different [Interaction]s.
+ * @param interactionSource the [MutableInteractionSource] representing the stream of
+ * [Interaction]s for this CoreTextField. You can create and pass in your own remembered
+ * [MutableInteractionSource] if you want to observe [Interaction]s and customize the
+ * appearance / behavior of this CoreTextField in different [Interaction]s.
  * @param cursorBrush [Brush] to paint cursor with. If [SolidColor] with [Color.Unspecified]
  * provided, there will be no cursor drawn
  * @param softWrap Whether the text should break at soft line breaks. If false, the glyphs in the
@@ -160,11 +146,7 @@ import kotlin.math.roundToInt
  * innerTextField exactly once.
  */
 @Composable
-@OptIn(
-    ExperimentalTextApi::class,
-    MouseTemporaryApi::class,
-    InternalTextApi::class
-)
+@OptIn(InternalFoundationTextApi::class)
 internal fun CoreTextField(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
@@ -172,8 +154,7 @@ internal fun CoreTextField(
     textStyle: TextStyle = TextStyle.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     onTextLayout: (TextLayoutResult) -> Unit = {},
-    onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
-    interactionState: InteractionState? = null,
+    interactionSource: MutableInteractionSource? = null,
     cursorBrush: Brush = SolidColor(Color.Unspecified),
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
@@ -247,7 +228,8 @@ internal fun CoreTextField(
         state.keyboardActionRunner.runAction(imeAction)
     }
 
-    state.processor.onNewState(value, textInputService, state.inputSession)
+    // notify the EditProcessor of value every recomposition
+    state.processor.reset(value, state.inputSession)
 
     val manager = remember { TextFieldSelectionManager() }
     manager.offsetMapping = offsetMapping
@@ -265,7 +247,7 @@ internal fun CoreTextField(
     val focusModifier = Modifier.textFieldFocusModifier(
         enabled = enabled,
         focusRequester = focusRequester,
-        interactionState = interactionState
+        interactionSource = interactionSource
     ) {
         if (state.hasFocus == it.isFocused) {
             return@textFieldFocusModifier
@@ -280,17 +262,18 @@ internal fun CoreTextField(
                 imeOptions,
                 onValueChangeWrapper,
                 onImeActionPerformedWrapper,
-                onTextInputStarted,
                 offsetMapping
             )
         }
         if (!it.isFocused) manager.deselect()
     }
 
-    val focusRequestTapModifier = Modifier.focusRequestTapModifier(
-        enabled = enabled,
-        onTap = { offset ->
-            tapToFocus(state, focusRequester, textInputService, !readOnly)
+    val selectionModifier =
+        Modifier.longPressDragGestureFilter(manager.touchSelectionObserver, enabled)
+
+    val pointerModifier = if (isInTouchMode) {
+        Modifier.tapPressTextFieldModifier(interactionSource, enabled) { offset ->
+            tapToFocus(state, focusRequester, !readOnly)
             if (state.hasFocus) {
                 if (!state.selectionIsOn) {
                     state.layoutResult?.let { layoutResult ->
@@ -306,21 +289,9 @@ internal fun CoreTextField(
                     manager.deselect(offset)
                 }
             }
-        }
-    )
-
-    val selectionModifier =
-        Modifier.longPressDragGestureFilter(manager.touchSelectionObserver, enabled)
-
-    val pointerModifier = if (isMouseInput) {
-        Modifier.mouseDragGestureFilter(
-            manager.mouseSelectionObserver(onStart = { focusRequester.requestFocus() }),
-            enabled = enabled
-        )
+        }.then(selectionModifier)
     } else {
-        Modifier.pressGestureFilter(interactionState = interactionState, enabled = enabled)
-            .then(selectionModifier)
-            .then(focusRequestTapModifier)
+        Modifier.mouseDragGestureDetector(manager::mouseSelectionDetector, enabled = enabled)
     }
 
     val drawModifier = Modifier.drawBehind {
@@ -350,16 +321,17 @@ internal fun CoreTextField(
                 state.showSelectionHandleEnd = manager.isSelectionHandleInVisibleBound(false)
             }
             state.layoutResult?.let { layoutResult ->
-                TextFieldDelegate.notifyFocusedRect(
-                    value,
-                    state.textDelegate,
-                    layoutResult.value,
-                    it,
-                    textInputService,
-                    state.inputSession,
-                    state.hasFocus,
-                    offsetMapping
-                )
+                state.inputSession?.let { inputSession ->
+                    TextFieldDelegate.notifyFocusedRect(
+                        value,
+                        state.textDelegate,
+                        layoutResult.value,
+                        it,
+                        inputSession,
+                        state.hasFocus,
+                        offsetMapping
+                    )
+                }
             }
         }
         state.layoutResult?.innerTextFieldCoordinates = it
@@ -415,7 +387,7 @@ internal fun CoreTextField(
         onClick {
             // according to the documentation, we still need to provide proper semantics actions
             // even if the state is 'disabled'
-            tapToFocus(state, focusRequester, textInputService, !readOnly)
+            tapToFocus(state, focusRequester, !readOnly)
             true
         }
         onLongClick {
@@ -449,13 +421,24 @@ internal fun CoreTextField(
         onDispose { manager.hideSelectionToolbar() }
     }
 
+    val textKeyInputModifier =
+        Modifier.textFieldKeyInput(
+            state = state,
+            manager = manager,
+            value = value,
+            editable = !readOnly,
+            singleLine = maxLines == 1,
+            offsetMapping = offsetMapping
+        )
+
     // Modifiers that should be applied to the outer text field container. Usually those include
     // gesture and semantics modifiers.
     val decorationBoxModifier = modifier
-        .textFieldScrollable(scrollerPosition, interactionState, enabled)
+        .textFieldScrollable(scrollerPosition, interactionSource, enabled)
         .then(pointerModifier)
         .then(semanticsModifier)
         .then(focusModifier)
+        .then(textKeyInputModifier)
         .onGloballyPositioned {
             state.layoutResult?.decorationBoxCoordinates = it
         }
@@ -476,7 +459,6 @@ internal fun CoreTextField(
                 .then(drawModifier)
                 .then(onPositionedModifier)
                 .textFieldMinSize(textStyle)
-                .textFieldKeyboardModifier(manager)
 
             SimpleLayout(coreTextFieldModifier) {
                 Layout({ }) { _, constraints ->
@@ -508,21 +490,19 @@ internal fun CoreTextField(
                         state.selectionIsOn &&
                         state.layoutCoordinates != null &&
                         state.layoutCoordinates!!.isAttached &&
-                        !isMouseInput
+                        isInTouchMode
                 )
             }
         }
     }
 }
 
-internal expect fun Modifier.textFieldKeyboardModifier(manager: TextFieldSelectionManager): Modifier
-
-@OptIn(InternalTextApi::class)
+@OptIn(InternalFoundationTextApi::class)
 internal class TextFieldState(
     var textDelegate: TextDelegate
 ) {
     val processor = EditProcessor()
-    var inputSession = NO_SESSION
+    var inputSession: TextInputSession? = null
 
     /**
      * This should be a state as every time we update the value we need to redraw it.
@@ -625,17 +605,15 @@ internal class TextFieldState(
 private fun tapToFocus(
     state: TextFieldState,
     focusRequester: FocusRequester,
-    textInputService: TextInputService?,
     allowKeyboard: Boolean
 ) {
     if (!state.hasFocus) {
         focusRequester.requestFocus()
     } else if (allowKeyboard) {
-        textInputService?.showSoftwareKeyboard(state.inputSession)
+        state.inputSession?.showSoftwareKeyboard()
     }
 }
 
-@OptIn(InternalTextApi::class)
 private fun notifyTextInputServiceOnFocusChange(
     textInputService: TextInputService,
     state: TextFieldState,
@@ -643,7 +621,6 @@ private fun notifyTextInputServiceOnFocusChange(
     imeOptions: ImeOptions,
     onValueChange: (TextFieldValue) -> Unit,
     onImeActionPerformed: (ImeAction) -> Unit,
-    onTextInputStarted: (SoftwareKeyboardController) -> Unit,
     offsetMapping: OffsetMapping
 ) {
     if (state.hasFocus) {
@@ -654,32 +631,26 @@ private fun notifyTextInputServiceOnFocusChange(
             imeOptions,
             onValueChange,
             onImeActionPerformed
-        )
-        if (state.inputSession != NO_SESSION) {
-            onTextInputStarted(SoftwareKeyboardController(textInputService, state.inputSession))
-        }
-        state.layoutCoordinates?.let { coords ->
-            state.layoutResult?.let { layoutResult ->
-                TextFieldDelegate.notifyFocusedRect(
-                    value,
-                    state.textDelegate,
-                    layoutResult.value,
-                    coords,
-                    textInputService,
-                    state.inputSession,
-                    state.hasFocus,
-                    offsetMapping
-                )
+        ).also { newSession ->
+            state.layoutCoordinates?.let { coords ->
+                state.layoutResult?.let { layoutResult ->
+                    TextFieldDelegate.notifyFocusedRect(
+                        value,
+                        state.textDelegate,
+                        layoutResult.value,
+                        coords,
+                        newSession,
+                        state.hasFocus,
+                        offsetMapping
+                    )
+                }
             }
         }
     } else {
-        TextFieldDelegate.onBlur(
-            textInputService,
-            state.inputSession,
-            state.processor,
-            false,
-            onValueChange
-        )
+        state.inputSession?.let { session ->
+            TextFieldDelegate.onBlur(session, state.processor, onValueChange)
+        }
+        state.inputSession = null
     }
 }
 

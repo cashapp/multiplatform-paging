@@ -178,7 +178,7 @@ class MediaControllerImplBase implements MediaControllerImpl {
         }
         mContext = context;
         mSequencedFutureManager = new SequencedFutureManager();
-        mControllerStub = new MediaControllerStub(this, mSequencedFutureManager);
+        mControllerStub = new MediaControllerStub(this);
         mToken = token;
         mDeathRecipient = new IBinder.DeathRecipient() {
             @Override
@@ -874,6 +874,7 @@ class MediaControllerImplBase implements MediaControllerImpl {
     }
 
     // Returns session binder if the controller can send the command.
+    @SuppressWarnings("ObjectToString")
     IMediaSession getSessionInterfaceIfAble(SessionCommand command) {
         synchronized (mLock) {
             if (!mAllowedCommands.hasCommand(command)) {
@@ -1171,7 +1172,15 @@ class MediaControllerImplBase implements MediaControllerImpl {
         });
     }
 
+    <T> void setFutureResult(int seq, T futureResult) {
+        if (futureResult == null) {
+            return;
+        }
+        mSequencedFutureManager.setFutureResult(seq, futureResult);
+    }
+
     // Should be used without a lock to prevent potential deadlock.
+    @SuppressWarnings("ObjectToString")
     void onConnectedNotLocked(final int sessionVersion,
             IMediaSession sessionBinder,
             final SessionCommandGroup allowedCommands,

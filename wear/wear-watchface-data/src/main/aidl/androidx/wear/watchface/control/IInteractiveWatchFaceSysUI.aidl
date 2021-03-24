@@ -17,7 +17,7 @@
 package androidx.wear.watchface.control;
 
 import android.support.wearable.watchface.accessibility.ContentDescriptionLabel;
-import androidx.wear.watchface.control.data.WatchfaceScreenshotParams;
+import androidx.wear.watchface.control.data.WatchFaceRenderParams;
 import androidx.wear.watchface.data.SystemState;
 import androidx.wear.watchface.style.data.UserStyleWireFormat;
 
@@ -38,21 +38,21 @@ interface IInteractiveWatchFaceSysUI {
     const int API_VERSION = 1;
 
     /** Indicates a "down" touch event on the watch face. */
-    const int TAP_TYPE_TOUCH = 0;
+    const int TAP_TYPE_DOWN = 0;
 
     /**
-     * Indicates that a previous TAP_TYPE_TOUCH event has been canceled. This generally happens when
-     * the watch face is touched but then a move or long press occurs.
+     * Indicates that a previous {@link #TAP_TYPE_DOWN} event has been canceled. This generally
+     * happens when the watch face is touched but then a move or long press occurs.
      */
-    const int TAP_TYPE_TOUCH_CANCEL = 1;
+    const int TAP_TYPE_CANCEL = 1;
 
     /**
      * Indicates that an "up" event on the watch face has occurred that has not been consumed by
-     * another activity. A TAP_TYPE_TOUCH always occur first. This event will not occur if a
-     * TAP_TYPE_TOUCH_CANCEL is sent.
+     * another activity. A {@link #TAP_TYPE_DOWN} always occur first. This event will not occur if a
+     * {@link #TAP_TYPE_CANCEL} is sent.
      *
      */
-    const int TAP_TYPE_TAP = 2;
+    const int TAP_TYPE_UP = 2;
 
     /**
      * Returns the version number for this API which the client can use to determine which methods
@@ -81,8 +81,7 @@ interface IInteractiveWatchFaceSysUI {
      *
      * @param xPos X Coordinate of the touch event
      * @param yPos Y Coordinate of the touch event
-     * @param tapType One of {@link #TAP_TYPE_TOUCH}, {@link #TAP_TYPE_TOUCH_CANCEL},
-     *    {@link #TAP_TYPE_TAP}
+     * @param tapType One of {@link #TAP_TYPE_DOWN}, {@link #TAP_TYPE_CANCEL}, {@link #TAP_TYPE_UP}
      * @since API version 1.
      */
     oneway void sendTouchEvent(in int xPos, in int yPos, in int tapType) = 4;
@@ -108,12 +107,12 @@ interface IInteractiveWatchFaceSysUI {
      * calendarTimeMillis.
      *
      * @since API version 1.
-     * @param params The {@link WatchfaceScreenshotParams} for this screenshot.
+     * @param params The {@link WatchFaceRenderParams} for this screenshot.
      * @return A bundle containing a compressed shared memory backed {@link Bitmap} of the watch
      *     face with the requested settings
      * TODO(alexclarke): Refactor to return a parcelable rather than a bundle.
      */
-    Bundle takeWatchFaceScreenshot(in WatchfaceScreenshotParams params) = 7;
+    Bundle renderWatchFaceToBitmap(in WatchFaceRenderParams params) = 7;
 
     /**
      * Gets the labels to be read aloud by screen readers. The results will change depending on the

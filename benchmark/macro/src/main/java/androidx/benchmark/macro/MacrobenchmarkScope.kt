@@ -43,36 +43,64 @@ public class MacrobenchmarkScope(
     private val device = UiDevice.getInstance(instrumentation)
 
     /**
-     * Launch the package, with a customizable intent.
+     * Start an activity, by default the default launch of the package, and wait until
+     * its launch completes.
+     *
+     * @param block Allows customization of the intent used to launch the activity.
      */
-    fun launchPackageAndWait(
+    fun startActivityAndWait(
         block: (Intent) -> Unit = {}
     ) {
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
             ?: throw IllegalStateException("Unable to acquire intent for package $packageName")
 
         block(intent)
-        launchIntentAndWait(intent)
+        startActivityAndWait(intent)
     }
 
-    fun launchIntentAndWait(intent: Intent) {
+    /**
+     * Start an activity with the provided intent, and wait until its launch completes.
+     *
+     * @param intent Specifies which app/Activity should be launched.
+     */
+    fun startActivityAndWait(intent: Intent) {
         // Must launch with new task, as we're not launching from an existing task
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (launchWithClearTask) {
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (securityException: SecurityException) {
+            // Android 11 sets exported=false by default, which means we can't launch, but this
+            // can also happen if "android:exported=false" is used directly.
+            throw SecurityException(
+                "Unable to launch Activity due to Security Exception. To launch an " +
+                    "activity from a benchmark, you may need to set android:exported=true " +
+                    "for the Activity in your application's manifest",
+                securityException
+            )
+        }
         device.wait(
             Until.hasObject(By.pkg(packageName).depth(0)),
             5000 /* ms */
         )
     }
 
+    /**
+     * Perform a home button click.
+     *
+     * Useful for resetting the test to a base condition in cases where the app isn't killed in
+     * each iteration.
+     */
     fun pressHome(delayDurationMs: Long = 300) {
         device.pressHome()
         Thread.sleep(delayDurationMs)
     }
 
+    /**
+     * Force-stop the process being measured.
+     */
     fun killProcess() {
         Log.d(TAG, "Killing process $packageName")
         device.executeShellCommand("am force-stop $packageName")

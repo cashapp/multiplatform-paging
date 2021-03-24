@@ -32,9 +32,11 @@ internal class ModifiedLayoutNode(
     modifier: LayoutModifier
 ) : DelegatingLayoutNodeWrapper<LayoutModifier>(wrapped, modifier) {
 
-    override fun performMeasure(constraints: Constraints): Placeable = with(modifier) {
-        measureResult = measureScope.measure(wrapped, constraints)
-        this@ModifiedLayoutNode
+    override fun measure(constraints: Constraints): Placeable = performingMeasure(constraints) {
+        with(modifier) {
+            measureResult = measureScope.measure(wrapped, constraints)
+            this@ModifiedLayoutNode
+        }
     }
 
     override fun minIntrinsicWidth(height: Int): Int =
@@ -57,11 +59,11 @@ internal class ModifiedLayoutNode(
             measureScope.maxIntrinsicHeight(wrapped, width)
         }
 
-    override operator fun get(line: AlignmentLine): Int {
-        if (measureResult.alignmentLines.containsKey(line)) {
-            return measureResult.alignmentLines[line] ?: AlignmentLine.Unspecified
+    override operator fun get(alignmentLine: AlignmentLine): Int {
+        if (measureResult.alignmentLines.containsKey(alignmentLine)) {
+            return measureResult.alignmentLines[alignmentLine] ?: AlignmentLine.Unspecified
         }
-        val positionInWrapped = wrapped[line]
+        val positionInWrapped = wrapped[alignmentLine]
         if (positionInWrapped == AlignmentLine.Unspecified) {
             return AlignmentLine.Unspecified
         }
@@ -69,7 +71,7 @@ internal class ModifiedLayoutNode(
         isShallowPlacing = true
         placeAt(this.position, this.zIndex, this.layerBlock)
         isShallowPlacing = false
-        return if (line is HorizontalAlignmentLine) {
+        return if (alignmentLine is HorizontalAlignmentLine) {
             positionInWrapped + wrapped.position.y
         } else {
             positionInWrapped + wrapped.position.x

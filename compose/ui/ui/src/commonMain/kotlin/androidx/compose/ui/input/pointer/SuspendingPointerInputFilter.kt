@@ -21,6 +21,7 @@ import androidx.compose.runtime.collection.mutableVectorOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.fastMapNotNull
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
@@ -117,18 +118,23 @@ interface PointerInputScope : Density {
     ): R
 }
 
+private const val PointerInputModifierNoParamError =
+    "Modifier.pointerInput must provide one or more 'key' parameters that define the identity of " +
+        "the modifier and determine when its previous input processing coroutine should be " +
+        "cancelled and a new effect launched for the new key."
+
 /**
  * Create a modifier for processing pointer input within the region of the modified element.
  *
- * [pointerInput] [block]s may call [PointerInputScope.awaitPointerEventScope] to install a pointer
- * input handler that can [AwaitPointerEventScope.awaitPointerEvent] to receive and consume
- * pointer input events. Extension functions on [PointerInputScope] or [AwaitPointerEventScope]
- * may be defined to perform higher-level gesture detection.
+ * It is an error to call [pointerInput] without at least one `key` parameter.
  */
-@Deprecated("Effect keys are now required parameters", ReplaceWith("pointerInput(Unit, block)"))
+// This deprecated-error function shadows the varargs overload so that the varargs version
+// is not used without key parameters.
+@Suppress("DeprecatedCallableAddReplaceWith", "UNUSED_PARAMETER", "unused")
+@Deprecated(PointerInputModifierNoParamError, level = DeprecationLevel.ERROR)
 fun Modifier.pointerInput(
     block: suspend PointerInputScope.() -> Unit
-): Modifier = pointerInput(Unit, block)
+): Modifier = error(PointerInputModifierNoParamError)
 
 /**
  * Create a modifier for processing pointer input within the region of the modified element.
@@ -336,7 +342,7 @@ internal class SuspendingPointerInputFilter(
         // down-ness is consumed, and we omit any pointers that previously went up entirely.
         val lastEvent = lastPointerEvent ?: return
 
-        val newChanges = lastEvent.changes.mapNotNull { old ->
+        val newChanges = lastEvent.changes.fastMapNotNull { old ->
             if (old.pressed) {
                 old.copy(
                     currentPressed = false,

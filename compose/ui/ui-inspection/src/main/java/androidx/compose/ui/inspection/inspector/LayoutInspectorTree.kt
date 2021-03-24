@@ -38,6 +38,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 private val systemPackages = setOf(
+    -1,
     packageNameHash("androidx.compose.animation"),
     packageNameHash("androidx.compose.animation.core"),
     packageNameHash("androidx.compose.desktop"),
@@ -53,27 +54,18 @@ private val systemPackages = setOf(
     packageNameHash("androidx.compose.ui.tooling"),
     packageNameHash("androidx.compose.ui.selection"),
     packageNameHash("androidx.compose.ui.semantics"),
-    packageNameHash("androidx.compose.ui.viewinterop")
-)
-
-private val unwantedPackages = setOf(
-    -1,
-    packageNameHash("androidx.compose.ui"),
-    packageNameHash("androidx.compose.runtime"),
-    packageNameHash("androidx.compose.ui.tooling"),
-    packageNameHash("androidx.compose.ui.selection"),
-    packageNameHash("androidx.compose.ui.semantics"),
-    packageNameHash("androidx.compose.ui.inspection.inspector"),
+    packageNameHash("androidx.compose.ui.viewinterop"),
+    packageNameHash("androidx.compose.ui.window"),
 )
 
 private val unwantedCalls = setOf(
     "emit",
     "remember",
-    "Inspectable",
-    "Layout",
     "CompositionLocalProvider",
-    "SelectionContainer",
-    "SelectionLayout"
+    "Content",
+    "Inspectable",
+    "ProvideAndroidCompositionLocals",
+    "ProvideCommonCompositionLocals",
 )
 
 private fun packageNameHash(packageName: String) =
@@ -118,8 +110,54 @@ class LayoutInspectorTree {
     /**
      * Converts the [RawParameter]s of the [node] into displayable parameters.
      */
-    fun convertParameters(node: InspectorNode): List<NodeParameter> {
-        return node.parameters.mapNotNull { parameterFactory.create(node, it.name, it.value) }
+    fun convertParameters(
+        rootId: Long,
+        node: InspectorNode,
+        maxRecursions: Int,
+        maxInitialIterableSize: Int
+    ): List<NodeParameter> {
+        return node.parameters.mapIndexed { index, parameter ->
+            parameterFactory.create(
+                rootId,
+                node,
+                parameter.name,
+                parameter.value,
+                index,
+                maxRecursions,
+                maxInitialIterableSize
+            )
+        }
+    }
+
+    /**
+     * Converts a part of the [RawParameter] identified by [reference] into a
+     * displayable parameter. If the parameter is some sort of a collection
+     * then [startIndex] and [maxElements] describes the scope of the data returned.
+     */
+    fun expandParameter(
+        rootId: Long,
+        node: InspectorNode,
+        reference: NodeParameterReference,
+        startIndex: Int,
+        maxElements: Int,
+        maxRecursions: Int,
+        maxInitialIterableSize: Int
+    ): NodeParameter? {
+        if (reference.parameterIndex !in node.parameters.indices) {
+            return null
+        }
+        val parameter = node.parameters[reference.parameterIndex]
+        return parameterFactory.expand(
+            rootId,
+            node,
+            parameter.name,
+            parameter.value,
+            reference,
+            startIndex,
+            maxElements,
+            maxRecursions,
+            maxInitialIterableSize
+        )
     }
 
     /**
@@ -308,7 +346,7 @@ class LayoutInspectorTree {
                 node.layoutNodes.forEach { claimedNodes.getOrPut(it) { resultNode } }
                 parentNode.children.add(resultNode)
             }
-            if (node.bounds.isNotEmpty() && sameBoundingRectangle(parentNode, node)) {
+            if (node.bounds != null && sameBoundingRectangle(parentNode, node)) {
                 parentNode.bounds = node.bounds
             }
             parentNode.layoutNodes.addAll(node.layoutNodes)
@@ -366,11 +404,11 @@ class LayoutInspectorTree {
         ) {
             return
         }
-        node.bounds = intArrayOf(
+        node.bounds = QuadBounds(
             topLeft.x, topLeft.y,
             topRight.x, topRight.y,
             bottomRight.x, bottomRight.y,
-            bottomLeft.x, bottomLeft.y
+            bottomLeft.x, bottomLeft.y,
         )
     }
 
@@ -418,8 +456,7 @@ class LayoutInspectorTree {
     }
 
     private fun unwantedGroup(node: MutableInspectorNode): Boolean =
-        (node.packageHash in unwantedPackages && node.name in unwantedCalls) ||
-            (hideSystemNodes && node.packageHash in systemPackages)
+        node.packageHash in systemPackages && (hideSystemNodes || node.name in unwantedCalls)
 
     private fun newNode(): MutableInspectorNode =
         if (cache.isNotEmpty()) cache.pop() else MutableInspectorNode()

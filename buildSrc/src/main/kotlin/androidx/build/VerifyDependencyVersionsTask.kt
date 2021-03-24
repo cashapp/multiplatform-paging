@@ -117,7 +117,9 @@ fun shouldVerifyConfiguration(configuration: Configuration): Boolean {
     // Don't check any Android-specific variants of Java plugin configurations -- releaseApi for
     // api, debugImplementation for implementation, etc. -- or test configurations.
     if (name.startsWith("androidTest")) return false
+    if (name.startsWith("androidAndroidTest")) return false
     if (name.startsWith("debug")) return false
+    if (name.startsWith("androidDebug")) return false
     if (name.startsWith("release")) return false
     if (name.startsWith("test")) return false
 
@@ -127,6 +129,12 @@ fun shouldVerifyConfiguration(configuration: Configuration): Boolean {
     if (name.startsWith("jacoco")) return false
     if (name.startsWith("lint")) return false
     if (name == "metalava") return false
+
+    // Don't check any configurations that directly bundle the dependencies with the output
+    if (name == "bundleInside") return false
+
+    // Don't check any compile-only configurations
+    if (name.startsWith("compile")) return false
 
     return true
 }

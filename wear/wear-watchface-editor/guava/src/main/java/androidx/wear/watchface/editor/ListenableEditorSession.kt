@@ -19,6 +19,7 @@ package androidx.wear.watchface.editor
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.annotation.UiThread
@@ -27,6 +28,7 @@ import androidx.wear.complications.data.ComplicationData
 import androidx.wear.watchface.RenderParameters
 import androidx.wear.watchface.client.ComplicationState
 import androidx.wear.watchface.client.HeadlessWatchFaceClient
+import androidx.wear.watchface.client.WatchFaceId
 import androidx.wear.watchface.style.UserStyle
 import androidx.wear.watchface.style.UserStyleSchema
 import com.google.common.util.concurrent.ListenableFuture
@@ -105,7 +107,9 @@ public class ListenableEditorSession(
 
     override val watchFaceComponentName: ComponentName = wrappedEditorSession.watchFaceComponentName
 
-    override val instanceId: String? = wrappedEditorSession.instanceId
+    @get:RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.R)
+    override val watchFaceId: WatchFaceId = wrappedEditorSession.watchFaceId
 
     override var userStyle: UserStyle
         get() = wrappedEditorSession.userStyle
@@ -118,16 +122,16 @@ public class ListenableEditorSession(
     override val userStyleSchema: UserStyleSchema
         get() = wrappedEditorSession.userStyleSchema
 
-    override val complicationState: Map<Int, ComplicationState>
-        get() = wrappedEditorSession.complicationState
+    override val complicationsState: Map<Int, ComplicationState>
+        get() = wrappedEditorSession.complicationsState
 
-    /** [ListenableFuture] wrapper around [EditorSession.getComplicationPreviewData]. */
+    /** [ListenableFuture] wrapper around [EditorSession.getComplicationsPreviewData]. */
     public fun getListenableComplicationPreviewData():
         ListenableFuture<Map<Int, ComplicationData>> {
             val future = ResolvableFuture.create<Map<Int, ComplicationData>>()
             getCoroutineScope().launch {
                 try {
-                    future.set(wrappedEditorSession.getComplicationPreviewData())
+                    future.set(wrappedEditorSession.getComplicationsPreviewData())
                 } catch (e: Exception) {
                     future.setException(e)
                 }
@@ -135,8 +139,8 @@ public class ListenableEditorSession(
             return future
         }
 
-    override suspend fun getComplicationPreviewData(): Map<Int, ComplicationData> =
-        wrappedEditorSession.getComplicationPreviewData()
+    override suspend fun getComplicationsPreviewData(): Map<Int, ComplicationData> =
+        wrappedEditorSession.getComplicationsPreviewData()
 
     @get:SuppressWarnings("AutoBoxing")
     override val backgroundComplicationId: Int?
@@ -146,11 +150,11 @@ public class ListenableEditorSession(
     override fun getComplicationIdAt(x: Int, y: Int): Int? =
         wrappedEditorSession.getComplicationIdAt(x, y)
 
-    override fun takeWatchFaceScreenshot(
+    override fun renderWatchFaceToBitmap(
         renderParameters: RenderParameters,
         calendarTimeMillis: Long,
         idToComplicationData: Map<Int, ComplicationData>?
-    ): Bitmap = wrappedEditorSession.takeWatchFaceScreenshot(
+    ): Bitmap = wrappedEditorSession.renderWatchFaceToBitmap(
         renderParameters,
         calendarTimeMillis,
         idToComplicationData

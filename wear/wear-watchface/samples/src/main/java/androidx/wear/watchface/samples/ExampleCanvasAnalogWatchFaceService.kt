@@ -30,6 +30,7 @@ import androidx.wear.complications.ComplicationBounds
 import androidx.wear.complications.DefaultComplicationProviderPolicy
 import androidx.wear.complications.SystemProviders
 import androidx.wear.complications.data.ComplicationType
+import androidx.wear.watchface.CanvasComplicationDrawable
 import androidx.wear.watchface.CanvasType
 import androidx.wear.watchface.Complication
 import androidx.wear.watchface.ComplicationsManager
@@ -137,8 +138,8 @@ fun createExampleCanvasAnalogWatchFaceBuilder(
         context.getString(R.string.watchface_pips_setting),
         context.getString(R.string.watchface_pips_setting_description),
         null,
-        true,
-        listOf(Layer.BASE_LAYER)
+        listOf(Layer.BASE_LAYER),
+        true
     )
     val watchHandLengthStyleSetting = DoubleRangeUserStyleSetting(
         WATCH_HAND_LENGTH_STYLE_SETTING,
@@ -147,8 +148,8 @@ fun createExampleCanvasAnalogWatchFaceBuilder(
         null,
         0.25,
         1.0,
-        0.75,
-        listOf(Layer.TOP_LAYER)
+        listOf(Layer.TOP_LAYER),
+        0.75
     )
     // These are style overrides applied on top of the complications passed into
     // complicationsManager below.
@@ -218,7 +219,7 @@ fun createExampleCanvasAnalogWatchFaceBuilder(
     )
     val leftComplication = Complication.createRoundRectComplicationBuilder(
         EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID,
-        watchFaceStyle.getComplicationDrawableRenderer(context, watchState),
+        CanvasComplicationDrawable(watchFaceStyle.getDrawable(context)!!, watchState),
         listOf(
             ComplicationType.RANGED_VALUE,
             ComplicationType.LONG_TEXT,
@@ -232,7 +233,7 @@ fun createExampleCanvasAnalogWatchFaceBuilder(
         .build()
     val rightComplication = Complication.createRoundRectComplicationBuilder(
         EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID,
-        watchFaceStyle.getComplicationDrawableRenderer(context, watchState),
+        CanvasComplicationDrawable(watchFaceStyle.getDrawable(context)!!, watchState),
         listOf(
             ComplicationType.RANGED_VALUE,
             ComplicationType.LONG_TEXT,
@@ -272,7 +273,7 @@ class ExampleAnalogWatchCanvasRenderer(
     private val context: Context,
     private var watchFaceColorStyle: WatchFaceColorStyle,
     userStyleRepository: UserStyleRepository,
-    private val watchState: WatchState,
+    watchState: WatchState,
     private val colorStyleSetting: ListUserStyleSetting,
     private val drawPipsStyleSetting: BooleanUserStyleSetting,
     private val watchHandLengthStyleSettingDouble: DoubleRangeUserStyleSetting,
@@ -328,8 +329,7 @@ class ExampleAnalogWatchCanvasRenderer(
                     // the styles are defined in XML so we need to replace the complication's
                     // drawables.
                     for ((_, complication) in complicationsManager.complications) {
-                        complication.renderer =
-                            watchFaceColorStyle.getComplicationDrawableRenderer(context, watchState)
+                        complication.renderer.drawable = watchFaceColorStyle.getDrawable(context)!!
                     }
 
                     val drawPipsOption = userStyle[drawPipsStyleSetting]?.toBooleanOption()!!

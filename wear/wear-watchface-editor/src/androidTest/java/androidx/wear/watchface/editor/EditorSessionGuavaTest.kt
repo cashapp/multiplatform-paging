@@ -30,10 +30,13 @@ import androidx.wear.complications.SystemProviders
 import androidx.wear.complications.data.ComplicationType
 import androidx.wear.complications.data.LongTextComplicationData
 import androidx.wear.complications.data.ShortTextComplicationData
-import androidx.wear.watchface.CanvasComplication
+import androidx.wear.watchface.CanvasComplicationDrawable
 import androidx.wear.watchface.Complication
 import androidx.wear.watchface.ComplicationsManager
+import androidx.wear.watchface.MutableWatchState
 import androidx.wear.watchface.WatchFace
+import androidx.wear.watchface.client.WatchFaceId
+import androidx.wear.watchface.complications.rendering.ComplicationDrawable
 import androidx.wear.watchface.style.UserStyleRepository
 import androidx.wear.watchface.style.UserStyleSchema
 import androidx.wear.watchface.style.UserStyleSetting
@@ -51,12 +54,14 @@ private const val TIMEOUT_MS = 500L
 @MediumTest
 public class EditorSessionGuavaTest {
     private val testComponentName = ComponentName("test.package", "test.class")
-    private val testEditorComponentName = ComponentName("test.package", "test.editor.class")
-    private val testInstanceId = "TEST_INSTANCE_ID"
+    private val testEditorPackageName = "test.package"
+    private val testInstanceId = WatchFaceId("TEST_INSTANCE_ID")
     private var editorDelegate = Mockito.mock(WatchFace.EditorDelegate::class.java)
     private val screenBounds = Rect(0, 0, 400, 400)
 
-    private val mockLeftCanvasComplication = Mockito.mock(CanvasComplication::class.java)
+    private val placeholderWatchState = MutableWatchState().asWatchState()
+    private val mockLeftCanvasComplication =
+        CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
     private val leftComplication =
         Complication.createRoundRectComplicationBuilder(
             LEFT_COMPLICATION_ID,
@@ -73,7 +78,8 @@ public class EditorSessionGuavaTest {
         ).setDefaultProviderType(ComplicationType.SHORT_TEXT)
             .build()
 
-    private val mockRightCanvasComplication = Mockito.mock(CanvasComplication::class.java)
+    private val mockRightCanvasComplication =
+        CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
     private val rightComplication =
         Complication.createRoundRectComplicationBuilder(
             RIGHT_COMPLICATION_ID,
@@ -93,7 +99,7 @@ public class EditorSessionGuavaTest {
     private fun createOnWatchFaceEditingTestActivity(
         userStyleSettings: List<UserStyleSetting>,
         complications: List<Complication>,
-        instanceId: String? = testInstanceId,
+        watchFaceId: WatchFaceId = testInstanceId,
         previewReferenceTimeMillis: Long = 12345
     ): ActivityScenario<OnWatchFaceEditingTestActivity> {
         val userStyleRepository = UserStyleRepository(UserStyleSchema(userStyleSettings))
@@ -101,15 +107,16 @@ public class EditorSessionGuavaTest {
 
         WatchFace.registerEditorDelegate(testComponentName, editorDelegate)
         Mockito.`when`(editorDelegate.complicationsManager).thenReturn(complicationsManager)
-        Mockito.`when`(editorDelegate.userStyleRepository).thenReturn(userStyleRepository)
+        Mockito.`when`(editorDelegate.userStyleSchema).thenReturn(userStyleRepository.schema)
+        Mockito.`when`(editorDelegate.userStyle).thenReturn(userStyleRepository.userStyle)
         Mockito.`when`(editorDelegate.screenBounds).thenReturn(screenBounds)
         Mockito.`when`(editorDelegate.previewReferenceTimeMillis)
             .thenReturn(previewReferenceTimeMillis)
 
         return ActivityScenario.launch(
-            WatchFaceEditorContractForTest().createIntent(
+            WatchFaceEditorContract().createIntent(
                 ApplicationProvider.getApplicationContext<Context>(),
-                EditorRequest(testComponentName, testEditorComponentName, instanceId, null)
+                EditorRequest(testComponentName, testEditorPackageName, null, watchFaceId)
             ).apply {
                 component = ComponentName(
                     ApplicationProvider.getApplicationContext<Context>(),

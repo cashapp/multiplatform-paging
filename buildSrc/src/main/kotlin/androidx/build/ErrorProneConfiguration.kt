@@ -92,9 +92,6 @@ private fun JavaCompile.configureWithErrorProne() {
             "-Xep:RestrictTo:OFF",
 
             // Disable the following checks.
-            "-Xep:ObjectToString:OFF",
-            "-Xep:CatchAndPrintStackTrace:OFF",
-            "-Xep:MixedMutabilityReturnType:OFF",
             "-Xep:UnescapedEntity:OFF",
             "-Xep:MissingSummary:OFF",
             "-Xep:StaticAssignmentInConstructor:OFF",
@@ -162,6 +159,9 @@ private fun JavaCompile.configureWithErrorProne() {
             "-Xep:RxReturnValueIgnored:ERROR",
             "-Xep:BadImport:ERROR",
             "-Xep:MissingCasesInEnumSwitch:ERROR",
+            "-Xep:ObjectToString:ERROR",
+            "-Xep:CatchAndPrintStackTrace:ERROR",
+            "-Xep:MixedMutabilityReturnType:ERROR",
 
             // Nullaway
             "-XepIgnoreUnknownCheckNames", // https://github.com/uber/NullAway/issues/25
@@ -182,8 +182,7 @@ private fun Project.makeErrorProneTask(
         name = ERROR_PRONE_TASK,
         onConfigure = {
             val compileTask = compileTaskProvider.get()
-            it.classpath = compileTask.classpath +
-                project.files("${project.buildDir}/classes/kotlin/main")
+            it.classpath = compileTask.classpath
 
             it.source = compileTask.source
             it.destinationDir = file(buildDir.resolve("errorProne"))

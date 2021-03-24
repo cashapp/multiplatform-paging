@@ -27,15 +27,15 @@ import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.preferredSize
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -50,7 +50,13 @@ fun AlphaAnimationSample() {
         // being updated by animation. (This method is overloaded for different parameter types.)
         // Here we use the returned [State] object as a property delegate.
         val alpha: Float by animateFloatAsState(if (visible) 1f else 0f)
-        Box(modifier = Modifier.background(Color.Red).alpha(alpha))
+
+        // Updates the alpha of a graphics layer with the float animation value. It is more
+        // performant to modify alpha in a graphics layer than using `Modifier.alpha`. The former
+        // limits the invalidation scope of alpha change to graphicsLayer's draw stage (i.e. no
+        // recomposition would be needed). The latter triggers recomposition on each animation
+        // frame.
+        Box(modifier = Modifier.graphicsLayer { this.alpha = alpha }.background(Color.Red))
     }
 }
 
@@ -80,7 +86,7 @@ fun ArbitraryValueTypeTransitionSample() {
                 convertFromVector = { MySize(it.v1.dp, it.v2.dp) }
             )
         )
-        Box(Modifier.preferredSize(animSize.width, animSize.height).background(color = Color.Red))
+        Box(Modifier.size(animSize.width, animSize.height).background(color = Color.Red))
     }
 }
 
@@ -91,7 +97,7 @@ fun DpAnimationSample() {
     fun HeightAnimation(collapsed: Boolean) {
         // Animates a height of [Dp] type to different target values based on the [collapsed] flag.
         val height: Dp by animateDpAsState(if (collapsed) 10.dp else 20.dp)
-        Box(Modifier.fillMaxWidth().height(height).background(color = Color.Red))
+        Box(Modifier.fillMaxWidth().requiredHeight(height).background(color = Color.Red))
     }
 }
 

@@ -38,13 +38,7 @@ object SemanticsProperties {
      */
     val ContentDescription = SemanticsPropertyKey<String>(
         name = "ContentDescription",
-        mergePolicy = { parentValue, childValue ->
-            if (parentValue == null) {
-                childValue
-            } else {
-                "$parentValue, $childValue"
-            }
-        }
+        mergePolicy = { parentValue, _ -> parentValue }
     )
 
     /**
@@ -70,9 +64,10 @@ object SemanticsProperties {
         }
     )
 
+    /** @see SemanticsPropertyReceiver.selectableGroup */
+    val SelectableGroup = SemanticsPropertyKey<Unit>("SelectableGroup")
+
     /**
-     * The node is marked as heading for accessibility.
-     *
      * @see SemanticsPropertyReceiver.heading
      */
     val Heading = SemanticsPropertyKey<Unit>("Heading")
@@ -81,6 +76,11 @@ object SemanticsProperties {
      * @see SemanticsPropertyReceiver.disabled
      */
     val Disabled = SemanticsPropertyKey<Unit>("Disabled")
+
+    /**
+     * @see SemanticsPropertyReceiver.liveRegion
+     */
+    val LiveRegion = SemanticsPropertyKey<LiveRegionMode>("LiveRegion")
 
     /**
      * @see SemanticsPropertyReceiver.focused
@@ -145,7 +145,7 @@ object SemanticsProperties {
      *
      * @see SemanticsPropertyReceiver.role
      */
-    val Role = SemanticsPropertyKey<Role>("Role")
+    val Role = SemanticsPropertyKey<Role>("Role") { parentValue, _ -> parentValue }
 
     /**
      * @see SemanticsPropertyReceiver.testTag
@@ -528,6 +528,24 @@ enum class Role {
 }
 
 /**
+ * The mode of live region. Live region indicates to accessibility services they should
+ * automatically notify the user about changes to the node's content description or text, or to
+ * the content descriptions or text of the node's children (where applicable).
+ */
+enum class LiveRegionMode {
+    /**
+     * Live region mode specifying that accessibility services should announce
+     * changes to this node.
+     */
+    Polite,
+    /**
+     * Live region mode specifying that accessibility services should interrupt
+     * ongoing speech to immediately announce changes to this node.
+     */
+    Assertive
+}
+
+/**
  * SemanticsPropertyReceiver is the scope provided by semantics {} blocks, letting you set
  * key/value pairs primarily via extension functions.
  */
@@ -590,9 +608,23 @@ fun SemanticsPropertyReceiver.disabled() {
 }
 
 /**
- * Whether this semantics node is focused.
+ * This node is marked as live region for accessibility. This indicates to accessibility services
+ * they should automatically notify the user about changes to the node's content description or
+ * text, or to the content descriptions or text of the node's children (where applicable). It
+ * should be used with caution, especially with assertive mode which immediately stops the
+ * current audio and the user does not hear the rest of the content. An example of proper use is
+ * a Snackbar which is marked as [LiveRegionMode.Polite].
  *
- * @See SemanticsProperties.Focused
+ * @see SemanticsProperties.LiveRegion
+ * @see LiveRegionMode
+ */
+var SemanticsPropertyReceiver.liveRegion by SemanticsProperties.LiveRegion
+
+/**
+ * Whether this semantics node is focused. The presence of this property indicates this node is
+ * focusable
+ *
+ * @see SemanticsProperties.Focused
  */
 var SemanticsPropertyReceiver.focused by SemanticsProperties.Focused
 
@@ -604,9 +636,9 @@ var SemanticsPropertyReceiver.focused by SemanticsProperties.Focused
  * but the system cannot automatically determine that.  To make the screen reader linear
  * navigation skip over this type of invisible node, this property can be set.
  *
- * If looking for a way to hide semantics of small items from screenreaders because they're
- * redundant with semantics of their parent, consider
- * [SemanticsPropertyReceiver.replaceSemantics] instead.
+ * If looking for a way to hide semantics of small items from screen readers because they're
+ * redundant with semantics of their parent, consider [SemanticsModifier.clearAndSetSemantics]
+ * instead.
  */
 @ExperimentalComposeUiApi
 fun SemanticsPropertyReceiver.invisibleToUser() {
@@ -702,6 +734,15 @@ by SemanticsProperties.ToggleableState
  */
 fun SemanticsPropertyReceiver.password() {
     this[SemanticsProperties.Password] = Unit
+}
+
+/**
+ * The node is marked as a collection of horizontally or vertically stacked selectable elements.
+ *
+ * @see SemanticsPropertyReceiver.selected
+*/
+fun SemanticsPropertyReceiver.selectableGroup() {
+    this[SemanticsProperties.SelectableGroup] = Unit
 }
 
 /**

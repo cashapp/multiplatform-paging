@@ -16,12 +16,11 @@
 
 package androidx.compose.ui.inspection.inspector
 
-import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.preferredHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
@@ -33,10 +32,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.tooling.CompositionData
-import androidx.compose.runtime.InternalComposeApi
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.InternalComposeApi
 import androidx.compose.runtime.currentComposer
+import androidx.compose.runtime.tooling.CompositionData
 import androidx.compose.runtime.tooling.LocalInspectionTables
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.R
@@ -72,6 +71,9 @@ import java.util.WeakHashMap
 import kotlin.math.roundToInt
 
 private const val DEBUG = false
+private const val ROOT_ID = 3L
+private const val MAX_RECURSIONS = 2
+private const val MAX_ITERABLE_SIZE = 5
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)
@@ -79,7 +81,7 @@ private const val DEBUG = false
 @OptIn(UiToolingDataApi::class)
 class LayoutInspectorTreeTest {
     private lateinit var density: Density
-    private lateinit var view: View
+    private lateinit var view: ViewGroup
 
     @get:Rule
     val activityScenario = ActivityScenarioRule(TestActivity::class.java)
@@ -88,7 +90,7 @@ class LayoutInspectorTreeTest {
     fun before() {
         activityScenario.scenario.onActivity {
             density = Density(it)
-            view = it.findViewById<ViewGroup>(android.R.id.content)
+            view = it.findViewById(android.R.id.content)
         }
         isDebugInspectorInfoEnabled = true
     }
@@ -116,26 +118,18 @@ class LayoutInspectorTreeTest {
 
         // TODO: Find out if we can set "settings put global debug_view_attributes 1" in tests
         view.setTag(R.id.inspection_slot_table_set, slotTableRecord.store)
-        val viewWidth = with(density) { view.width.toDp() }
-        val viewHeight = with(density) { view.height.toDp() }
         val builder = LayoutInspectorTree()
         val nodes = builder.convert(view)
         dumpNodes(nodes, builder)
 
         validate(nodes, builder, checkParameters = false) {
             node(
-                name = "Content",
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
-                children = listOf("Box")
-            )
-            node(
                 name = "Box",
                 isRenderNode = true,
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
-                children = listOf("Column")
+                children = listOf("Inspectable")
             )
+            node("Inspectable", children = listOf("CompositionLocalProvider"))
+            node("CompositionLocalProvider", children = listOf("Column"))
             node(
                 name = "Column",
                 fileName = "LayoutInspectorTreeTest.kt",
@@ -196,31 +190,31 @@ class LayoutInspectorTreeTest {
 
         // TODO: Find out if we can set "settings put global debug_view_attributes 1" in tests
         view.setTag(R.id.inspection_slot_table_set, slotTableRecord.store)
-        val viewWidth = with(density) { view.width.toDp() }
-        val viewHeight = with(density) { view.height.toDp() }
         val builder = LayoutInspectorTree()
         val nodes = builder.convert(view)
         dumpNodes(nodes, builder)
 
         validate(nodes, builder, checkParameters = false) {
             node(
-                name = "Content",
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
-                children = listOf("Box")
-            )
-            node(
                 name = "Box",
                 isRenderNode = true,
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
+                children = listOf("Inspectable")
+            )
+            node(
+                name = "Inspectable",
+                hasTransformations = true,
+                children = listOf("CompositionLocalProvider")
+            )
+            node(
+                name = "CompositionLocalProvider",
+                hasTransformations = true,
                 children = listOf("MaterialTheme")
             )
             node(
                 name = "MaterialTheme",
                 hasTransformations = true,
                 fileName = "LayoutInspectorTreeTest.kt",
-                left = 68.0.dp, top = 49.7.dp, width = 88.5.dp, height = 21.7.dp,
+                left = 68.0.dp, top = 49.7.dp, width = 88.6.dp, height = 21.7.dp,
                 children = listOf("Text")
             )
             node(
@@ -228,7 +222,7 @@ class LayoutInspectorTreeTest {
                 isRenderNode = true,
                 hasTransformations = true,
                 fileName = "LayoutInspectorTreeTest.kt",
-                left = 68.0.dp, top = 49.7.dp, width = 88.5.dp, height = 21.7.dp,
+                left = 68.0.dp, top = 49.7.dp, width = 88.6.dp, height = 21.7.dp,
             )
         }
     }
@@ -333,7 +327,7 @@ class LayoutInspectorTreeTest {
             Inspectable(slotTableRecord) {
                 Column {
                     Text(text = "Hello World", color = Color.Green)
-                    Spacer(Modifier.preferredHeight(16.dp))
+                    Spacer(Modifier.height(16.dp))
                     Image(Icons.Filled.Call, null)
                 }
             }
@@ -402,7 +396,11 @@ class LayoutInspectorTreeTest {
         checkParameters: Boolean,
         block: TreeValidationReceiver.() -> Unit = {}
     ) {
-        val nodes = result.flatMap { flatten(it) }.iterator()
+        val nodes = result.flatMap { flatten(it) }.listIterator()
+        // Ignore a starting CompositionLocalProvider...
+        if (nodes.next().name != "CompositionLocalProvider") {
+            nodes.previous()
+        }
         val tree = TreeValidationReceiver(nodes, density, checkParameters, builder)
         tree.block()
     }
@@ -443,9 +441,9 @@ class LayoutInspectorTreeTest {
                 assertWithMessage(message).that(node.id).isLessThan(0L)
             }
             if (hasTransformations) {
-                assertWithMessage(message).that(node.bounds).isNotEmpty()
+                assertWithMessage(message).that(node.bounds).isNotNull()
             } else {
-                assertWithMessage(message).that(node.bounds).isEmpty()
+                assertWithMessage(message).that(node.bounds).isNull()
             }
             if (left != Dp.Unspecified) {
                 with(density) {
@@ -461,14 +459,11 @@ class LayoutInspectorTreeTest {
             }
 
             if (checkParameters) {
-                val params = builder.convertParameters(node)
+                val params =
+                    builder.convertParameters(ROOT_ID, node, MAX_RECURSIONS, MAX_ITERABLE_SIZE)
                 val receiver = ParameterValidationReceiver(params.listIterator())
                 receiver.block()
-                if (receiver.parameterIterator.hasNext()) {
-                    val elementNames = mutableListOf<String>()
-                    receiver.parameterIterator.forEachRemaining { elementNames.add(it.name) }
-                    error("$name: has more parameters like: ${elementNames.joinToString()}")
-                }
+                receiver.checkFinished(name)
             }
         }
     }
@@ -531,7 +526,10 @@ class LayoutInspectorTreeTest {
         println()
         print(")")
         if (generateParameters && node.parameters.isNotEmpty()) {
-            generateParameters(builder.convertParameters(node), 0)
+            generateParameters(
+                builder.convertParameters(ROOT_ID, node, MAX_RECURSIONS, MAX_ITERABLE_SIZE),
+                0
+            )
         }
         println()
         node.children.forEach { generateValidate(it, builder) }

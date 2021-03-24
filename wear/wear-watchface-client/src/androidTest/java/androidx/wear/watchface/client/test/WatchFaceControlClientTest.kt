@@ -24,6 +24,7 @@ import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.service.wallpaper.WallpaperService
+import android.view.Surface
 import android.view.SurfaceHolder
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -31,9 +32,9 @@ import androidx.test.filters.MediumTest
 import androidx.test.screenshot.AndroidXScreenshotTestRule
 import androidx.test.screenshot.assertAgainstGolden
 import androidx.wear.complications.SystemProviders
-import androidx.wear.complications.data.ComplicationText
 import androidx.wear.complications.data.ComplicationType
 import androidx.wear.complications.data.LongTextComplicationData
+import androidx.wear.complications.data.PlainComplicationText
 import androidx.wear.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.DrawMode
 import androidx.wear.watchface.LayerMode
@@ -88,6 +89,8 @@ class WatchFaceControlClientTest {
 
     @Mock
     private lateinit var surfaceHolder: SurfaceHolder
+    @Mock
+    private lateinit var surface: Surface
     private lateinit var engine: WallpaperService.Engine
     private val handler = Handler(Looper.getMainLooper())
     private val engineLatch = CountDownLatch(1)
@@ -100,6 +103,7 @@ class WatchFaceControlClientTest {
 
         Mockito.`when`(surfaceHolder.surfaceFrame)
             .thenReturn(Rect(0, 0, 400, 400))
+        Mockito.`when`(surfaceHolder.surface).thenReturn(surface)
     }
 
     @After
@@ -129,18 +133,24 @@ class WatchFaceControlClientTest {
 
     private val complications = mapOf(
         EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID to
-            ShortTextComplicationData.Builder(ComplicationText.plain("ID"))
-                .setTitle(ComplicationText.plain("Left"))
+            ShortTextComplicationData.Builder(PlainComplicationText.Builder("ID").build())
+                .setTitle(PlainComplicationText.Builder("Left").build())
                 .build(),
         EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID to
-            ShortTextComplicationData.Builder(ComplicationText.plain("ID"))
-                .setTitle(ComplicationText.plain("Right"))
+            ShortTextComplicationData.Builder(PlainComplicationText.Builder("ID").build())
+                .setTitle(PlainComplicationText.Builder("Right").build())
                 .build()
     )
 
     private fun createEngine() {
         handler.post {
             engine = wallpaperService.onCreateEngine()
+            engine.onSurfaceChanged(
+                surfaceHolder,
+                0,
+                surfaceHolder.surfaceFrame.width(),
+                surfaceHolder.surfaceFrame.height()
+            )
             engineLatch.countDown()
         }
         engineLatch.await(CONNECT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
@@ -162,14 +172,13 @@ class WatchFaceControlClientTest {
             400,
             400
         )!!
-        val bitmap = headlessInstance.takeWatchFaceScreenshot(
+        val bitmap = headlessInstance.renderWatchFaceToBitmap(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 RenderParameters.DRAW_ALL_LAYERS,
                 null,
                 Color.RED
             ),
-            100,
             1234567,
             null,
             complications
@@ -196,7 +205,7 @@ class WatchFaceControlClientTest {
             400,
             400
         )!!
-        val bitmap = headlessInstance.takeWatchFaceScreenshot(
+        val bitmap = headlessInstance.renderWatchFaceToBitmap(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 mapOf(
@@ -207,7 +216,6 @@ class WatchFaceControlClientTest {
                 null,
                 Color.YELLOW
             ),
-            100,
             1234567,
             null,
             complications
@@ -227,9 +235,9 @@ class WatchFaceControlClientTest {
             400
         )!!
 
-        assertThat(headlessInstance.complicationState.size).isEqualTo(2)
+        assertThat(headlessInstance.complicationsState.size).isEqualTo(2)
 
-        val leftComplicationDetails = headlessInstance.complicationState[
+        val leftComplicationDetails = headlessInstance.complicationsState[
             EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID
         ]!!
         assertThat(leftComplicationDetails.bounds).isEqualTo(Rect(80, 160, 160, 240))
@@ -249,7 +257,7 @@ class WatchFaceControlClientTest {
         )
         assertTrue(leftComplicationDetails.isEnabled)
 
-        val rightComplicationDetails = headlessInstance.complicationState[
+        val rightComplicationDetails = headlessInstance.complicationsState[
             EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID
         ]!!
         assertThat(rightComplicationDetails.bounds).isEqualTo(Rect(240, 160, 320, 240))
@@ -319,14 +327,13 @@ class WatchFaceControlClientTest {
                 }
             }
 
-        val bitmap = interactiveInstance.takeWatchFaceScreenshot(
+        val bitmap = interactiveInstance.renderWatchFaceToBitmap(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 RenderParameters.DRAW_ALL_LAYERS,
                 null,
                 Color.RED
             ),
-            100,
             1234567,
             null,
             complications
@@ -365,14 +372,13 @@ class WatchFaceControlClientTest {
                 }
             }
 
-        val bitmap = interactiveInstance.takeWatchFaceScreenshot(
+        val bitmap = interactiveInstance.renderWatchFaceToBitmap(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 RenderParameters.DRAW_ALL_LAYERS,
                 null,
                 Color.RED
             ),
-            100,
             1234567,
             null,
             complications
@@ -409,15 +415,19 @@ class WatchFaceControlClientTest {
         interactiveInstance.updateComplicationData(
             mapOf(
                 EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID to
-                    ShortTextComplicationData.Builder(ComplicationText.plain("Test")).build(),
+                    ShortTextComplicationData.Builder(
+                        PlainComplicationText.Builder("Test").build()
+                    ).build(),
                 EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID to
-                    LongTextComplicationData.Builder(ComplicationText.plain("Test")).build()
+                    LongTextComplicationData.Builder(
+                        PlainComplicationText.Builder("Test").build()
+                    ).build()
             )
         )
 
-        assertThat(interactiveInstance.complicationState.size).isEqualTo(2)
+        assertThat(interactiveInstance.complicationsState.size).isEqualTo(2)
 
-        val leftComplicationDetails = interactiveInstance.complicationState[
+        val leftComplicationDetails = interactiveInstance.complicationsState[
             EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID
         ]!!
         assertThat(leftComplicationDetails.bounds).isEqualTo(Rect(80, 160, 160, 240))
@@ -440,7 +450,7 @@ class WatchFaceControlClientTest {
             ComplicationType.SHORT_TEXT
         )
 
-        val rightComplicationDetails = interactiveInstance.complicationState[
+        val rightComplicationDetails = interactiveInstance.complicationsState[
             EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID
         ]!!
         assertThat(rightComplicationDetails.bounds).isEqualTo(Rect(240, 160, 320, 240))
@@ -537,7 +547,15 @@ class WatchFaceControlClientTest {
         assertFalse(deferredExistingInstance.isCompleted)
 
         // We don't want to leave a pending request or it'll mess up subsequent tests.
-        handler.post { engine = wallpaperService.onCreateEngine() }
+        handler.post {
+            engine = wallpaperService.onCreateEngine()
+            engine.onSurfaceChanged(
+                surfaceHolder,
+                0,
+                surfaceHolder.surfaceFrame.width(),
+                surfaceHolder.surfaceFrame.height()
+            )
+        }
         runBlocking {
             withTimeout(CONNECT_TIMEOUT_MILLIS) {
                 deferredExistingInstance.await()
@@ -585,10 +603,12 @@ class WatchFaceControlClientTest {
         assertThat(contentDescriptionLabels[2].bounds).isEqualTo(Rect(240, 160, 320, 240))
         assertThat(contentDescriptionLabels[2].getTextAt(context.resources, 0))
             .isEqualTo("ID Right")
+
+        sysUiInterface.close()
     }
 
     @Test
-    fun setUserStyle() {
+    fun updateInstance() {
         val deferredInteractiveInstance =
             service.getOrCreateWallpaperServiceBackedInteractiveWatchFaceWcsClientAsync(
                 "testId",
@@ -613,23 +633,42 @@ class WatchFaceControlClientTest {
             }
         }
 
+        assertThat(interactiveInstance.instanceId).isEqualTo("testId")
+
         // Note this map doesn't include all the categories, which is fine the others will be set
         // to their defaults.
-        interactiveInstance.setUserStyle(
+        interactiveInstance.updateWatchFaceInstance(
+            "testId2",
             mapOf(
                 COLOR_STYLE_SETTING to BLUE_STYLE,
                 WATCH_HAND_LENGTH_STYLE_SETTING to "0.9",
             )
         )
 
-        val bitmap = interactiveInstance.takeWatchFaceScreenshot(
+        assertThat(interactiveInstance.instanceId).isEqualTo("testId2")
+
+        // The complications should have been cleared.
+        val leftComplication =
+            interactiveInstance.complicationsState[EXAMPLE_CANVAS_WATCHFACE_LEFT_COMPLICATION_ID]!!
+        val rightComplication =
+            interactiveInstance.complicationsState[EXAMPLE_CANVAS_WATCHFACE_RIGHT_COMPLICATION_ID]!!
+        assertThat(leftComplication.currentType).isEqualTo(ComplicationType.NO_DATA)
+        assertThat(rightComplication.currentType).isEqualTo(ComplicationType.NO_DATA)
+
+        // It should be possible to create a SysUI instance with the updated id.
+        val sysUiInterface =
+            service.getInteractiveWatchFaceSysUiClientInstance("testId2")
+        assertThat(sysUiInterface).isNotNull()
+        sysUiInterface?.close()
+
+        interactiveInstance.updateComplicationData(complications)
+        val bitmap = interactiveInstance.renderWatchFaceToBitmap(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 RenderParameters.DRAW_ALL_LAYERS,
                 null,
                 Color.RED
             ),
-            100,
             1234567,
             null,
             complications

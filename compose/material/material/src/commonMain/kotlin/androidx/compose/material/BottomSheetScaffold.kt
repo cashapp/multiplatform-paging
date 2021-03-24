@@ -16,9 +16,8 @@
 
 package androidx.compose.material
 
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.AnimationEndReason
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -26,7 +25,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -38,10 +37,9 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.gesture.nestedscroll.nestedScroll
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +48,7 @@ import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -101,19 +100,21 @@ class BottomSheetState(
 
     /**
      * Expand the bottom sheet with animation and suspend until it if fully expanded or animation
-     * has been cancelled.
+     * has been cancelled. This method will throw [CancellationException] if the animation is
+     * interrupted
      *
      * @return the reason the expand animation ended
      */
-    suspend fun expand(): AnimationEndReason = animateTo(BottomSheetValue.Expanded)
+    suspend fun expand() = animateTo(BottomSheetValue.Expanded)
 
     /**
      * Collapse the bottom sheet with animation and suspend until it if fully collapsed or animation
-     * has been cancelled.
+     * has been cancelled. This method will throw [CancellationException] if the animation is
+     * interrupted
      *
      * @return the reason the collapse animation ended
      */
-    suspend fun collapse(): AnimationEndReason = animateTo(BottomSheetValue.Collapsed)
+    suspend fun collapse() = animateTo(BottomSheetValue.Collapsed)
 
     companion object {
         /**
@@ -249,7 +250,6 @@ fun rememberBottomSheetScaffoldState(
  */
 @Composable
 @ExperimentalMaterialApi
-@OptIn(ExperimentalAnimationApi::class)
 fun BottomSheetScaffold(
     sheetContent: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier,
@@ -294,15 +294,17 @@ fun BottomSheetScaffold(
                 resistance = null
             )
             .semantics {
-                if (scaffoldState.bottomSheetState.isCollapsed) {
-                    expand {
-                        scope.launch { scaffoldState.bottomSheetState.expand() }
-                        true
-                    }
-                } else {
-                    collapse {
-                        scope.launch { scaffoldState.bottomSheetState.collapse() }
-                        true
+                if (peekHeightPx != bottomSheetHeight) {
+                    if (scaffoldState.bottomSheetState.isCollapsed) {
+                        expand {
+                            scope.launch { scaffoldState.bottomSheetState.expand() }
+                            true
+                        }
+                    } else {
+                        collapse {
+                            scope.launch { scaffoldState.bottomSheetState.collapse() }
+                            true
+                        }
                     }
                 }
             }
@@ -324,7 +326,7 @@ fun BottomSheetScaffold(
                     Surface(
                         swipeable
                             .fillMaxWidth()
-                            .heightIn(min = sheetPeekHeight)
+                            .requiredHeightIn(min = sheetPeekHeight)
                             .onGloballyPositioned {
                                 bottomSheetHeight = it.size.height.toFloat()
                             },

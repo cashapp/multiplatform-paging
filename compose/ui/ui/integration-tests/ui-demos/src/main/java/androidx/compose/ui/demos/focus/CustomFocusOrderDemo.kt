@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -65,6 +65,7 @@ fun CustomFocusOrderDemo() {
                         next = item2
                         right = item2
                         down = item3
+                        previous = item4
                     }
                 )
                 FocusableText(
@@ -73,6 +74,7 @@ fun CustomFocusOrderDemo() {
                         next = item3
                         left = item1
                         down = item4
+                        previous = item1
                     }
                 )
             }
@@ -83,6 +85,7 @@ fun CustomFocusOrderDemo() {
                         next = item4
                         right = item4
                         up = item1
+                        previous = item2
                     }
                 )
                 FocusableText(
@@ -91,6 +94,7 @@ fun CustomFocusOrderDemo() {
                         next = item1
                         left = item3
                         up = item2
+                        previous = item3
                     }
                 )
             }
@@ -109,7 +113,7 @@ private fun FocusableText(text: String, modifier: Modifier = Modifier) {
     Text(
         modifier = modifier
             .border(width = 1.dp, color = Black)
-            .width(50.dp)
+            .requiredWidth(50.dp)
             .focusRequester(focusRequester)
             .onFocusChanged { color = if (it.isFocused) Green else Black }
             .focusModifier()

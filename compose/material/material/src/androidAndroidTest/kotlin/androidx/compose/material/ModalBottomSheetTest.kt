@@ -19,14 +19,16 @@ package androidx.compose.material
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.preferredHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertTopPositionInRootIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.performGesture
@@ -38,6 +40,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,7 +70,7 @@ class ModalBottomSheetTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(sheetHeight)
+                            .height(sheetHeight)
                             .testTag(sheetTag)
                     )
                 }
@@ -89,7 +92,7 @@ class ModalBottomSheetTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(sheetHeight)
+                            .height(sheetHeight)
                             .testTag(sheetTag)
                     )
                 }
@@ -111,7 +114,7 @@ class ModalBottomSheetTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(sheetHeight)
+                            .height(sheetHeight)
                             .testTag(sheetTag)
                     )
                 }
@@ -309,7 +312,7 @@ class ModalBottomSheetTest {
     }
 
     @Test
-    fun modalBottomSheet_showAndHide_manually(): Unit = runBlocking {
+    fun modalBottomSheet_showAndHide_manually(): Unit = runBlocking(AutoTestFrameClock()) {
         lateinit var sheetState: ModalBottomSheetState
         rule.setMaterialContent {
             sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
@@ -320,7 +323,7 @@ class ModalBottomSheetTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(sheetHeight)
+                            .height(sheetHeight)
                             .testTag(sheetTag)
                     )
                 }
@@ -348,7 +351,9 @@ class ModalBottomSheetTest {
     }
 
     @Test
-    fun modalBottomSheet_showAndHide_manually_tallBottomSheet(): Unit = runBlocking {
+    fun modalBottomSheet_showAndHide_manually_tallBottomSheet(): Unit = runBlocking(
+        AutoTestFrameClock()
+    ) {
         lateinit var sheetState: ModalBottomSheetState
         rule.setMaterialContent {
             sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
@@ -397,7 +402,7 @@ class ModalBottomSheetTest {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .preferredHeight(sheetHeight)
+                            .height(sheetHeight)
                             .testTag(sheetTag)
                     )
                 }
@@ -480,5 +485,35 @@ class ModalBottomSheetTest {
         rule.runOnIdle {
             assertThat(sheetState.currentValue).isEqualTo(ModalBottomSheetValue.Expanded)
         }
+    }
+
+    @Test
+    fun modalBottomSheet_scrimNode_reportToSemanticsWhenShow_tallBottomSheet() {
+        val topTag = "ModalBottomSheetLayout"
+        rule.setMaterialContent {
+            ModalBottomSheetLayout(
+                modifier = Modifier.testTag(topTag),
+                sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.HalfExpanded),
+                content = { Box(Modifier.fillMaxSize().testTag("content")) },
+                sheetContent = { Box(Modifier.fillMaxSize().testTag(sheetTag)) }
+            )
+        }
+
+        val height = rule.rootHeight()
+        rule.onNodeWithTag(sheetTag)
+            .assertTopPositionInRootIsEqualTo(height / 2)
+        var topNode = rule.onNodeWithTag(topTag).fetchSemanticsNode()
+        assertEquals(3, topNode.children.size)
+        rule.onNodeWithTag(topTag)
+            .onChildAt(1)
+            .assertHasClickAction()
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        advanceClock()
+
+        rule.onNodeWithTag(sheetTag)
+            .assertTopPositionInRootIsEqualTo(height)
+        topNode = rule.onNodeWithTag(topTag).fetchSemanticsNode()
+        assertEquals(2, topNode.children.size)
     }
 }

@@ -31,14 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.text.InternalTextApi
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
 import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth.assertThat
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -50,7 +48,6 @@ import java.util.concurrent.TimeUnit
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalTextApi::class)
 class SelectionHandlesTest {
     @Suppress("DEPRECATION")
     @get:Rule
@@ -66,12 +63,12 @@ class SelectionHandlesTest {
         start = Selection.AnchorInfo(
             direction = ResolvedTextDirection.Ltr,
             offset = 0,
-            selectable = mock()
+            selectableId = 0
         ),
         end = Selection.AnchorInfo(
             direction = ResolvedTextDirection.Ltr,
             offset = 0,
-            selectable = mock()
+            selectableId = 0
         ),
         handlesCrossed = false
     )
@@ -79,12 +76,12 @@ class SelectionHandlesTest {
         start = Selection.AnchorInfo(
             direction = ResolvedTextDirection.Ltr,
             offset = 0,
-            selectable = mock()
+            selectableId = 0
         ),
         end = Selection.AnchorInfo(
             direction = ResolvedTextDirection.Ltr,
             offset = 0,
-            selectable = mock()
+            selectableId = 0
         ),
         handlesCrossed = true
     )

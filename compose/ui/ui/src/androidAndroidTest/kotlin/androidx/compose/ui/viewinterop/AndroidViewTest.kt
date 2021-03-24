@@ -20,6 +20,7 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.LayoutInflater
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -29,11 +30,14 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.testutils.assertPixels
 import androidx.compose.ui.Modifier
@@ -205,7 +209,7 @@ class AndroidViewTest {
         rule.setContent {
             AndroidView(
                 { LayoutInflater.from(it).inflate(R.layout.test_layout, null) },
-                Modifier.size(size)
+                Modifier.requiredSize(size)
             )
         }
         Espresso
@@ -227,7 +231,7 @@ class AndroidViewTest {
             frameLayout = FrameLayout(activity)
         }
         rule.setContent {
-            AndroidView({ frameLayout }, Modifier.size(size))
+            AndroidView({ frameLayout }, Modifier.requiredSize(size))
         }
 
         Espresso
@@ -267,7 +271,7 @@ class AndroidViewTest {
         rule.setContent {
             AndroidView(
                 { LayoutInflater.from(it).inflate(R.layout.test_layout, null) },
-                Modifier.size(size.value)
+                Modifier.requiredSize(size.value)
             )
         }
         Espresso
@@ -337,7 +341,7 @@ class AndroidViewTest {
             CompositionLocalProvider(LocalDensity provides density) {
                 AndroidView(
                     { FrameLayout(it) },
-                    Modifier.size(size).onGloballyPositioned {
+                    Modifier.requiredSize(size).onGloballyPositioned {
                         assertThat(it.size).isEqualTo(IntSize(sizeIpx, sizeIpx))
                     }
                 )
@@ -373,7 +377,7 @@ class AndroidViewTest {
         rule.setContent {
             CompositionLocalProvider(ambient provides "setByParent") {
                 AndroidView(
-                    viewBlock = {
+                    factory = {
                         ComposeView(it).apply {
                             setContent {
                                 childComposedAmbientValue = ambient.current
@@ -395,7 +399,7 @@ class AndroidViewTest {
         rule.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 AndroidView(
-                    viewBlock = {
+                    factory = {
                         FrameLayout(it).apply {
                             addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                                 childViewLayoutDirection = layoutDirection
@@ -423,6 +427,57 @@ class AndroidViewTest {
         rule.runOnIdle {
             assertThat(childViewLayoutDirection).isEqualTo(android.util.LayoutDirection.RTL)
             assertThat(childCompositionLayoutDirection).isEqualTo(LayoutDirection.Ltr)
+        }
+    }
+
+    @Test
+    fun androidView_runsFactoryExactlyOnce_afterFirstComposition() {
+        var factoryRunCount = 0
+        rule.setContent {
+            val view = remember { View(rule.activity) }
+            AndroidView({ ++factoryRunCount; view })
+        }
+        rule.runOnIdle {
+            assertThat(factoryRunCount).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun androidView_runsFactoryExactlyOnce_evenWhenFactoryIsChanged() {
+        var factoryRunCount = 0
+        var first by mutableStateOf(true)
+        rule.setContent {
+            val view = remember { View(rule.activity) }
+            AndroidView(
+                if (first) {
+                    { ++factoryRunCount; view }
+                } else {
+                    { ++factoryRunCount; view }
+                }
+            )
+        }
+        rule.runOnIdle {
+            assertThat(factoryRunCount).isEqualTo(1)
+            first = false
+        }
+        rule.runOnIdle {
+            assertThat(factoryRunCount).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun androidView_clipsToBounds() {
+        val size = 20
+        val sizeDp = with(rule.density) { size.toDp() }
+        rule.setContent {
+            Column {
+                Box(Modifier.size(sizeDp).background(Color.Blue).testTag("box"))
+                AndroidView(factory = { SurfaceView(it) })
+            }
+        }
+
+        rule.onNodeWithTag("box").captureToImage().assertPixels(IntSize(size, size)) {
+            Color.Blue
         }
     }
 

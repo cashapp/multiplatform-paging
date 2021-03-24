@@ -16,11 +16,16 @@
 
 package androidx.compose.foundation.lazy
 
-import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -143,21 +148,23 @@ private class IntervalContent(
     val content: LazyItemScope.(index: Int) -> @Composable() () -> Unit
 )
 
-private class LazyListScopeImpl : LazyListScope {
+private class LazyListScopeImpl : LazyListScope, LazyListItemsProvider {
     private val intervals = IntervalList<IntervalContent>()
-    val totalSize get() = intervals.totalSize
-    var headersIndexes: MutableList<Int>? = null
-        private set
+    override val itemsCount get() = intervals.totalSize
+    private var _headerIndexes: MutableList<Int>? = null
+    override val headerIndexes: List<Int> get() = _headerIndexes ?: emptyList()
 
-    fun contentFor(index: Int, scope: LazyItemScope): ItemContent {
+    override fun getKey(index: Int): Any {
         val interval = intervals.intervalForIndex(index)
         val localIntervalIndex = index - interval.startIndex
         val key = interval.content.key?.invoke(localIntervalIndex)
+        return key ?: getDefaultLazyKeyFor(index)
+    }
 
-        return ItemContent(
-            key = key ?: "[DefaultKeyForIndex=$index]",
-            content = interval.content.content.invoke(scope, localIntervalIndex)
-        )
+    override fun getContent(index: Int, scope: LazyItemScope): @Composable () -> Unit {
+        val interval = intervals.intervalForIndex(index)
+        val localIntervalIndex = index - interval.startIndex
+        return interval.content.content.invoke(scope, localIntervalIndex)
     }
 
     override fun items(
@@ -186,14 +193,22 @@ private class LazyListScopeImpl : LazyListScope {
 
     @ExperimentalFoundationApi
     override fun stickyHeader(key: Any?, content: @Composable LazyItemScope.() -> Unit) {
-        val headersIndexes = headersIndexes ?: mutableListOf<Int>().also {
-            headersIndexes = it
+        val headersIndexes = _headerIndexes ?: mutableListOf<Int>().also {
+            _headerIndexes = it
         }
-        headersIndexes.add(totalSize)
+        headersIndexes.add(itemsCount)
 
         item(key, content)
     }
 }
+
+/**
+ * This should create an object meeting following requirements:
+ * 1) objects created for the same index are equals and never equals for different indexes
+ * 2) this class is saveable via a default SaveableStateRegistry on the platform
+ * 3) this objects can't be equals to any object which could be provided by a user as a custom key
+ */
+internal expect fun getDefaultLazyKeyFor(index: Int): Any
 
 /**
  * The horizontally scrolling list that only composes and lays out the currently visible items.
@@ -216,8 +231,7 @@ private class LazyListScopeImpl : LazyListScope {
  * to add a spacing between items and specify the arrangement of the items when we have not enough
  * of them to fill the whole minimum size.
  * @param verticalAlignment the vertical alignment applied to the items
- * @param flingSpec fling animation configuration to use when drag ends with velocity. If
- * `null`, default fling configuration will be used.
+ * @param flingBehavior logic describing fling behavior.
  * @param content a block which describes the content. Inside this block you can use methods like
  * [LazyListScope.item] to add a single item or [LazyListScope.items] to add a list of items.
  */
@@ -230,26 +244,20 @@ fun LazyRow(
     horizontalArrangement: Arrangement.Horizontal =
         if (!reverseLayout) Arrangement.Start else Arrangement.End,
     verticalAlignment: Alignment.Vertical = Alignment.Top,
-    flingSpec: DecayAnimationSpec<Float>? = null,
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     content: LazyListScope.() -> Unit
 ) {
-    val scope = LazyListScopeImpl()
-    scope.apply(content)
-
     LazyList(
-        itemsCount = scope.totalSize,
+        stateOfItemsProvider = rememberStateOfItemsProvider(content),
         modifier = modifier,
         state = state,
         contentPadding = contentPadding,
         verticalAlignment = verticalAlignment,
         horizontalArrangement = horizontalArrangement,
         isVertical = false,
-        flingSpec = flingSpec,
-        reverseLayout = reverseLayout,
-        headerIndexes = scope.headersIndexes ?: emptyList()
-    ) { index ->
-        scope.contentFor(index, this)
-    }
+        flingBehavior = flingBehavior,
+        reverseLayout = reverseLayout
+    )
 }
 
 /**
@@ -273,8 +281,7 @@ fun LazyRow(
  * to add a spacing between items and specify the arrangement of the items when we have not enough
  * of them to fill the whole minimum size.
  * @param horizontalAlignment the horizontal alignment applied to the items.
- * @param flingSpec fling animation configuration to use when drag ends with velocity. If
- * `null`, default fling configuration will be used.
+ * @param flingBehavior logic describing fling behavior.
  * @param content a block which describes the content. Inside this block you can use methods like
  * [LazyListScope.item] to add a single item or [LazyListScope.items] to add a list of items.
  */
@@ -287,24 +294,28 @@ fun LazyColumn(
     verticalArrangement: Arrangement.Vertical =
         if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    flingSpec: DecayAnimationSpec<Float>? = null,
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
     content: LazyListScope.() -> Unit
 ) {
-    val scope = LazyListScopeImpl()
-    scope.apply(content)
-
     LazyList(
-        itemsCount = scope.totalSize,
+        stateOfItemsProvider = rememberStateOfItemsProvider(content),
         modifier = modifier,
         state = state,
         contentPadding = contentPadding,
+        flingBehavior = flingBehavior,
         horizontalAlignment = horizontalAlignment,
         verticalArrangement = verticalArrangement,
         isVertical = true,
-        flingSpec = flingSpec,
-        reverseLayout = reverseLayout,
-        headerIndexes = scope.headersIndexes ?: emptyList()
-    ) { index ->
-        scope.contentFor(index, this)
+        reverseLayout = reverseLayout
+    )
+}
+
+@Composable
+private fun rememberStateOfItemsProvider(
+    content: LazyListScope.() -> Unit
+): State<LazyListItemsProvider> {
+    val latestContent = rememberUpdatedState(content)
+    return remember {
+        derivedStateOf { LazyListScopeImpl().apply(latestContent.value) }
     }
 }

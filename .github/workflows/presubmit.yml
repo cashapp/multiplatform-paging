@@ -41,32 +41,52 @@ jobs:
           echo "ANDROID_SDK_ROOT=$HOME/Library/Android/sdk" >> $GITHUB_ENV
           echo "DIST_DIR=$HOME/dist" >> $GITHUB_ENV
 
+      - name: "Compute actions/checkout arguments"
+        id: checkout-args
+        run: |
+          set -x
+
+          REF=${{ github.event.pull_request.head.ref }}
+          if [ -z "$REF" ]; then
+            REF=${{ github.event.ref }}
+          fi
+          echo "::set-output name=ref::$REF"
+
+          REPOSITORY=${{ github.event.pull_request.head.repo.full_name }}
+          if [ -z "$REPOSITORY" ]; then
+            REPOSITORY=${{ github.repository }}
+          fi
+          echo "::set-output name=repository::$REPOSITORY"
+
       - name: "Checkout androidx repo"
         uses: actions/checkout@v2
         with:
-          fetch-depth: 1
+          ref: ${{ steps.checkout-args.outputs.ref }}
+          repository: ${{ steps.checkout-args.outputs.repository }}
+          fetch-depth: 0 # Need full depth for changed-files-action
 
       - name: "Get changed files in push or pull_request"
         id: changed-files
         # Temporary workaround for failing on force-push
         continue-on-error: true
-        uses: jitterbit/get-changed-files@v1
+        uses: androidx/changed-files-action@main
 
       - name: Check invalid suppressions
         run: |
           set -x
-          ./development/checkInvalidSuppress.py -f ${{ steps.changed-files.outputs.added_modified }}
+          echo ${{ steps.changed-files.outputs.files }}
+          ./development/checkInvalidSuppress.py -f ${{ steps.changed-files.outputs.files }}
 
       - name: "Warn on missing updateApi"
         run: |
           set -x
-          ./development/apilint.py -f ${{ steps.changed-files.outputs.added_modified }}
+          ./development/apilint.py -f ${{ steps.changed-files.outputs.files }}
 
       - name: "Parse changed-files as ktlint args"
         id: ktlint-file-args
         run: |
           set -x
-          KTLINT_FILES=`echo "${{ steps.changed-files.outputs.added_modified }}" | sed 's|[^ ]* *|--file=${{ github.workspace }}/&|g'`
+          KTLINT_FILES=`echo "${{ steps.changed-files.outputs.files }}" | sed 's|[^ ]* *|--file=${{ github.workspace }}/&|g' | grep -v "*.txt"`
           echo "::set-output name=ktlint-file-args::$KTLINT_FILES"
 
       - name: "ktlint"
@@ -74,10 +94,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: -q :ktlintCheckFile ${{ steps.ktlint-file-args.outputs.ktlint-file-args }}
+          arguments: -q :ktlintCheckFile ${{ steps.ktlint-file-args.outputs.ktlint-file-args }} --stacktrace
           build-root-directory: activity
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: activity/gradlew
           wrapper-directory: activity/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Report job status"
         id: output-status
@@ -120,10 +143,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -174,10 +200,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -228,10 +257,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -282,10 +314,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -336,10 +371,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -390,10 +428,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -444,10 +485,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true
@@ -498,10 +542,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
 
       - name: "upload build artifacts"
@@ -553,10 +600,13 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         with:
-          arguments: buildOnServer
+          arguments: buildOnServer --stacktrace
           build-root-directory: ${{ env.project-root }}
+          configuration-cache-enabled: true
+          dependencies-cache-enabled: true
           gradle-executable: ${{ env.project-root }}/gradlew
           wrapper-directory: ${{ env.project-root }}/gradle/wrapper
+          wrapper-cache-enabled: true
 
       - name: "Upload build artifacts"
         continue-on-error: true

@@ -17,7 +17,8 @@
 package androidx.lifecycle.viewmodel.compose
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.ViewModelStoreOwner
@@ -31,18 +32,21 @@ public object LocalViewModelStoreOwner {
         compositionLocalOf<ViewModelStoreOwner?> { null }
 
     /**
-     * Returns current composition local value for the owner.
+     * Returns current composition local value for the owner or `null` if one has not
+     * been provided nor is one available via [ViewTreeViewModelStoreOwner.get] on the
+     * current [LocalView].
      */
-    public val current: ViewModelStoreOwner
+    public val current: ViewModelStoreOwner?
         @Composable
         get() = LocalViewModelStoreOwner.current
             ?: ViewTreeViewModelStoreOwner.get(LocalView.current)
-            ?: error("No ViewModelStoreOwner provided")
 
     /**
-     * Returns a [ProvidableCompositionLocal] which you can use to override the value for the
-     * subtree.
+     * Associates a [LocalViewModelStoreOwner] key to a value in a call to
+     * [CompositionLocalProvider].
      */
-    public fun asProvidableCompositionLocal():
-        ProvidableCompositionLocal<ViewModelStoreOwner?> = LocalViewModelStoreOwner
+    public infix fun provides(viewModelStoreOwner: ViewModelStoreOwner):
+        ProvidedValue<ViewModelStoreOwner?> {
+            return LocalViewModelStoreOwner.provides(viewModelStoreOwner)
+        }
 }
