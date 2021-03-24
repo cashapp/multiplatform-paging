@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-@file:OptIn(ExperimentalComposeApi::class)
-
 package androidx.compose.runtime.snapshots
 
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.Stable
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
@@ -94,7 +91,6 @@ class SnapshotStateMap<K, V> : MutableMap<K, V>, StateObject {
 
     private inline fun <R> withCurrent(block: StateMapStateRecord<K, V>.() -> R): R =
         @Suppress("UNCHECKED_CAST")
-        @OptIn(ExperimentalComposeApi::class)
         (firstStateRecord as StateMapStateRecord<K, V>).withCurrent(block)
 
     private inline fun <R> writable(block: StateMapStateRecord<K, V>.() -> R): R =
@@ -164,7 +160,7 @@ private class SnapshotMapEntrySet<K, V>(
         return removed
     }
     override fun retainAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean {
-        val entries = elements.map { it.key to it.value }.toMap()
+        val entries = elements.associate { it.key to it.value }
         return map.removeIf { !entries.containsKey(it.key) || entries[it.key] != it.value }
     }
     override fun contains(element: MutableMap.MutableEntry<K, V>): Boolean {

@@ -16,11 +16,11 @@
 
 package androidx.compose.material
 
-import androidx.compose.animation.core.AnimationEndReason
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,20 +35,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.gesture.nestedscroll.nestedScroll
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.semantics.collapse
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.expand
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -104,6 +106,8 @@ class ModalBottomSheetState(
     /**
      * Show the bottom sheet with animation and suspend until it's shown. If half expand is
      * enabled, the bottom sheet will be half expanded. Otherwise it will be fully expanded.
+     *
+     * @throws [CancellationException] if the animation is interrupted
      */
     suspend fun show() {
         val targetValue =
@@ -116,7 +120,7 @@ class ModalBottomSheetState(
      * Half expand the bottom sheet if half expand is enabled with animation and suspend until it
      * animation is complete or cancelled
      *
-     * @return the reason the half expand animation ended
+     * @throws [CancellationException] if the animation is interrupted
      */
     internal suspend fun halfExpand() {
         if (!isHalfExpandedEnabled) {
@@ -128,18 +132,18 @@ class ModalBottomSheetState(
     /**
      * Fully expand the bottom sheet with animation and suspend until it if fully expanded or
      * animation has been cancelled.
-     *
-     * @return the reason the expand animation ended
+     * *
+     * @throws [CancellationException] if the animation is interrupted
      */
-    internal suspend fun expand(): AnimationEndReason = animateTo(ModalBottomSheetValue.Expanded)
+    internal suspend fun expand() = animateTo(ModalBottomSheetValue.Expanded)
 
     /**
      * Hide the bottom sheet with animation and suspend until it if fully hidden or animation has
      * been cancelled.
      *
-     * @return the reason the hide animation ended
+     * @throws [CancellationException] if the animation is interrupted
      */
-    suspend fun hide(): AnimationEndReason = animateTo(ModalBottomSheetValue.Hidden)
+    suspend fun hide() = animateTo(ModalBottomSheetValue.Hidden)
 
     internal val nestedScrollConnection = this.PreUpPostDownNestedScrollConnection
 
@@ -310,7 +314,12 @@ private fun Scrim(
             animationSpec = TweenSpec()
         )
         val dismissModifier = if (visible) {
-            Modifier.pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
+            Modifier
+                .pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
+                .semantics(mergeDescendants = true) {
+                    contentDescription = Strings.CloseSheet
+                    onClick { onDismiss(); true }
+                }
         } else {
             Modifier
         }

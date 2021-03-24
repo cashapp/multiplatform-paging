@@ -37,8 +37,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@OptIn(UiToolingDataApi::class)
 @MediumTest
+@OptIn(UiToolingDataApi::class)
 class ComposeViewAdapterTest {
     @Suppress("DEPRECATION")
     @get:Rule
@@ -57,11 +57,31 @@ class ComposeViewAdapterTest {
      * Asserts that the given Composable method executes correct and outputs some [ViewInfo]s.
      */
     private fun assertRendersCorrectly(className: String, methodName: String): List<ViewInfo> {
+        initAndWaitForDraw(className, methodName)
+        activityTestRule.runOnUiThread {
+            assertTrue(composeViewAdapter.viewInfos.isNotEmpty())
+        }
+
+        return composeViewAdapter.viewInfos
+    }
+
+    /**
+     * Initiates the given Composable method and waits for the [ComposeViewAdapter.onDraw] callback.
+     */
+    private fun initAndWaitForDraw(
+        className: String,
+        methodName: String,
+        designInfoProvidersArgument: String? = null
+    ) {
         val committedAndDrawn = CountDownLatch(1)
         val committed = AtomicBoolean(false)
         activityTestRule.runOnUiThread {
             composeViewAdapter.init(
-                className, methodName, debugViewInfos = true,
+                className,
+                methodName,
+                debugViewInfos = true,
+                lookForDesignInfoProviders = true,
+                designInfoProvidersArgument = designInfoProvidersArgument,
                 onCommit = {
                     committed.set(true)
                 },
@@ -81,11 +101,6 @@ class ComposeViewAdapterTest {
 
         // Wait for the first draw after the Composable has been committed.
         committedAndDrawn.await()
-        activityTestRule.runOnUiThread {
-            assertTrue(composeViewAdapter.viewInfos.isNotEmpty())
-        }
-
-        return composeViewAdapter.viewInfos
     }
 
     @Test
@@ -165,7 +180,7 @@ class ComposeViewAdapterTest {
         }
     }
 
-//    @Test
+    //    @Test
     fun lineNumberLocationMapping() {
         val viewInfos = assertRendersCorrectly(
             "androidx.compose.ui.tooling.LineNumberPreviewKt",
@@ -295,6 +310,39 @@ class ComposeViewAdapterTest {
         }
         // Draw will keep happening so, eventually this will hit 0
         assertTrue(drawCountDownLatch.await(10, TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun simpleDesignInfoProviderTest() {
+        checkDesignInfoList("DesignInfoProviderA", "A", "ObjectA, x=0, y=0")
+        checkDesignInfoList("DesignInfoProviderA", "B", "Invalid, x=0, y=0")
+
+        checkDesignInfoList("DesignInfoProviderB", "A", "Invalid, x=0, y=0")
+        checkDesignInfoList("DesignInfoProviderB", "B", "ObjectB, x=0, y=0")
+    }
+
+    @Test
+    fun subcompositionDesignInfoProviderTest() {
+        checkDesignInfoList("ScaffoldDesignInfoProvider", "A", "ObjectA, x=0, y=0")
+    }
+
+    private fun checkDesignInfoList(
+        methodName: String,
+        customArgument: String,
+        expectedResult: String
+    ) {
+        initAndWaitForDraw(
+            "androidx.compose.ui.tooling.preview.DesignInfoProviderComposableKt",
+            methodName,
+            customArgument
+        )
+
+        activityTestRule.runOnUiThread {
+            assertTrue(composeViewAdapter.designInfoList.isNotEmpty())
+        }
+
+        assertEquals(1, composeViewAdapter.designInfoList.size)
+        assertEquals(expectedResult, composeViewAdapter.designInfoList[0])
     }
 
     /**

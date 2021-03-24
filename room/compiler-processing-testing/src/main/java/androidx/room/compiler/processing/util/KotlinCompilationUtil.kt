@@ -17,7 +17,10 @@
 package androidx.room.compiler.processing.util
 
 import com.tschuchort.compiletesting.KotlinCompilation
+import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
+import java.io.OutputStream
+import java.net.URLClassLoader
 
 /**
  * Helper class for Kotlin Compile Testing library to have common setup for room.
@@ -25,6 +28,7 @@ import java.io.File
 internal object KotlinCompilationUtil {
     fun prepareCompilation(
         sources: List<Source>,
+        outputStream: OutputStream,
         classpaths: List<File> = emptyList()
     ): KotlinCompilation {
         val compilation = KotlinCompilation()
@@ -40,10 +44,98 @@ internal object KotlinCompilationUtil {
         // workaround for https://github.com/tschuchortdev/kotlin-compile-testing/issues/105
         compilation.kotlincArguments += "-Xjava-source-roots=${javaSrcRoot.absolutePath}"
         compilation.jvmDefault = "enable"
-        compilation.jvmTarget = "1.8"
-        compilation.inheritClassPath = true
+        compilation.jvmTarget = JvmTarget.JVM_1_8.description
+        compilation.inheritClassPath = false
         compilation.verbose = false
-        compilation.classpaths += classpaths
+        compilation.classpaths = Classpaths.inheritedClasspath + classpaths
+        compilation.messageOutputStream = outputStream
+        compilation.kotlinStdLibJar = Classpaths.kotlinStdLibJar
+        compilation.kotlinStdLibCommonJar = Classpaths.kotlinStdLibCommonJar
+        compilation.kotlinStdLibJdkJar = Classpaths.kotlinStdLibJdkJar
+        compilation.kotlinReflectJar = Classpaths.kotlinReflectJar
+        compilation.kotlinScriptRuntimeJar = Classpaths.kotlinScriptRuntimeJar
         return compilation
+    }
+
+    /**
+     * Helper object to persist common classpaths resolved by KCT to make sure it does not
+     * re-resolve host classpath repeatedly and also runs compilation with a smaller classpath.
+     * see: https://github.com/tschuchortdev/kotlin-compile-testing/issues/113
+     */
+    private object Classpaths {
+
+        val inheritedClasspath: List<File>
+
+        /**
+         * These jars are files that Kotlin Compile Testing discovers from classpath. It uses a
+         * rather expensive way of discovering these so we cache them here for now.
+         *
+         * We can remove this cache once we update to a version that includes the fix in KCT:
+         * https://github.com/tschuchortdev/kotlin-compile-testing/pull/114
+         */
+        val kotlinStdLibJar: File?
+        val kotlinStdLibCommonJar: File?
+        val kotlinStdLibJdkJar: File?
+        val kotlinReflectJar: File?
+        val kotlinScriptRuntimeJar: File?
+
+        init {
+            // create a KotlinCompilation to resolve common jars
+            val compilation = KotlinCompilation()
+            kotlinStdLibJar = compilation.kotlinStdLibJar
+            kotlinStdLibCommonJar = compilation.kotlinStdLibCommonJar
+            kotlinStdLibJdkJar = compilation.kotlinStdLibJdkJar
+            kotlinReflectJar = compilation.kotlinReflectJar
+            kotlinScriptRuntimeJar = compilation.kotlinScriptRuntimeJar
+
+            val hostClasspaths = getClasspathFromClassloader(
+                KotlinCompilationUtil::class.java.classLoader
+            )
+            inheritedClasspath = hostClasspaths.filter {
+                // size of this classpath has a rather significant impact on kotlin compilation
+                // tests hence limit it to things we need and no more.
+                it.path.contains("room") ||
+                    it.path.contains("androidx") ||
+                    it.path.contains("junit") ||
+                    it.path.contains("android.jar")
+            }
+        }
+    }
+
+    // ported from https://github.com/google/compile-testing/blob/master/src/main/java/com
+    // /google/testing/compile/Compiler.java#L231
+    private fun getClasspathFromClassloader(referenceClassLoader: ClassLoader): List<File> {
+        val platformClassLoader: ClassLoader = ClassLoader.getPlatformClassLoader()
+        var currentClassloader = referenceClassLoader
+        val systemClassLoader = ClassLoader.getSystemClassLoader()
+
+        // Concatenate search paths from all classloaders in the hierarchy
+        // 'till the system classloader.
+        val classpaths: MutableSet<String> = LinkedHashSet()
+        while (true) {
+            if (currentClassloader === systemClassLoader) {
+                classpaths.addAll(getSystemClasspaths())
+                break
+            }
+            if (currentClassloader === platformClassLoader) {
+                break
+            }
+            check(currentClassloader is URLClassLoader) {
+                """Classpath for compilation could not be extracted
+                since $currentClassloader is not an instance of URLClassloader
+                """.trimIndent()
+            }
+            // We only know how to extract classpaths from URLClassloaders.
+            currentClassloader.urLs.forEach { url ->
+                check(url.protocol == "file") {
+                    """Given classloader consists of classpaths which are unsupported for
+                    compilation.
+                    """.trimIndent()
+                }
+                classpaths.add(url.path)
+            }
+            currentClassloader = currentClassloader.parent
+        }
+        return classpaths.map { File(it) }.filter { it.exists() }
     }
 }

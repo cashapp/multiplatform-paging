@@ -40,14 +40,17 @@ fun Project.registerShadowDependenciesTask(
     zipTask: TaskProvider<Copy>
 ): TaskProvider<ShadowJar> {
     val uberJar = registerUberJarTask(variant)
+    val versionTask = project.registerGenerateInspectionPlatformVersionTask(variant)
     return tasks.register(
         variant.taskName("shadowDependencies"),
         ShadowJar::class.java
     ) {
         it.dependsOn(uberJar)
+        it.dependsOn(versionTask)
         val fileTree = project.fileTree(zipTask.get().destinationDir)
         fileTree.include("**/*.jar", "**/*.so")
         it.from(fileTree)
+        it.from(versionTask.get().outputDir)
         it.includeEmptyDirs = false
         it.filesMatching("**/*.so") {
             if (it.path.startsWith("jni")) {
@@ -55,6 +58,7 @@ fun Project.registerShadowDependenciesTask(
             }
         }
         it.transform(RenameServicesTransformer::class.java)
+        it.from(versionTask.get().outputDir)
         it.destinationDirectory.set(taskWorkingDir(variant, "shadowedJar"))
         it.archiveBaseName.set("${project.name}-shadowed")
         it.dependsOn(zipTask)
@@ -99,6 +103,10 @@ private fun Iterable<File>.extractPackageNames(): Set<String> = map(::JarFile)
 
 /**
  * Transformer that renames services included in META-INF.
+ *
+ * kotlin-reflect has two META-INF/services in it. Interfaces of these services and theirs
+ * implementations live in the kotlin-reflect itself. This transformer renames files that
+ * live in meta-inf directory and their contents respecting the rules supplied into shadowJar.
  */
 class RenameServicesTransformer : Transformer {
     val renamed = mutableMapOf<String, String>()

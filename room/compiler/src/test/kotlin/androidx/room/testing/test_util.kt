@@ -20,6 +20,8 @@ import androidx.room.compiler.processing.XElement
 import androidx.room.compiler.processing.XFieldElement
 import androidx.room.compiler.processing.XType
 import androidx.room.compiler.processing.util.Source
+import androidx.room.compiler.processing.util.XTestInvocation
+import androidx.room.compiler.processing.util.getSystemClasspathFiles
 import androidx.room.ext.GuavaUtilConcurrentTypeNames
 import androidx.room.ext.KotlinTypeNames
 import androidx.room.ext.LifecyclesTypeNames
@@ -35,6 +37,7 @@ import androidx.room.processor.TableEntityProcessor
 import androidx.room.solver.CodeGenScope
 import androidx.room.testing.TestInvocation
 import androidx.room.testing.TestProcessor
+import androidx.room.testing.context
 import androidx.room.verifier.DatabaseVerifier
 import androidx.room.writer.ClassWriter
 import com.google.common.io.Files
@@ -255,6 +258,11 @@ fun loadJavaCode(fileName: String, qName: String): JavaFileObject {
     return JavaFileObjects.forSourceString(qName, contents)
 }
 
+fun loadTestSource(fileName: String, qName: String): Source {
+    val contents = File("src/test/data/$fileName")
+    return Source.load(contents, qName, fileName)
+}
+
 fun createVerifierFromEntitiesAndViews(invocation: TestInvocation): DatabaseVerifier {
     return DatabaseVerifier.create(
         invocation.context, mock(XElement::class.java),
@@ -262,14 +270,34 @@ fun createVerifierFromEntitiesAndViews(invocation: TestInvocation): DatabaseVeri
     )!!
 }
 
+fun createVerifierFromEntitiesAndViews(invocation: XTestInvocation): DatabaseVerifier {
+    return DatabaseVerifier.create(
+        invocation.context, mock(XElement::class.java),
+        invocation.getEntities(), invocation.getViews()
+    )!!
+}
+
+fun XTestInvocation.getViews(): List<androidx.room.vo.DatabaseView> {
+    return roundEnv.getTypeElementsAnnotatedWith(DatabaseView::class.qualifiedName!!).map {
+        DatabaseViewProcessor(context, it).process()
+    }
+}
+
+fun XTestInvocation.getEntities(): List<androidx.room.vo.Entity> {
+    val entities = roundEnv.getTypeElementsAnnotatedWith(Entity::class.qualifiedName!!).map {
+        TableEntityProcessor(context, it).process()
+    }
+    return entities
+}
+
 fun TestInvocation.getViews(): List<androidx.room.vo.DatabaseView> {
-    return roundEnv.getTypeElementsAnnotatedWith(DatabaseView::class.java).map {
+    return roundEnv.getTypeElementsAnnotatedWith(DatabaseView::class.qualifiedName!!).map {
         DatabaseViewProcessor(context, it).process()
     }
 }
 
 fun TestInvocation.getEntities(): List<androidx.room.vo.Entity> {
-    val entities = roundEnv.getTypeElementsAnnotatedWith(Entity::class.java).map {
+    val entities = roundEnv.getTypeElementsAnnotatedWith(Entity::class.qualifiedName!!).map {
         TableEntityProcessor(context, it).process()
     }
     return entities
@@ -308,11 +336,6 @@ fun compileLibrarySources(vararg sources: JavaFileObject): Set<File> {
     val task = compiler.getTask(null, fileManager, null, emptyList(), null, listOf(*sources))
     assertThat(task.call()).isTrue()
     return getSystemClasspathFiles() + lib
-}
-
-private fun getSystemClasspathFiles(): Set<File> {
-    val pathSeparator = System.getProperty("path.separator")!!
-    return System.getProperty("java.class.path")!!.split(pathSeparator).map { File(it) }.toSet()
 }
 
 fun String.toJFO(qName: String): JavaFileObject = JavaFileObjects.forSourceLines(qName, this)

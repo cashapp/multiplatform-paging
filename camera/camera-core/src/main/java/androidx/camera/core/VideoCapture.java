@@ -345,6 +345,7 @@ public final class VideoCapture extends UseCase {
      * @param executor          The executor in which the callback methods will be run.
      * @param callback          Callback for when the recorded video saving completion or failure.
      */
+    @SuppressWarnings("ObjectToString")
     public void startRecording(
             @NonNull OutputFileOptions outputFileOptions, @NonNull Executor executor,
             @NonNull OnVideoSavedCallback callback) {
@@ -821,6 +822,7 @@ public final class VideoCapture extends UseCase {
         // Audio encoding loop. Exits on end of stream.
         boolean audioEos = false;
         int outIndex;
+        long lastAudioTimestamp = 0;
         while (!audioEos && mIsRecording) {
             // Check for end of stream from main thread
             if (mEndOfAudioStreamSignal.get()) {
@@ -861,7 +863,20 @@ public final class VideoCapture extends UseCase {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
                             break;
                         default:
-                            audioEos = writeAudioEncodedBuffer(outIndex);
+                            // Drops out of order audio frame if the frame's earlier than last
+                            // frame.
+                            if (mAudioBufferInfo.presentationTimeUs > lastAudioTimestamp) {
+                                audioEos = writeAudioEncodedBuffer(outIndex);
+                                lastAudioTimestamp = mAudioBufferInfo.presentationTimeUs;
+                            } else {
+                                Logger.w(TAG,
+                                        "Drops frame, current frame's timestamp "
+                                                + mAudioBufferInfo.presentationTimeUs
+                                                + " is earlier that last frame "
+                                                + lastAudioTimestamp);
+                                // Releases this frame from output buffer
+                                mAudioEncoder.releaseOutputBuffer(outIndex, false);
+                            }
                     }
                 } while (outIndex >= 0 && !audioEos); // end of dequeue output buffer
             }
@@ -1184,6 +1199,7 @@ public final class VideoCapture extends UseCase {
     }
 
     /** Builder for a {@link VideoCapture}. */
+    @SuppressWarnings("ObjectToString")
     public static final class Builder
             implements
             UseCaseConfig.Builder<VideoCapture, VideoCaptureConfig, Builder>,

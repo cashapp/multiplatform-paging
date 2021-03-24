@@ -29,7 +29,7 @@ plugins {
 
 android.defaultConfig {
     minSdkVersion 28
-    testInstrumentationRunnerArgument 'androidx.benchmark.output.enable', 'true'
+    testInstrumentationRunnerArgument "androidx.benchmark.output.enable", "true"
 }
 
 dependencies {
@@ -39,8 +39,9 @@ dependencies {
     androidTestImplementation(ANDROIDX_TEST_EXT_JUNIT)
     androidTestImplementation(ANDROIDX_TEST_CORE)
     androidTestImplementation(ANDROIDX_TEST_RUNNER)
+    androidTestImplementation(ANDROIDX_TEST_UIAUTOMATOR)
 }
 
 // Define a task dependency so the app is installed before we run macro benchmarks.
-tasks.getByPath(':compose:integration-tests:macrobenchmark:connectedCheck')
-    .dependsOn(tasks.getByPath(':compose:integration-tests:macrobenchmark-target:installRelease'))
+tasks.getByPath(":compose:integration-tests:macrobenchmark:connectedCheck")
+    .dependsOn(tasks.getByPath(":compose:integration-tests:macrobenchmark-target:installRelease"))

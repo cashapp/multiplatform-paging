@@ -20,7 +20,7 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_C
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY;
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
-import static androidx.car.app.utils.CommonUtils.TAG;
+import static androidx.car.app.utils.LogTags.TAG;
 
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +46,9 @@ import androidx.car.app.utils.RemoteUtils;
 import androidx.car.app.utils.ThreadUtils;
 import androidx.car.app.versioning.CarAppApiLevel;
 import androidx.car.app.versioning.CarAppApiLevels;
+import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 
 import java.lang.annotation.Retention;
@@ -157,9 +159,7 @@ public class CarContext extends ContextWrapper {
      * @param name The name of the car service requested. This should be one of
      *             {@link #APP_SERVICE},
      *             {@link #NAVIGATION_SERVICE} or {@link #SCREEN_SERVICE}
-     *
      * @return The car service instance
-     *
      * @throws IllegalArgumentException if {@code name} does not refer to a valid car service
      * @throws NullPointerException     if {@code name} is {@code null}
      */
@@ -187,7 +187,6 @@ public class CarContext extends ContextWrapper {
      * ScreenManager}.
      *
      * @param serviceClass the class of the requested service
-     *
      * @throws IllegalArgumentException if {@code serviceClass} is not the class of a supported car
      *                                  service
      * @throws NullPointerException     if {@code serviceClass} is {@code null}
@@ -201,13 +200,10 @@ public class CarContext extends ContextWrapper {
      * Gets the name of the car service that is represented by the specified class.
      *
      * @param serviceClass the class of the requested service
-     *
      * @return the car service name to use with {@link #getCarService(String)}
-     *
      * @throws IllegalArgumentException if {@code serviceClass} is not the class of a supported car
      *                                  service
      * @throws NullPointerException     if {@code serviceClass} is {@code null}
-     *
      * @see #getCarService
      */
     @NonNull
@@ -252,7 +248,6 @@ public class CarContext extends ContextWrapper {
      * </dl>
      *
      * @param intent the {@link Intent} to send to the target application
-     *
      * @throws SecurityException         if the app attempts to start a different app explicitly or
      *                                   does not have permissions for the requested action
      * @throws InvalidParameterException if {@code intent} does not meet the criteria defined
@@ -263,11 +258,11 @@ public class CarContext extends ContextWrapper {
 
         mHostDispatcher.dispatch(
                 CarContext.CAR_SERVICE,
-                (ICarHost host) -> {
+                "startCarApp", (ICarHost host) -> {
                     host.startCarApp(intent);
                     return null;
-                },
-                "startCarApp");
+                }
+        );
     }
 
     /**
@@ -280,7 +275,6 @@ public class CarContext extends ContextWrapper {
      * @param appIntent          the {@link Intent} to use for starting the car app. See {@link
      *                           #startCarApp(Intent)} for the documentation on valid
      *                           {@link Intent}s
-     *
      * @throws InvalidParameterException if {@code notificationIntent} is not an {@link Intent}
      *                                   received from a broadcast, due to an action taken by the
      *                                   user in the car
@@ -302,12 +296,12 @@ public class CarContext extends ContextWrapper {
 
         IStartCarApp startCarAppInterface = requireNonNull(IStartCarApp.Stub.asInterface(binder));
 
-        RemoteUtils.call(
-                () -> {
+        RemoteUtils.dispatchCallToHost(
+                "startCarApp from notification", () -> {
                     startCarAppInterface.startCarApp(appIntent);
                     return null;
-                },
-                "startCarApp from notification");
+                }
+        );
     }
 
     /**
@@ -321,11 +315,11 @@ public class CarContext extends ContextWrapper {
     public void finishCarApp() {
         mHostDispatcher.dispatch(
                 CarContext.CAR_SERVICE,
-                (ICarHost host) -> {
+                "finish", (ICarHost host) -> {
                     host.finish();
                     return null;
-                },
-                "finish");
+                }
+        );
     }
 
     /**
@@ -376,9 +370,12 @@ public class CarContext extends ContextWrapper {
     void onCarConfigurationChanged(@NonNull Configuration configuration) {
         ThreadUtils.checkMainThread();
 
-        Log.d(TAG,
-                "Car configuration changed, configuration: " + configuration + ", displayMetrics: "
-                        + getResources().getDisplayMetrics());
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG,
+                    "Car configuration changed, configuration: " + configuration
+                            + ", displayMetrics: "
+                            + getResources().getDisplayMetrics());
+        }
 
         getResources()
                 .updateConfiguration(requireNonNull(configuration),
@@ -414,8 +411,7 @@ public class CarContext extends ContextWrapper {
         ThreadUtils.checkMainThread();
 
         // If this is the first time attaching the base, actually attach it, otherwise, just
-        // update the
-        // configuration.
+        // update the configuration.
         if (getBaseContext() == null) {
             // Create the virtual display with the proper dimensions.
             VirtualDisplay display =
@@ -446,14 +442,6 @@ public class CarContext extends ContextWrapper {
         mHostDispatcher.setCarHost(requireNonNull(carHost));
     }
 
-    /** @hide */
-    @RestrictTo(LIBRARY_GROUP) // Restrict to testing library
-    @MainThread
-    void resetHosts() {
-        ThreadUtils.checkMainThread();
-        mHostDispatcher.resetHosts();
-    }
-
     /**
      * Retrieves the API level negotiated with the host.
      *
@@ -475,7 +463,6 @@ public class CarContext extends ContextWrapper {
      * @return a value between {@link AppInfo#getMinCarAppApiLevel()} and
      * {@link AppInfo#getLatestCarAppApiLevel()}. In case of incompatibility, the host will
      * disconnect from the service before completing the handshake
-     *
      * @throws IllegalStateException if invoked before the connection handshake with the host has
      *                               been completed (for example, before
      *                               {@link Session#onCreateScreen(Intent)})
@@ -498,10 +485,20 @@ public class CarContext extends ContextWrapper {
         super(null);
 
         mHostDispatcher = hostDispatcher;
-        mAppManager = AppManager.create(this, hostDispatcher);
-        mNavigationManager = NavigationManager.create(this, hostDispatcher);
+        mAppManager = AppManager.create(this, hostDispatcher, lifecycle);
+        mNavigationManager = NavigationManager.create(this, hostDispatcher, lifecycle);
         mScreenManager = ScreenManager.create(this, lifecycle);
         mOnBackPressedDispatcher =
                 new OnBackPressedDispatcher(() -> getCarService(ScreenManager.class).pop());
+
+        LifecycleObserver observer = new DefaultLifecycleObserver() {
+            @Override
+            public void onDestroy(@NonNull LifecycleOwner owner) {
+                hostDispatcher.resetHosts();
+                owner.getLifecycle().removeObserver(this);
+            }
+        };
+
+        lifecycle.addObserver(observer);
     }
 }

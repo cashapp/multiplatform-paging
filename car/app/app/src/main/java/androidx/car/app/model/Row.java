@@ -29,12 +29,14 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
+import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.model.constraints.CarIconConstraints;
 import androidx.car.app.utils.CollectionUtils;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -88,7 +90,6 @@ public final class Row implements Item {
     @Nullable
     private final CarText mTitle;
     @Keep
-    @Nullable
     private final List<CarText> mTexts;
     @Keep
     @Nullable
@@ -267,7 +268,7 @@ public final class Row implements Item {
     /** Constructs an empty instance, used by serialization code. */
     private Row() {
         mTitle = null;
-        mTexts = null;
+        mTexts = Collections.emptyList();
         mImage = null;
         mToggle = null;
         mOnClickDelegate = null;
@@ -305,6 +306,21 @@ public final class Row implements Item {
                 throw new IllegalArgumentException("The title cannot be null or empty");
             }
             mTitle = titleText;
+            return this;
+        }
+
+        /**
+         * Sets the title of the row.
+         *
+         * @throws IllegalArgumentException if {@code title} is {@code null} or empty
+         */
+        @ExperimentalCarApi
+        @NonNull
+        public Builder setTitle(@NonNull CarText title) {
+            if (requireNonNull(title).isEmpty()) {
+                throw new IllegalArgumentException("The title cannot be null or empty");
+            }
+            mTitle = title;
             return this;
         }
 
@@ -371,7 +387,6 @@ public final class Row implements Item {
          * </pre>
          *
          * @throws NullPointerException if {@code text} is {@code null}
-         *
          * @see ForegroundCarColorSpan
          */
         @NonNull
@@ -381,10 +396,22 @@ public final class Row implements Item {
         }
 
         /**
+         * Adds a text string to the row below the title.
+         *
+         * @throws NullPointerException if {@code text} is {@code null}
+         * @see Builder#addText(CharSequence)
+         */
+        @ExperimentalCarApi
+        @NonNull
+        public Builder addText(@NonNull CarText text) {
+            mTexts.add(requireNonNull(text));
+            return this;
+        }
+
+        /**
          * Sets an image to show in the row with the default size {@link #IMAGE_TYPE_SMALL}.
          *
          * @throws NullPointerException if {@code image} is {@code null}
-         *
          * @see #setImage(CarIcon, int)
          */
         @NonNull
@@ -412,7 +439,6 @@ public final class Row implements Item {
          * @param image     the {@link CarIcon} to display or {@code null} to not display one
          * @param imageType one of {@link #IMAGE_TYPE_ICON}, {@link #IMAGE_TYPE_SMALL} or {@link
          *                  #IMAGE_TYPE_LARGE}
-         *
          * @throws NullPointerException if {@code image} is {@code null}
          */
         @NonNull

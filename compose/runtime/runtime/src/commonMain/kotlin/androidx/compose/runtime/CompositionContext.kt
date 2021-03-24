@@ -22,18 +22,6 @@ import kotlin.coroutines.CoroutineContext
 
 private val EmptyCompositionLocalMap: CompositionLocalMap = persistentHashMapOf()
 
-@Deprecated(
-    "Renamed to rememberCompositionContext",
-    ReplaceWith(
-        "rememberCompositionContext()",
-        "androidx.compose.runtime.rememberCompositionContext"
-    )
-)
-@Composable fun rememberCompositionReference() = rememberCompositionContext()
-
-@Deprecated("Renamed to CompositionContext")
-typealias CompositionReference = CompositionContext
-
 /**
  * A [CompositionContext] is an opaque type that is used to logically "link" two compositions
  * together. The [CompositionContext] instance represents a reference to the "parent" composition
@@ -50,6 +38,7 @@ abstract class CompositionContext internal constructor() {
     internal abstract val compoundHashKey: Int
     internal abstract val collectingParameterInformation: Boolean
     internal abstract val effectCoroutineContext: CoroutineContext
+    internal abstract val recomposeCoroutineContext: CoroutineContext
     internal abstract fun composeInitial(
         composition: ControlledComposition,
         content: @Composable () -> Unit

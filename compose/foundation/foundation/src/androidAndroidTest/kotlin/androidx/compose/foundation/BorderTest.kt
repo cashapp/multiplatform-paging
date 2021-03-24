@@ -18,8 +18,8 @@ package androidx.compose.foundation
 
 import android.os.Build
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.preferredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,13 +58,18 @@ import kotlin.math.floor
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
 @RunWith(Parameterized::class)
 class BorderTest(val shape: Shape) {
-
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun initShapes(): Array<Any> = arrayOf(
-            RectangleShape, CircleShape, RoundedCornerShape(5.0f)
+            namedShape("Rectangle", RectangleShape),
+            namedShape("Circle", CircleShape),
+            namedShape("Rounded", RoundedCornerShape(5.0f))
         )
+
+        private fun namedShape(name: String, shape: Shape): Shape = object : Shape by shape {
+            override fun toString(): String = name
+        }
     }
 
     @get:Rule
@@ -89,7 +94,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp())
                         .background(color = Color.Blue)
                         .border(BorderStroke(10.0f.toDp(), Color.Red), shape)
 
@@ -114,7 +119,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp())
                         .background(color = Color.Blue)
                         .border(
                             BorderStroke(10.0f.toDp(), SolidColor(Color.Red)),
@@ -141,7 +146,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp())
                         .background(color = Color.Blue)
                         .border(BorderStroke(1500.0f.toDp(), Color.Red), shape)
                 ) {}
@@ -163,7 +168,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp())
                         .background(color = Color.Blue)
                         .border(BorderStroke(-5.0f.toDp(), Color.Red), shape)
                 ) {}
@@ -185,10 +190,10 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp()).background(Color.White)
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp()).background(Color.White)
                 ) {
                     Box(
-                        Modifier.preferredSize(0.0f.toDp(), 40.0f.toDp())
+                        Modifier.size(0.0f.toDp(), 40.0f.toDp())
                             .border(BorderStroke(4.0f.toDp(), Color.Red), shape)
                     ) {}
                 }
@@ -215,7 +220,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             Box(
                 Modifier.testTag(testTag)
-                    .size(100.dp, 100.dp)
+                    .requiredSize(100.dp, 100.dp)
                     .background(Color.White)
                     .border(BorderStroke(10.dp, Color.Red), triangle)
             )
@@ -241,7 +246,7 @@ class BorderTest(val shape: Shape) {
         rule.setContent {
             SemanticParent {
                 Box(
-                    Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                    Modifier.size(40.0f.toDp(), 40.0f.toDp())
                         .background(color = Color.Blue)
                         .border(BorderStroke(10.0f.toDp(), Color.Red), rtlAwareShape)
                 ) {}
@@ -266,7 +271,7 @@ class BorderTest(val shape: Shape) {
             SemanticParent {
                 CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
                     Box(
-                        Modifier.preferredSize(40.0f.toDp(), 40.0f.toDp())
+                        Modifier.size(40.0f.toDp(), 40.0f.toDp())
                             .background(color = Color.Blue)
                             .border(BorderStroke(10.0f.toDp(), Color.Red), rtlAwareShape)
                     ) {}

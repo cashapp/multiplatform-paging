@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.model.CarIcon;
 import androidx.car.app.model.CarText;
 import androidx.car.app.utils.CollectionUtils;
@@ -185,11 +186,21 @@ public final class Step {
          * unsupported characters will not be displayed properly.
          *
          * @throws NullPointerException if {@code cue} is {@code null}
-         *
          * @see Builder#setCue(CharSequence)
          */
         public Builder(@NonNull CharSequence cue) {
             mCue = CarText.create(requireNonNull(cue));
+        }
+
+        /**
+         * Constructs a new builder of {@link Step} with a cue.
+         *
+         * @throws NullPointerException if {@code cue} is {@code null}
+         * @see Builder#Builder(CharSequence)
+         */
+        @ExperimentalCarApi
+        public Builder(@NonNull CarText cue) {
+            mCue = requireNonNull(cue);
         }
 
         /**
@@ -284,8 +295,7 @@ public final class Step {
          * that work with different car screen pixel densities.
          *
          * @throws NullPointerException if {@code cue} is {@code null}
-         *
-         * @see CarText for details on text handling and span support.
+         * @see CarText
          */
         @NonNull
         public Builder setCue(@NonNull CharSequence cue) {
@@ -304,8 +314,7 @@ public final class Step {
          * <p>Spans are not supported in the input string.
          *
          * @throws NullPointerException if {@code destinations} is {@code null}
-         *
-         * @see CarText for details on text handling and span support.
+         * @see CarText
          */
         @NonNull
         public Builder setRoad(@NonNull CharSequence road) {

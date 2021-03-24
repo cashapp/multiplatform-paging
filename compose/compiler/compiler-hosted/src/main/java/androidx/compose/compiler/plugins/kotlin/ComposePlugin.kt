@@ -129,7 +129,7 @@ class ComposeComponentRegistrar : ComponentRegistrar {
             project: Project,
             configuration: CompilerConfiguration
         ) {
-            val KOTLIN_VERSION_EXPECTATION = "1.4.30"
+            val KOTLIN_VERSION_EXPECTATION = "1.4.31"
             KotlinCompilerVersion.getVersion()?.let { version ->
                 val suppressKotlinVersionCheck = configuration.get(
                     ComposeConfiguration.SUPPRESS_KOTLIN_VERSION_COMPATIBILITY_CHECK,
@@ -146,6 +146,11 @@ class ComposeComponentRegistrar : ComponentRegistrar {
                             " `suppressKotlinVersionCompatibilityCheck` but don't say I didn't" +
                             " warn you!)."
                     )
+
+                    // Return without registering the Compose plugin because the registration
+                    // APIs may have changed and thus throw an exception during registration,
+                    // preventing the diagnostic from being emitted.
+                    return
                 }
             }
 

@@ -31,11 +31,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.preferredHeight
-import androidx.compose.foundation.layout.preferredSize
-import androidx.compose.foundation.layout.preferredWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScrollableTabRow
@@ -43,6 +44,7 @@ import androidx.compose.material.Tab
 import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.TabPosition
 import androidx.compose.material.TabRow
+import androidx.compose.material.LeadingIconTab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -123,6 +125,34 @@ fun TextAndIconTabs() {
         Text(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             text = "Text and icon tab ${state + 1} selected",
+            style = MaterialTheme.typography.body1
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun LeadingIconTabs() {
+    var state by remember { mutableStateOf(0) }
+    val titlesAndIcons = listOf(
+        "TAB" to Icons.Filled.Favorite,
+        "TAB & ICON" to Icons.Filled.Favorite,
+        "TAB 3 WITH LOTS OF TEXT" to Icons.Filled.Favorite
+    )
+    Column {
+        TabRow(selectedTabIndex = state) {
+            titlesAndIcons.forEachIndexed { index, (title, icon) ->
+                LeadingIconTab(
+                    text = { Text(title) },
+                    icon = { Icon(icon, contentDescription = null) },
+                    selected = state == index,
+                    onClick = { state = index }
+                )
+            }
+        }
+        Text(
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            text = "Leading icon tab ${state + 1} selected",
             style = MaterialTheme.typography.body1
         )
     }
@@ -288,11 +318,11 @@ fun ScrollingFancyIndicatorContainerTabs() {
 fun FancyTab(title: String, onClick: () -> Unit, selected: Boolean) {
     Tab(selected, onClick) {
         Column(
-            Modifier.padding(10.dp).preferredHeight(50.dp).fillMaxWidth(),
+            Modifier.padding(10.dp).height(50.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
-                Modifier.preferredSize(10.dp)
+                Modifier.size(10.dp)
                     .align(Alignment.CenterHorizontally)
                     .background(color = if (selected) Color.Red else Color.White)
             )
@@ -367,6 +397,6 @@ fun FancyAnimatedIndicator(tabPositions: List<TabPosition>, selectedTabIndex: In
             // Apply an offset from the start to correctly position the indicator around the tab
             .offset(x = indicatorStart)
             // Make the width of the indicator follow the animated width as we move between tabs
-            .preferredWidth(indicatorEnd - indicatorStart)
+            .width(indicatorEnd - indicatorStart)
     )
 }

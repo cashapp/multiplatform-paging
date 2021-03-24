@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 import androidx.car.app.Screen;
+import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.model.constraints.CarIconConstraints;
 
 import java.lang.annotation.Retention;
@@ -227,9 +228,7 @@ public final class GridItem implements Item {
         }
 
         /**
-         * Sets the title of the row.
-         *
-         * <p>Unless set with this method, the grid item will not have an title.
+         * Sets the title of the {@link GridItem}.
          *
          * <p>Spans are not supported in the input string.
          *
@@ -247,9 +246,25 @@ public final class GridItem implements Item {
         }
 
         /**
-         * Sets a secondary text string to the grid item that is displayed below the title.
+         * Sets the title of the {@link GridItem}.
          *
-         * <p>Unless set with this method, the grid item will not have a secondary text string.
+         * <p>Spans are not supported in the input string.
+         *
+         * @throws NullPointerException     if {@code title} is {@code null}
+         * @throws IllegalArgumentException if {@code title} is empty
+         */
+        @ExperimentalCarApi
+        @NonNull
+        public Builder setTitle(@NonNull CarText title) {
+            if (CarText.isNullOrEmpty(title)) {
+                throw new IllegalArgumentException("The title cannot be null or empty");
+            }
+            mTitle = title;
+            return this;
+        }
+
+        /**
+         * Sets a secondary text string to the grid item that is displayed below the title.
          *
          * <p>The text's color can be customized with {@link ForegroundCarColorSpan} instances, any
          * other spans will be ignored by the host.
@@ -267,10 +282,28 @@ public final class GridItem implements Item {
         }
 
         /**
+         * Sets a secondary text string to the grid item that is displayed below the title.
+         *
+         * <p>The text's color can be customized with {@link ForegroundCarColorSpan} instances, any
+         * other spans will be ignored by the host.
+         *
+         * <h2>Text Wrapping</h2>
+         *
+         * This text is truncated at the end to fit in a single line below the title
+         *
+         * @throws NullPointerException if {@code text} is {@code null}
+         */
+        @ExperimentalCarApi
+        @NonNull
+        public Builder setText(@NonNull CarText text) {
+            mText = requireNonNull(text);
+            return this;
+        }
+
+        /**
          * Sets an image to show in the grid item with the default size {@link #IMAGE_TYPE_LARGE}.
          *
          * @throws NullPointerException if {@code image} is {@code null}
-         *
          * @see #setImage(CarIcon, int)
          */
         @NonNull
@@ -297,7 +330,6 @@ public final class GridItem implements Item {
          *
          * @param image     the {@link CarIcon} to display
          * @param imageType one of {@link #IMAGE_TYPE_ICON} or {@link #IMAGE_TYPE_LARGE}
-         *
          * @throws NullPointerException if {@code image} is {@code null}
          */
         @NonNull

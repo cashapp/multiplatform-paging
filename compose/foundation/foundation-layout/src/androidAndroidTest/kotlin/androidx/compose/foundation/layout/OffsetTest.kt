@@ -42,6 +42,7 @@ import androidx.test.filters.MediumTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
@@ -51,7 +52,7 @@ import kotlin.math.roundToInt
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
-class OffsetTest : LayoutTest() {
+class OffsetTest {
     @get:Rule
     val rule = createComposeRule()
 
@@ -70,7 +71,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun offset_positionIsModified() = with(density) {
+    fun offset_positionIsModified() = with(rule.density) {
         val offsetX = 10.dp
         val offsetY = 20.dp
         var positionX = 0
@@ -96,7 +97,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun offset_positionIsModified_rtl() = with(density) {
+    fun offset_positionIsModified_rtl() = with(rule.density) {
         val containerWidth = 30.dp
         val boxSize = 1
         val offsetX = 10.dp
@@ -108,7 +109,7 @@ class OffsetTest : LayoutTest() {
                 Box(
                     Modifier.testTag("box")
                         .wrapContentSize(Alignment.TopEnd)
-                        .preferredWidth(containerWidth)
+                        .width(containerWidth)
                         .wrapContentSize(Alignment.TopStart)
                         .offset(offsetX, offsetY)
                         .onGloballyPositioned { coordinates: LayoutCoordinates ->
@@ -117,7 +118,7 @@ class OffsetTest : LayoutTest() {
                         }
                 ) {
                     // TODO(soboleva): this box should not be needed after b/154758475 is fixed.
-                    Box(Modifier.size(boxSize.toDp()))
+                    Box(Modifier.requiredSize(boxSize.toDp()))
                 }
             }
         }
@@ -130,7 +131,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun absoluteOffset_positionModified() = with(density) {
+    fun absoluteOffset_positionModified() = with(rule.density) {
         val offsetX = 10.dp
         val offsetY = 20.dp
         var positionX = 0
@@ -156,7 +157,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun absoluteOffset_positionModified_rtl() = with(density) {
+    fun absoluteOffset_positionModified_rtl() = with(rule.density) {
         val containerWidth = 30.dp
         val boxSize = 1
         val offsetX = 10.dp
@@ -168,7 +169,7 @@ class OffsetTest : LayoutTest() {
                 Box(
                     Modifier.testTag("box")
                         .wrapContentSize(Alignment.TopEnd)
-                        .preferredWidth(containerWidth)
+                        .width(containerWidth)
                         .wrapContentSize(Alignment.TopStart)
                         .absoluteOffset(offsetX, offsetY)
                         .onGloballyPositioned { coordinates: LayoutCoordinates ->
@@ -177,7 +178,7 @@ class OffsetTest : LayoutTest() {
                         }
                 ) {
                     // TODO(soboleva): this box should not be needed after b/154758475 is fixed.
-                    Box(Modifier.size(boxSize.toDp()))
+                    Box(Modifier.requiredSize(boxSize.toDp()))
                 }
             }
         }
@@ -190,7 +191,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun offsetPx_positionIsModified() = with(density) {
+    fun offsetPx_positionIsModified() = with(rule.density) {
         val offsetX = 10f
         val offsetY = 20f
         var positionX = 0f
@@ -216,7 +217,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun offsetPx_positionIsModified_rtl() = with(density) {
+    fun offsetPx_positionIsModified_rtl() = with(rule.density) {
         val containerWidth = 30.dp
         val boxSize = 1
         val offsetX = 10
@@ -228,7 +229,7 @@ class OffsetTest : LayoutTest() {
                 Box(
                     Modifier.testTag("box")
                         .wrapContentSize(Alignment.TopEnd)
-                        .preferredWidth(containerWidth)
+                        .width(containerWidth)
                         .wrapContentSize(Alignment.TopStart)
                         .offset { IntOffset(offsetX, offsetY) }
                         .onGloballyPositioned { coordinates: LayoutCoordinates ->
@@ -237,7 +238,7 @@ class OffsetTest : LayoutTest() {
                         }
                 ) {
                     // TODO(soboleva): this box should not be needed after b/154758475 is fixed.
-                    Box(Modifier.size(boxSize.toDp()))
+                    Box(Modifier.requiredSize(boxSize.toDp()))
                 }
             }
         }
@@ -253,7 +254,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun absoluteOffsetPx_positionIsModified() = with(density) {
+    fun absoluteOffsetPx_positionIsModified() = with(rule.density) {
         val offsetX = 10
         val offsetY = 20
         var positionX = 0
@@ -279,7 +280,7 @@ class OffsetTest : LayoutTest() {
     }
 
     @Test
-    fun absoluteOffsetPx_positionIsModified_rtl() = with(density) {
+    fun absoluteOffsetPx_positionIsModified_rtl() = with(rule.density) {
         val containerWidth = 30.dp
         val boxSize = 1
         val offsetX = 10
@@ -291,7 +292,7 @@ class OffsetTest : LayoutTest() {
                 Box(
                     Modifier.testTag("box")
                         .wrapContentSize(Alignment.TopEnd)
-                        .preferredWidth(containerWidth)
+                        .width(containerWidth)
                         .wrapContentSize(Alignment.TopStart)
                         .absoluteOffset { IntOffset(offsetX, offsetY) }
                         .onGloballyPositioned { coordinates: LayoutCoordinates ->
@@ -300,7 +301,7 @@ class OffsetTest : LayoutTest() {
                         }
                 ) {
                     // TODO(soboleva): this box should not be needed after b/154758475 is fixed.
-                    Box(Modifier.size(boxSize.toDp()))
+                    Box(Modifier.requiredSize(boxSize.toDp()))
                 }
             }
         }
@@ -362,7 +363,7 @@ class OffsetTest : LayoutTest() {
         rule.setContent {
             Box(
                 Modifier
-                    .size(10.dp)
+                    .requiredSize(10.dp)
                     .offset { IntOffset(offset.roundToInt(), 0) }
                     .drawBehind {
                         contentRedrawsCount ++

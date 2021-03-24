@@ -16,8 +16,9 @@
 
 package androidx.compose.foundation.lazy
 
-import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.foundation.assertNotNestingScrollableContainers
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,25 +26,19 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-
-internal class ItemContent(
-    val key: Any,
-    val content: @Composable() () -> Unit
-)
 
 @Composable
 internal fun LazyList(
-    /** The total size of the list */
-    itemsCount: Int,
+    /** State object containing the latest item provider */
+    stateOfItemsProvider: State<LazyListItemsProvider>,
     /** Modifier to be applied for the inner layout */
     modifier: Modifier,
     /** State controlling the scroll position */
@@ -54,8 +49,8 @@ internal fun LazyList(
     reverseLayout: Boolean,
     /** The layout orientation of the list */
     isVertical: Boolean,
-    /** fling configuration for flinging */
-    flingSpec: DecayAnimationSpec<Float>?,
+    /** fling behavior to be used for flinging */
+    flingBehavior: FlingBehavior,
     /** The alignment to align items horizontally. Required when isVertical is true */
     horizontalAlignment: Alignment.Horizontal? = null,
     /** The vertical arrangement for items. Required when isVertical is true */
@@ -63,28 +58,22 @@ internal fun LazyList(
     /** The alignment to align items vertically. Required when isVertical is false */
     verticalAlignment: Alignment.Vertical? = null,
     /** The horizontal arrangement for items. Required when isVertical is false */
-    horizontalArrangement: Arrangement.Horizontal? = null,
-    /** The list of indexes of the sticky header items */
-    headerIndexes: List<Int> = emptyList(),
-    /** The factory defining the content for an item on the given position in the list */
-    itemContent: LazyItemScope.(Int) -> ItemContent
+    horizontalArrangement: Arrangement.Horizontal? = null
 ) {
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     // reverse scroll by default, to have "natural" gesture that goes reversed to layout
     // if rtl and horizontal, do not reverse to make it right-to-left
     val reverseScrollDirection = if (!isVertical && isRtl) reverseLayout else !reverseLayout
 
-    val restorableItemContent = wrapWithStateRestoration(itemContent)
-    val cachingItemContentFactory = remember { CachingItemContentFactory(restorableItemContent) }
-    cachingItemContentFactory.itemContentFactory = restorableItemContent
+    val itemContentFactory = rememberItemContentFactory(stateOfItemsProvider, state)
 
     SubcomposeLayout(
         modifier
             .scrollable(
                 orientation = if (isVertical) Orientation.Vertical else Orientation.Horizontal,
                 reverseDirection = reverseScrollDirection,
-                interactionState = state.interactionState,
-                flingSpec = flingSpec,
+                interactionSource = state.internalInteractionSource,
+                flingBehavior = flingBehavior,
                 state = state
             )
             .clipToBounds()
@@ -93,8 +82,13 @@ internal fun LazyList(
     ) { constraints ->
         constraints.assertNotNestingScrollableContainers(isVertical)
 
+        val itemsProvider = stateOfItemsProvider.value
+
+        // Update the state's cached Density
+        state.density = Density(density, fontScale)
+
         // this will update the scope object if the constrains have been changed
-        cachingItemContentFactory.updateItemScope(this, constraints)
+        itemContentFactory.updateItemScope(this, constraints)
 
         val startContentPadding = if (isVertical) {
             contentPadding.calculateTopPadding()
@@ -114,11 +108,14 @@ internal fun LazyList(
         }
         val spaceBetweenItems = spaceBetweenItemsDp.roundToPx()
 
+        val itemsCount = itemsProvider.itemsCount
+
         val itemProvider = LazyMeasuredItemProvider(
             constraints,
             isVertical,
             this,
-            cachingItemContentFactory
+            itemsProvider,
+            itemContentFactory
         ) { index, key, placeables ->
             // we add spaceBetweenItems as an extra spacing for all items apart from the last one so
             // the lazy list measuring logic will take it into account.
@@ -130,6 +127,7 @@ internal fun LazyList(
                 horizontalAlignment = horizontalAlignment,
                 verticalAlignment = verticalAlignment,
                 layoutDirection = layoutDirection,
+                reverseLayout = reverseLayout,
                 startContentPadding = startContentPadding,
                 endContentPadding = endContentPadding,
                 spacing = spacing,
@@ -150,8 +148,13 @@ internal fun LazyList(
 
         state.applyMeasureResult(measureResult)
 
-        val headers = if (headerIndexes.isNotEmpty()) {
-            LazyListHeaders(itemProvider, headerIndexes, measureResult, startContentPadding)
+        val headers = if (itemsProvider.headerIndexes.isNotEmpty()) {
+            LazyListHeaders(
+                itemProvider,
+                itemsProvider.headerIndexes,
+                measureResult,
+                startContentPadding
+            )
         } else {
             null
         }
@@ -165,24 +168,5 @@ internal fun LazyList(
             reverseLayout,
             headers
         )
-    }
-}
-
-/**
- * Converts item content factory to another one which adds auto state restoration functionality.
- */
-@Composable
-internal fun wrapWithStateRestoration(
-    itemContentFactory: LazyItemScope.(Int) -> ItemContent
-): LazyItemScope.(Int) -> ItemContent {
-    val saveableStateHolder = rememberSaveableStateHolder()
-    return remember(itemContentFactory) {
-        { index ->
-            val content = itemContentFactory.invoke(this, index)
-            // we just wrap our original lambda with the one which auto restores the state
-            ItemContent(content.key) {
-                saveableStateHolder.SaveableStateProvider(content.key, content.content)
-            }
-        }
     }
 }

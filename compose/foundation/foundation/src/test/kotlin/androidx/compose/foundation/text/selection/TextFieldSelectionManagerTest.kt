@@ -16,6 +16,7 @@
 
 package androidx.compose.foundation.text.selection
 
+import androidx.compose.foundation.text.InternalFoundationTextApi
 import androidx.compose.foundation.text.TextFieldState
 import androidx.compose.foundation.text.TextLayoutResultProxy
 import androidx.compose.ui.focus.FocusRequester
@@ -27,7 +28,6 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.InternalTextApi
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.util.packInts
 import com.google.common.truth.Truth.assertThat
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.isNull
@@ -56,7 +57,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 @RunWith(JUnit4::class)
-@OptIn(InternalTextApi::class)
 class TextFieldSelectionManagerTest {
     private val text = "Hello World"
     private val density = Density(density = 1f)
@@ -74,15 +74,17 @@ class TextFieldSelectionManagerTest {
     private val dragTextRange = TextRange("Hello".length + 1, text.length)
     private val layoutResult: TextLayoutResult = mock()
     private val layoutResultProxy: TextLayoutResultProxy = mock()
-    private val manager = TextFieldSelectionManager()
+    private lateinit var manager: TextFieldSelectionManager
 
     private val clipboardManager = mock<ClipboardManager>()
     private val textToolbar = mock<TextToolbar>()
     private val hapticFeedback = mock<HapticFeedback>()
     private val focusRequester = mock<FocusRequester>()
 
+    @OptIn(InternalFoundationTextApi::class)
     @Before
     fun setup() {
+        manager = TextFieldSelectionManager()
         manager.offsetMapping = offsetMapping
         manager.onValueChange = lambda
         manager.value = value
@@ -115,10 +117,15 @@ class TextFieldSelectionManagerTest {
         whenever(layoutResult.getBoundingBox(any())).thenReturn(Rect.Zero)
         // left or right handle drag
         whenever(layoutResult.getOffsetForPosition(dragBeginPosition)).thenReturn(beginOffset)
-        whenever(layoutResult.getOffsetForPosition(dragDistance)).thenReturn(dragOffset)
+        whenever(layoutResult.getOffsetForPosition(dragBeginPosition + dragDistance))
+            .thenReturn(dragOffset)
         // touch drag
-        whenever(layoutResultProxy.getOffsetForPosition(dragBeginPosition)).thenReturn(beginOffset)
-        whenever(layoutResultProxy.getOffsetForPosition(dragDistance)).thenReturn(dragOffset)
+        whenever(
+            layoutResultProxy.getOffsetForPosition(dragBeginPosition, false)
+        ).thenReturn(beginOffset)
+        whenever(
+            layoutResultProxy.getOffsetForPosition(dragBeginPosition + dragDistance, false)
+        ).thenReturn(dragOffset)
 
         whenever(layoutResultProxy.value).thenReturn(layoutResult)
 
@@ -512,5 +519,6 @@ class TextFieldSelectionManagerTest {
 // This class is a workaround for the bug that mockito can't stub a method returning inline class.
 // (https://github.com/nhaarman/mockito-kotlin/issues/309).
 internal class TextRangeAnswer(private val textRange: TextRange) : Answer<Any> {
-    override fun answer(invocation: InvocationOnMock?): Any = textRange.packedValue
+    override fun answer(invocation: InvocationOnMock?): Any =
+        packInts(textRange.start, textRange.end)
 }

@@ -300,13 +300,13 @@ public final class MediaRouter {
     @NonNull
     public List<RouteInfo> getRoutes() {
         checkCallingThread();
-        return sGlobal.getRoutes();
+        return sGlobal == null ? Collections.<RouteInfo>emptyList() : sGlobal.getRoutes();
     }
 
     @Nullable
     RouteInfo getRoute(String uniqueId) {
         checkCallingThread();
-        return sGlobal.getRoute(uniqueId);
+        return sGlobal == null ? null : sGlobal.getRoute(uniqueId);
     }
 
     /**
@@ -316,7 +316,7 @@ public final class MediaRouter {
     @NonNull
     public List<ProviderInfo> getProviders() {
         checkCallingThread();
-        return sGlobal.getProviders();
+        return sGlobal == null ? Collections.<ProviderInfo>emptyList() : sGlobal.getProviders();
     }
 
     /**
@@ -341,7 +341,7 @@ public final class MediaRouter {
     @Nullable
     public RouteInfo getBluetoothRoute() {
         checkCallingThread();
-        return sGlobal.getBluetoothRoute();
+        return sGlobal == null ? null : sGlobal.getBluetoothRoute();
     }
 
     /**
@@ -875,7 +875,7 @@ public final class MediaRouter {
 
     @Nullable
     public MediaSessionCompat.Token getMediaSessionToken() {
-        return sGlobal.getMediaSessionToken();
+        return sGlobal == null ? null : sGlobal.getMediaSessionToken();
     }
 
     /**
@@ -885,7 +885,7 @@ public final class MediaRouter {
     @Nullable
     public MediaRouterParams getRouterParams() {
         checkCallingThread();
-        return sGlobal.getRouterParams();
+        return sGlobal == null ? null : sGlobal.getRouterParams();
     }
 
     /**
@@ -938,10 +938,7 @@ public final class MediaRouter {
      * Returns whether transferring media from remote to local is enabled.
      */
     static boolean isTransferToLocalEnabled() {
-        if (sGlobal == null) {
-            return false;
-        }
-        return sGlobal.isTransferToLocalEnabled();
+        return sGlobal == null ? false : sGlobal.isTransferToLocalEnabled();
     }
 
     /**
@@ -2245,6 +2242,14 @@ public final class MediaRouter {
          */
         public void onProviderChanged(@NonNull MediaRouter router, @NonNull ProviderInfo provider) {
         }
+
+        /**
+         * @hide
+         */
+        @RestrictTo(LIBRARY)
+        public void onRouterParamsChanged(@NonNull MediaRouter router,
+                @Nullable MediaRouterParams params) {
+        }
     }
 
     /**
@@ -2558,6 +2563,7 @@ public final class MediaRouter {
                     mMr2Provider.setDiscoveryRequestInternal(mDiscoveryRequestForMr2Provider);
                 }
             }
+            mCallbackHandler.post(CallbackHandler.MSG_ROUTER_PARAMS_CHANGED, params);
         }
 
         @Nullable
@@ -3630,6 +3636,7 @@ public final class MediaRouter {
             private static final int MSG_TYPE_MASK = 0xff00;
             private static final int MSG_TYPE_ROUTE = 0x0100;
             private static final int MSG_TYPE_PROVIDER = 0x0200;
+            private static final int MSG_TYPE_ROUTER = 0x0300;
 
             public static final int MSG_ROUTE_ADDED = MSG_TYPE_ROUTE | 1;
             public static final int MSG_ROUTE_REMOVED = MSG_TYPE_ROUTE | 2;
@@ -3643,6 +3650,8 @@ public final class MediaRouter {
             public static final int MSG_PROVIDER_ADDED = MSG_TYPE_PROVIDER | 1;
             public static final int MSG_PROVIDER_REMOVED = MSG_TYPE_PROVIDER | 2;
             public static final int MSG_PROVIDER_CHANGED = MSG_TYPE_PROVIDER | 3;
+
+            public static final int MSG_ROUTER_PARAMS_CHANGED = MSG_TYPE_ROUTER | 1;
 
             CallbackHandler() {
             }
@@ -3785,6 +3794,16 @@ public final class MediaRouter {
                                 callback.onProviderChanged(router, provider);
                                 break;
                         }
+                        break;
+                    }
+                    case MSG_TYPE_ROUTER: {
+                        switch (what) {
+                            case MSG_ROUTER_PARAMS_CHANGED:
+                                final MediaRouterParams params = (MediaRouterParams) obj;
+                                callback.onRouterParamsChanged(router, params);
+                                break;
+                        }
+                        break;
                     }
                 }
             }

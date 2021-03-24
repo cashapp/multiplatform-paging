@@ -35,6 +35,7 @@ import androidx.build.license.configureExternalDependencyLicenseCheck
 import androidx.build.resources.configurePublicResourcesStub
 import androidx.build.studio.StudioTask
 import androidx.build.testConfiguration.addAppApkToTestConfigGeneration
+import androidx.build.testConfiguration.addToTestZips
 import androidx.build.testConfiguration.configureTestConfigGeneration
 import com.android.build.api.extension.LibraryAndroidComponentsExtension
 import com.android.build.gradle.AppExtension
@@ -43,6 +44,7 @@ import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.ApkVariant
+import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion.VERSION_1_8
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -268,7 +270,7 @@ class AndroidXPlugin : Plugin<Project> {
 
         project.extensions.getByType<LibraryAndroidComponentsExtension>().apply {
             @Suppress("deprecation")
-            beforeUnitTest(selector().withBuildType("release")) { unitTest ->
+            beforeUnitTests(selector().withBuildType("release")) { unitTest ->
                 unitTest.enabled = false
             }
         }
@@ -386,6 +388,7 @@ class AndroidXPlugin : Plugin<Project> {
         }
 
         // Force AGP to use our version of JaCoCo
+        @Suppress("deprecation")
         jacoco.version = Jacoco.VERSION
         compileSdkVersion(COMPILE_SDK_VERSION)
         buildToolsVersion = BUILD_TOOLS_VERSION
@@ -490,18 +493,7 @@ class AndroidXPlugin : Plugin<Project> {
                 return
             }
 
-            project.rootProject.tasks.named(ZIP_TEST_CONFIGS_WITH_APKS_TASK)
-                .configure { task ->
-                    task as Zip
-                    task.from(packageTask.outputDirectory) {
-                        it.include("*.apk")
-                        it.duplicatesStrategy = DuplicatesStrategy.FAIL
-                        it.rename { fileName ->
-                            fileName.renameApkForTesting(project.path, project.hasBenchmarkPlugin())
-                        }
-                    }
-                    task.dependsOn(packageTask)
-                }
+            addToTestZips(project, packageTask)
 
             packageTask.doLast {
                 project.copy {
@@ -645,7 +637,6 @@ class AndroidXPlugin : Plugin<Project> {
         val zipEcFilesTask = Jacoco.getZipEcFilesTask(this)
 
         tasks.withType(JacocoReport::class.java).configureEach { task ->
-            zipEcFilesTask.get().dependsOn(task) // zip follows every jacocoReport task being run
             task.reports {
                 it.xml.isEnabled = true
                 it.html.isEnabled = false
@@ -656,6 +647,10 @@ class AndroidXPlugin : Plugin<Project> {
                     "${project.path.asFilenamePrefix()}.xml"
                 )
             }
+        }
+        // zip follows every jacocoReport task being run
+        zipEcFilesTask.configure { zipTask ->
+            zipTask.dependsOn(tasks.withType(JacocoReport::class.java))
         }
     }
 
@@ -668,6 +663,7 @@ class AndroidXPlugin : Plugin<Project> {
         const val GENERATE_TEST_CONFIGURATION_TASK = "GenerateTestConfiguration"
         const val REPORT_LIBRARY_METRICS_TASK = "reportLibraryMetrics"
         const val ZIP_TEST_CONFIGS_WITH_APKS_TASK = "zipTestConfigsWithApks"
+        const val ZIP_CONSTRAINED_TEST_CONFIGS_WITH_APKS_TASK = "zipConstrainedTestConfigsWithApks"
 
         const val TASK_GROUP_API = "API"
 
@@ -679,6 +675,9 @@ class AndroidXPlugin : Plugin<Project> {
         const val TASK_TIMEOUT_MINUTES = 30L
     }
 }
+
+private const val PROJECTS_MAP_KEY = "projects"
+private const val ACCESSED_PROJECTS_MAP_KEY = "accessedProjectsMap"
 
 /**
  * Hides a project's Javadoc tasks from the output of `./gradlew tasks` by setting their group to
@@ -703,8 +702,15 @@ private fun Project.addToProjectMap(extension: AndroidXExtension) {
             if (group != null) {
                 val module = "$group:$name"
 
+                if (project.rootProject.extra.has(ACCESSED_PROJECTS_MAP_KEY)) {
+                    throw GradleException(
+                        "Attempted to add $project to project map after " +
+                            "the contents of the map were accessed"
+                    )
+                }
                 @Suppress("UNCHECKED_CAST")
-                val projectModules = getProjectsMap()
+                val projectModules = project.rootProject.extra.get(PROJECTS_MAP_KEY)
+                    as ConcurrentHashMap<String, String>
                 projectModules[module] = path
             }
         }
@@ -728,7 +734,8 @@ private fun Project.createCheckReleaseReadyTask(taskProviderList: List<TaskProvi
 
 @Suppress("UNCHECKED_CAST")
 fun Project.getProjectsMap(): ConcurrentHashMap<String, String> {
-    return rootProject.extra.get("projects") as ConcurrentHashMap<String, String>
+    project.rootProject.extra.set(ACCESSED_PROJECTS_MAP_KEY, true)
+    return rootProject.extra.get(PROJECTS_MAP_KEY) as ConcurrentHashMap<String, String>
 }
 
 /**

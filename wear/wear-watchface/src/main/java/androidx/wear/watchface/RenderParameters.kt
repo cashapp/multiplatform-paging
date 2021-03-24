@@ -19,6 +19,7 @@ package androidx.wear.watchface
 import android.graphics.Color
 import androidx.annotation.ColorInt
 import androidx.annotation.RestrictTo
+import androidx.wear.watchface.data.LayerParameterWireFormat
 import androidx.wear.watchface.data.RenderParametersWireFormat
 import androidx.wear.watchface.style.Layer
 
@@ -64,30 +65,53 @@ public enum class LayerMode {
     HIDE
 }
 
-/** Used to parameterize watch face rendering. */
+/**
+ * Used to parameterize watch face rendering.
+ *
+ * @param drawMode The overall drawing parameters based on system state.
+ * @param layerParameters Parameters for rendering individual layers. Generally these will all be
+ *     [LayerMode#DRAW] in normal operation, but the editor may make more complicated requests
+ *     which need to be honored to function properly.
+ * @param selectedComplicationId Optional parameter which if non null specifies that a particular
+ *     complication should be drawn with a special highlight to indicate it's been selected.
+ * @param outlineTint Specifies the tint should be used with [LayerMode.DRAW_OUTLINED]
+ */
 public class RenderParameters constructor(
-    /** The overall drawing parameters based on system state. */
     public val drawMode: DrawMode,
-
-    /**
-     * Parameters for rendering individual layers. Generally these will all be [LayerMode#DRAW]
-     * in normal operation, but the editor may make more complicated requests which need to be
-     * honored to function properly.
-     */
     public val layerParameters: Map<Layer, LayerMode>,
-
-    /**
-     * Optional parameter which if non null specifies that a particular complication should be
-     * drawn with a special highlight to indicate it's been selected.
-     */
     @SuppressWarnings("AutoBoxing")
     @get:SuppressWarnings("AutoBoxing")
     public val selectedComplicationId: Int?,
-
-    /** Specifies the tint should be used when outlined. */
     @ColorInt
+    @get:ColorInt
     public val outlineTint: Int
 ) {
+    /**
+     * Constructs [RenderParameters] without an explicit [outlineTint]. This constructor doesn't
+     * support [LayerMode.DRAW_OUTLINED].
+     *
+     * @param drawMode The overall drawing parameters based on system state.
+     * @param layerParameters Parameters for rendering individual layers. Generally these will all
+     *     be [LayerMode#DRAW] in normal operation, but the editor may make more complicated
+     *     requests which need to be honored to function properly.
+     * @param selectedComplicationId Optional parameter which if non null specifies that a
+     *     particular complication should be drawn with a special highlight to indicate it's been
+     *     selected.
+     */
+    public constructor(
+        drawMode: DrawMode,
+        layerParameters: Map<Layer, LayerMode>,
+        @SuppressWarnings("AutoBoxing")
+        selectedComplicationId: Int?,
+    ) : this(drawMode, layerParameters, selectedComplicationId, Color.RED) {
+        for (layerMode in layerParameters.values) {
+            require(layerMode != LayerMode.DRAW_OUTLINED) {
+                "LayerMode.DRAW_OUTLINED is not supported by this constructor, use the primary " +
+                    "one instead"
+            }
+        }
+    }
+
     public companion object {
         /** A layerParameters map where all Layers have [LayerMode.DRAW]. */
         @JvmField
@@ -97,7 +121,7 @@ public class RenderParameters constructor(
         /** Default RenderParameters which draws everything in interactive mode. */
         @JvmField
         public val DEFAULT_INTERACTIVE: RenderParameters =
-            RenderParameters(DrawMode.INTERACTIVE, DRAW_ALL_LAYERS, null, Color.RED)
+            RenderParameters(DrawMode.INTERACTIVE, DRAW_ALL_LAYERS, null)
     }
 
     /** @hide */
@@ -117,7 +141,7 @@ public class RenderParameters constructor(
     public fun toWireFormat(): RenderParametersWireFormat = RenderParametersWireFormat(
         drawMode.ordinal,
         layerParameters.map {
-            RenderParametersWireFormat.LayerParameterWireFormat(
+            LayerParameterWireFormat(
                 it.key.ordinal,
                 it.value.ordinal
             )
@@ -125,4 +149,15 @@ public class RenderParameters constructor(
         selectedComplicationId,
         outlineTint
     )
+
+    internal fun dump(writer: IndentingPrintWriter) {
+        writer.println("RenderParameters:")
+        writer.increaseIndent()
+        writer.println("drawMode=${drawMode.name}")
+        writer.println("selectedComplicationId=$selectedComplicationId")
+        writer.println("outlineTint=$outlineTint")
+        val params = layerParameters.map { "${it.key} -> ${it.value.name}" }.joinToString { it }
+        writer.println("layerParameters=[$params]")
+        writer.decreaseIndent()
+    }
 }

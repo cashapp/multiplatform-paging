@@ -25,6 +25,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import android.os.IBinder
 import android.os.Parcel
 import android.support.wearable.complications.ComplicationData
 import android.support.wearable.complications.ComplicationProviderInfo
@@ -37,18 +38,22 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.wear.complications.ComplicationBounds
 import androidx.wear.complications.DefaultComplicationProviderPolicy
+import androidx.wear.complications.ProviderChooserIntent
 import androidx.wear.complications.ProviderInfoRetriever
 import androidx.wear.complications.SystemProviders
-import androidx.wear.complications.data.ComplicationText
 import androidx.wear.complications.data.ComplicationType
 import androidx.wear.complications.data.LongTextComplicationData
+import androidx.wear.complications.data.PlainComplicationText
 import androidx.wear.complications.data.ShortTextComplicationData
-import androidx.wear.watchface.CanvasComplication
+import androidx.wear.watchface.CanvasComplicationDrawable
 import androidx.wear.watchface.Complication
 import androidx.wear.watchface.ComplicationsManager
+import androidx.wear.watchface.MutableWatchState
 import androidx.wear.watchface.RenderParameters
 import androidx.wear.watchface.WatchFace
+import androidx.wear.watchface.client.WatchFaceId
 import androidx.wear.watchface.client.asApiEditorState
+import androidx.wear.watchface.complications.rendering.ComplicationDrawable
 import androidx.wear.watchface.data.ComplicationBoundsType
 import androidx.wear.watchface.editor.data.EditorStateWireFormat
 import androidx.wear.watchface.style.Layer
@@ -63,7 +68,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -86,6 +90,9 @@ public val provider2: ComponentName = ComponentName("provider.app2", "provider.c
 public val provider3: ComponentName = ComponentName("provider.app3", "provider.class3")
 
 private const val TIMEOUT_MILLIS = 500L
+
+private const val PROVIDER_CHOOSER_EXTRA_KEY = "PROVIDER_CHOOSER_EXTRA_KEY"
+private const val PROVIDER_CHOOSER_EXTRA_VALUE = "PROVIDER_CHOOSER_EXTRA_VALUE"
 
 /** Trivial "editor" which exposes the EditorSession for testing. */
 public open class OnWatchFaceEditingTestActivity : ComponentActivity() {
@@ -123,29 +130,29 @@ public open class OnWatchFaceEditingTestActivity : ComponentActivity() {
                                     "ProviderApp1",
                                     "Provider1",
                                     providerIcon1,
-                                    ComplicationType.SHORT_TEXT.asWireComplicationType(),
+                                    ComplicationType.SHORT_TEXT.toWireComplicationType(),
                                     provider1
                                 ),
                                 RIGHT_COMPLICATION_ID to ComplicationProviderInfo(
                                     "ProviderApp2",
                                     "Provider2",
                                     providerIcon2,
-                                    ComplicationType.LONG_TEXT.asWireComplicationType(),
+                                    ComplicationType.LONG_TEXT.toWireComplicationType(),
                                     provider2
                                 )
                             ),
                             mapOf(
                                 provider1 to
                                     ShortTextComplicationData.Builder(
-                                        ComplicationText.plain("Left")
+                                        PlainComplicationText.Builder("Left").build()
                                     ).build().asWireComplicationData(),
                                 provider2 to
                                     LongTextComplicationData.Builder(
-                                        ComplicationText.plain("Right")
+                                        PlainComplicationText.Builder("Right").build()
                                     ).build().asWireComplicationData(),
                                 provider3 to
                                     LongTextComplicationData.Builder(
-                                        ComplicationText.plain("Provider3")
+                                        PlainComplicationText.Builder("Provider3").build()
                                     ).build().asWireComplicationData(),
                             )
                         )
@@ -193,8 +200,14 @@ private class FakeProviderInfoServiceV1(
 /** Fake ComplicationHelperActivity for testing. */
 public class TestComplicationHelperActivity : Activity() {
 
+    public companion object {
+        public var lastIntent: Intent? = null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lastIntent = intent
 
         setResult(
             123,
@@ -207,7 +220,7 @@ public class TestComplicationHelperActivity : Activity() {
                         Icon.createWithBitmap(
                             Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
                         ),
-                        ComplicationType.LONG_TEXT.asWireComplicationType(),
+                        ComplicationType.LONG_TEXT.toWireComplicationType(),
                         provider3
                     )
                 )
@@ -217,18 +230,13 @@ public class TestComplicationHelperActivity : Activity() {
     }
 }
 
-// Disables the requirement that watchFaceInstanceId has to be non-null on R and above.
-public class WatchFaceEditorContractForTest : WatchFaceEditorContract() {
-    override fun nullWatchFaceInstanceIdOK() = true
-}
-
 @RunWith(AndroidJUnit4::class)
 @MediumTest
 public class EditorSessionTest {
     private val testComponentName = ComponentName("test.package", "test.class")
-    private val testEditorComponentName = ComponentName("test.package", "test.editor.class")
-    private val testInstanceId = "TEST_INSTANCE_ID"
-    private var editorDelegate = Mockito.mock(WatchFace.EditorDelegate::class.java)
+    private val testEditorPackageName = "test.package"
+    private val testInstanceId = WatchFaceId("TEST_INSTANCE_ID")
+    private lateinit var editorDelegate: WatchFace.EditorDelegate
     private val screenBounds = Rect(0, 0, 400, 400)
 
     private val redStyleOption =
@@ -272,7 +280,9 @@ public class EditorSessionTest {
         listOf(Layer.TOP_LAYER)
     )
 
-    private val mockLeftCanvasComplication = Mockito.mock(CanvasComplication::class.java)
+    private val placeholderWatchState = MutableWatchState().asWatchState()
+    private val mockLeftCanvasComplication =
+        CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
     private val leftComplication =
         Complication.createRoundRectComplicationBuilder(
             LEFT_COMPLICATION_ID,
@@ -289,7 +299,8 @@ public class EditorSessionTest {
         ).setDefaultProviderType(ComplicationType.SHORT_TEXT)
             .build()
 
-    private val mockRightCanvasComplication = Mockito.mock(CanvasComplication::class.java)
+    private val mockRightCanvasComplication =
+        CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
     private val rightComplication =
         Complication.createRoundRectComplicationBuilder(
             RIGHT_COMPLICATION_ID,
@@ -304,16 +315,25 @@ public class EditorSessionTest {
             DefaultComplicationProviderPolicy(SystemProviders.DAY_OF_WEEK),
             ComplicationBounds(RectF(0.6f, 0.4f, 0.8f, 0.6f))
         ).setDefaultProviderType(ComplicationType.SHORT_TEXT)
+            .setConfigExtras(
+                Bundle().apply {
+                    putString(PROVIDER_CHOOSER_EXTRA_KEY, PROVIDER_CHOOSER_EXTRA_VALUE)
+                }
+            )
             .build()
 
-    private val mockBackgroundCanvasComplication = Mockito.mock(CanvasComplication::class.java)
+    private val mockBackgroundCanvasComplication =
+        CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
     private val backgroundComplication =
         Complication.createBackgroundComplicationBuilder(
             BACKGROUND_COMPLICATION_ID,
             mockBackgroundCanvasComplication,
             emptyList(),
             DefaultComplicationProviderPolicy()
-        ).build()
+        ).setEnabled(false).build()
+
+    private val fakeBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+    private val onDestroyLatch = CountDownLatch(1)
 
     private class TestEditorObserver : IEditorObserver.Stub() {
         private lateinit var editorState: EditorStateWireFormat
@@ -330,27 +350,46 @@ public class EditorSessionTest {
             require(latch.await(timeout, unit))
             return editorState
         }
+
+        fun stateChangeObserved() = this::editorState.isInitialized
     }
 
     private fun createOnWatchFaceEditingTestActivity(
         userStyleSettings: List<UserStyleSetting>,
         complications: List<Complication>,
-        instanceId: String? = testInstanceId,
+        watchFaceId: WatchFaceId = testInstanceId,
         previewReferenceTimeMillis: Long = 12345
     ): ActivityScenario<OnWatchFaceEditingTestActivity> {
         val userStyleRepository = UserStyleRepository(UserStyleSchema(userStyleSettings))
         val complicationsManager = ComplicationsManager(complications, userStyleRepository)
 
+        // Mocking getters and setters with mockito at the same time is hard so we do this instead.
+        editorDelegate = object : WatchFace.EditorDelegate {
+            override val userStyleSchema = userStyleRepository.schema
+            override var userStyle: UserStyle
+                get() = userStyleRepository.userStyle
+                set(value) { userStyleRepository.userStyle = value }
+
+            override val complicationsManager = complicationsManager
+            override val screenBounds = this@EditorSessionTest.screenBounds
+            override val previewReferenceTimeMillis = previewReferenceTimeMillis
+
+            override fun renderWatchFaceToBitmap(
+                renderParameters: RenderParameters,
+                calendarTimeMillis: Long,
+                idToComplicationData: Map<Int, androidx.wear.complications.data.ComplicationData>?
+            ) = fakeBitmap
+
+            override fun onDestroy() {
+                onDestroyLatch.countDown()
+            }
+        }
         WatchFace.registerEditorDelegate(testComponentName, editorDelegate)
-        `when`(editorDelegate.complicationsManager).thenReturn(complicationsManager)
-        `when`(editorDelegate.userStyleRepository).thenReturn(userStyleRepository)
-        `when`(editorDelegate.screenBounds).thenReturn(screenBounds)
-        `when`(editorDelegate.previewReferenceTimeMillis).thenReturn(previewReferenceTimeMillis)
 
         return ActivityScenario.launch(
-            WatchFaceEditorContractForTest().createIntent(
+            WatchFaceEditorContract().createIntent(
                 ApplicationProvider.getApplicationContext<Context>(),
-                EditorRequest(testComponentName, testEditorComponentName, instanceId, null)
+                EditorRequest(testComponentName, testEditorPackageName, null, watchFaceId)
             ).apply {
                 component = ComponentName(
                     ApplicationProvider.getApplicationContext<Context>(),
@@ -372,7 +411,7 @@ public class EditorSessionTest {
     public fun instanceId() {
         val scenario = createOnWatchFaceEditingTestActivity(emptyList(), emptyList())
         scenario.onActivity {
-            assertThat(it.editorSession.instanceId).isEqualTo(testInstanceId)
+            assertThat(it.editorSession.watchFaceId.id).isEqualTo(testInstanceId.id)
         }
     }
 
@@ -435,31 +474,42 @@ public class EditorSessionTest {
             listOf(leftComplication, rightComplication, backgroundComplication)
         )
         scenario.onActivity {
-            assertThat(it.editorSession.complicationState.size).isEqualTo(3)
-            assertThat(it.editorSession.complicationState[LEFT_COMPLICATION_ID]!!.bounds)
+            assertThat(it.editorSession.complicationsState.size).isEqualTo(3)
+            assertThat(it.editorSession.complicationsState[LEFT_COMPLICATION_ID]!!.bounds)
                 .isEqualTo(Rect(80, 160, 160, 240))
-            assertThat(it.editorSession.complicationState[LEFT_COMPLICATION_ID]!!.boundsType)
+            assertThat(it.editorSession.complicationsState[LEFT_COMPLICATION_ID]!!.boundsType)
                 .isEqualTo(ComplicationBoundsType.ROUND_RECT)
             assertFalse(
-                it.editorSession.complicationState[LEFT_COMPLICATION_ID]!!.fixedComplicationProvider
+                it.editorSession.complicationsState[
+                    LEFT_COMPLICATION_ID
+                ]!!.fixedComplicationProvider
+            )
+            assertTrue(
+                it.editorSession.complicationsState[LEFT_COMPLICATION_ID]!!.isInitiallyEnabled
             )
 
-            assertThat(it.editorSession.complicationState[RIGHT_COMPLICATION_ID]!!.bounds)
+            assertThat(it.editorSession.complicationsState[RIGHT_COMPLICATION_ID]!!.bounds)
                 .isEqualTo(Rect(240, 160, 320, 240))
-            assertThat(it.editorSession.complicationState[RIGHT_COMPLICATION_ID]!!.boundsType)
+            assertThat(it.editorSession.complicationsState[RIGHT_COMPLICATION_ID]!!.boundsType)
                 .isEqualTo(ComplicationBoundsType.ROUND_RECT)
             assertFalse(
-                it.editorSession.complicationState[RIGHT_COMPLICATION_ID]!!
+                it.editorSession.complicationsState[RIGHT_COMPLICATION_ID]!!
                     .fixedComplicationProvider
             )
+            assertTrue(
+                it.editorSession.complicationsState[RIGHT_COMPLICATION_ID]!!.isInitiallyEnabled
+            )
 
-            assertThat(it.editorSession.complicationState[BACKGROUND_COMPLICATION_ID]!!.bounds)
+            assertThat(it.editorSession.complicationsState[BACKGROUND_COMPLICATION_ID]!!.bounds)
                 .isEqualTo(screenBounds)
-            assertThat(it.editorSession.complicationState[BACKGROUND_COMPLICATION_ID]!!.boundsType)
+            assertThat(it.editorSession.complicationsState[BACKGROUND_COMPLICATION_ID]!!.boundsType)
                 .isEqualTo(ComplicationBoundsType.BACKGROUND)
             assertFalse(
-                it.editorSession.complicationState[BACKGROUND_COMPLICATION_ID]!!
+                it.editorSession.complicationsState[BACKGROUND_COMPLICATION_ID]!!
                     .fixedComplicationProvider
+            )
+            assertFalse(
+                it.editorSession.complicationsState[BACKGROUND_COMPLICATION_ID]!!.isInitiallyEnabled
             )
             // We could test more state but this should be enough.
         }
@@ -467,6 +517,8 @@ public class EditorSessionTest {
 
     @Test
     public fun fixedComplicationProvider() {
+        val mockLeftCanvasComplication =
+            CanvasComplicationDrawable(ComplicationDrawable(), placeholderWatchState)
         val fixedLeftComplication =
             Complication.createRoundRectComplicationBuilder(
                 LEFT_COMPLICATION_ID,
@@ -490,7 +542,9 @@ public class EditorSessionTest {
         )
         scenario.onActivity {
             assertTrue(
-                it.editorSession.complicationState[LEFT_COMPLICATION_ID]!!.fixedComplicationProvider
+                it.editorSession.complicationsState[
+                    LEFT_COMPLICATION_ID
+                ]!!.fixedComplicationProvider
             )
 
             try {
@@ -543,14 +597,17 @@ public class EditorSessionTest {
                 val providerIcon =
                     Icon.createWithBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
                 val complicationText = "TestText"
+                val mockBinder = Mockito.mock(IBinder::class.java)
 
                 `when`(mockProviderInfoService.apiVersion).thenReturn(1)
+                `when`(mockProviderInfoService.asBinder()).thenReturn(mockBinder)
 
                 doAnswer {
                     val callback = it.arguments[2] as IPreviewComplicationDataCallback
                     callback.updateComplicationData(
-                        ShortTextComplicationData.Builder(ComplicationText.plain(complicationText))
-                            .build().asWireComplicationData()
+                        ShortTextComplicationData.Builder(
+                            PlainComplicationText.Builder(complicationText).build()
+                        ).build().asWireComplicationData()
                     )
                     true
                 }.`when`(mockProviderInfoService).requestPreviewComplicationData(
@@ -696,15 +753,11 @@ public class EditorSessionTest {
              * Invoke [TestComplicationHelperActivity] which will change the provider (and hence
              * the preview data) for [LEFT_COMPLICATION_ID].
              */
-            assertTrue(
-                editorSession.launchComplicationProviderChooser(
-                    LEFT_COMPLICATION_ID
-                )
-            )
+            assertTrue(editorSession.launchComplicationProviderChooser(LEFT_COMPLICATION_ID))
 
             // This should update the preview data to point to the updated provider3 data.
             val previewComplication =
-                editorSession.getComplicationPreviewData()[LEFT_COMPLICATION_ID]
+                editorSession.getComplicationsPreviewData()[LEFT_COMPLICATION_ID]
                     as LongTextComplicationData
 
             assertThat(
@@ -713,6 +766,37 @@ public class EditorSessionTest {
                     0
                 )
             ).isEqualTo("Provider3")
+
+            assertThat(
+                TestComplicationHelperActivity.lastIntent?.extras?.getString(
+                    ProviderChooserIntent.EXTRA_WATCHFACE_INSTANCE_ID
+                )
+            ).isEqualTo(testInstanceId.id)
+        }
+    }
+
+    @Test
+    public fun launchComplicationProviderChooser_ComplicationConfigExtras() {
+        ComplicationProviderChooserContract.useTestComplicationHelperActivity = true
+
+        val scenario = createOnWatchFaceEditingTestActivity(
+            emptyList(),
+            listOf(leftComplication, rightComplication)
+        )
+
+        lateinit var editorSession: EditorSession
+        scenario.onActivity { activity ->
+            editorSession = activity.editorSession
+        }
+
+        runBlocking {
+            assertTrue(editorSession.launchComplicationProviderChooser(RIGHT_COMPLICATION_ID))
+
+            assertThat(
+                TestComplicationHelperActivity.lastIntent?.extras?.getString(
+                    PROVIDER_CHOOSER_EXTRA_KEY
+                )
+            ).isEqualTo(PROVIDER_CHOOSER_EXTRA_VALUE)
         }
     }
 
@@ -732,25 +816,17 @@ public class EditorSessionTest {
     }
 
     @Test
-    public fun takeWatchFaceScreenshot() {
+    public fun renderWatchFaceToBitmap() {
         val scenario = createOnWatchFaceEditingTestActivity(emptyList(), emptyList())
-        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
-        `when`(
-            editorDelegate.takeScreenshot(
-                RenderParameters.DEFAULT_INTERACTIVE,
-                1234L,
-                null
-            )
-        ).thenReturn(bitmap)
 
         scenario.onActivity {
             assertThat(
-                it.editorSession.takeWatchFaceScreenshot(
+                it.editorSession.renderWatchFaceToBitmap(
                     RenderParameters.DEFAULT_INTERACTIVE,
                     1234L,
                     null
                 )
-            ).isEqualTo(bitmap)
+            ).isEqualTo(fakeBitmap)
         }
     }
 
@@ -784,17 +860,16 @@ public class EditorSessionTest {
 
         assertThat(result.userStyle[colorStyleSetting.id]).isEqualTo(blueStyleOption.id)
         assertThat(result.userStyle[watchHandStyleSetting.id]).isEqualTo(gothicStyleOption.id)
-        assertThat(result.watchFaceInstanceId).isEqualTo(testInstanceId)
-        assertTrue(result.commitChanges)
+        assertThat(result.watchFaceId.id).isEqualTo(testInstanceId.id)
+        assertTrue(result.shouldCommitChanges)
 
         // The style change should also have been applied to the watchface
-        assertThat(editorDelegate.userStyleRepository.userStyle[colorStyleSetting]!!.id)
-            .isEqualTo(blueStyleOption.id)
-        assertThat(editorDelegate.userStyleRepository.userStyle[watchHandStyleSetting]!!.id)
+        assertThat(editorDelegate.userStyle[colorStyleSetting]!!.id).isEqualTo(blueStyleOption.id)
+        assertThat(editorDelegate.userStyle[watchHandStyleSetting]!!.id)
             .isEqualTo(gothicStyleOption.id)
 
-        assertThat(result.previewComplicationData.size).isEqualTo(2)
-        val leftComplicationData = result.previewComplicationData[LEFT_COMPLICATION_ID] as
+        assertThat(result.previewComplicationsData.size).isEqualTo(2)
+        val leftComplicationData = result.previewComplicationsData[LEFT_COMPLICATION_ID] as
             ShortTextComplicationData
         assertThat(
             leftComplicationData.text.getTextAt(
@@ -803,7 +878,7 @@ public class EditorSessionTest {
             )
         ).isEqualTo("Left")
 
-        val rightComplicationData = result.previewComplicationData[RIGHT_COMPLICATION_ID] as
+        val rightComplicationData = result.previewComplicationsData[RIGHT_COMPLICATION_ID] as
             LongTextComplicationData
         assertThat(
             rightComplicationData.text.getTextAt(
@@ -816,11 +891,11 @@ public class EditorSessionTest {
     }
 
     @Test
-    public fun nullInstanceId() {
+    public fun emptyInstanceId() {
         val scenario = createOnWatchFaceEditingTestActivity(
             listOf(colorStyleSetting, watchHandStyleSetting),
             emptyList(),
-            instanceId = null
+            watchFaceId = WatchFaceId("")
         )
 
         val editorObserver = TestEditorObserver()
@@ -828,7 +903,7 @@ public class EditorSessionTest {
 
         scenario.onActivity { activity ->
             runBlocking {
-                assertThat(activity.editorSession.instanceId).isNull()
+                assertThat(activity.editorSession.watchFaceId.id).isEmpty()
                 activity.editorSession.close()
                 activity.finish()
             }
@@ -838,7 +913,7 @@ public class EditorSessionTest {
             TIMEOUT_MILLIS,
             TimeUnit.MILLISECONDS
         ).asApiEditorState()
-        assertNull(result.watchFaceInstanceId)
+        assertThat(result.watchFaceId.id).isEmpty()
 
         EditorService.globalEditorService.unregisterObserver(observerId)
     }
@@ -859,7 +934,7 @@ public class EditorSessionTest {
             TIMEOUT_MILLIS,
             TimeUnit.MILLISECONDS
         ).asApiEditorState()
-        assertThat(result.previewComplicationData).isEmpty()
+        assertThat(result.previewComplicationsData).isEmpty()
 
         EditorService.globalEditorService.unregisterObserver(observerId)
     }
@@ -874,9 +949,9 @@ public class EditorSessionTest {
         val observerId = EditorService.globalEditorService.registerObserver(editorObserver)
         scenario.onActivity { activity ->
             runBlocking {
-                assertThat(editorDelegate.userStyleRepository.userStyle[colorStyleSetting]!!.id)
+                assertThat(editorDelegate.userStyle[colorStyleSetting]!!.id)
                     .isEqualTo(redStyleOption.id)
-                assertThat(editorDelegate.userStyleRepository.userStyle[watchHandStyleSetting]!!.id)
+                assertThat(editorDelegate.userStyle[watchHandStyleSetting]!!.id)
                     .isEqualTo(classicStyleOption.id)
 
                 // Select [blueStyleOption] and [gothicStyleOption].
@@ -899,13 +974,12 @@ public class EditorSessionTest {
         ).asApiEditorState()
         assertThat(result.userStyle[colorStyleSetting.id]).isEqualTo(blueStyleOption.id)
         assertThat(result.userStyle[watchHandStyleSetting.id]).isEqualTo(gothicStyleOption.id)
-        assertFalse(result.commitChanges)
+        assertFalse(result.shouldCommitChanges)
 
         // The original style should be applied to the watch face however because
         // commitChangesOnClose is false.
-        assertThat(editorDelegate.userStyleRepository.userStyle[colorStyleSetting]!!.id)
-            .isEqualTo(redStyleOption.id)
-        assertThat(editorDelegate.userStyleRepository.userStyle[watchHandStyleSetting]!!.id)
+        assertThat(editorDelegate.userStyle[colorStyleSetting]!!.id).isEqualTo(redStyleOption.id)
+        assertThat(editorDelegate.userStyle[watchHandStyleSetting]!!.id)
             .isEqualTo(classicStyleOption.id)
 
         EditorService.globalEditorService.unregisterObserver(observerId)
@@ -916,15 +990,75 @@ public class EditorSessionTest {
         runBlocking {
             val intent = WatchFaceEditorContract().createIntent(
                 ApplicationProvider.getApplicationContext<Context>(),
-                EditorRequest(testComponentName, testEditorComponentName, testInstanceId, null)
+                EditorRequest(testComponentName, testEditorPackageName, null, testInstanceId)
             )
-            assertThat(intent.component).isEqualTo(testEditorComponentName)
+            assertThat(intent.getPackage()).isEqualTo(testEditorPackageName)
 
             val editorRequest = EditorRequest.createFromIntent(intent)!!
-            assertThat(editorRequest.editorComponentName).isEqualTo(testEditorComponentName)
+            assertThat(editorRequest.editorPackageName).isEqualTo(testEditorPackageName)
             assertThat(editorRequest.initialUserStyle).isNull()
             assertThat(editorRequest.watchFaceComponentName).isEqualTo(testComponentName)
-            assertThat(editorRequest.watchFaceInstanceId).isEqualTo(testInstanceId)
+            assertThat(editorRequest.watchFaceId.id).isEqualTo(testInstanceId.id)
+        }
+    }
+
+    @Test
+    public fun forceCloseEditorSession() {
+        val scenario = createOnWatchFaceEditingTestActivity(
+            listOf(colorStyleSetting, watchHandStyleSetting),
+            listOf(leftComplication, rightComplication)
+        )
+
+        val editorObserver = TestEditorObserver()
+        val observerId = EditorService.globalEditorService.registerObserver(editorObserver)
+
+        scenario.onActivity { activity ->
+            runBlocking {
+                // Select [blueStyleOption] and [gothicStyleOption].
+                val styleMap = activity.editorSession.userStyle.selectedOptions.toMutableMap()
+                for (userStyleSetting in activity.editorSession.userStyleSchema.userStyleSettings) {
+                    styleMap[userStyleSetting] = userStyleSetting.options.last()
+                }
+                activity.editorSession.userStyle = UserStyle(styleMap)
+            }
+        }
+
+        EditorService.globalEditorService.closeEditor()
+        assertTrue(onDestroyLatch.await(5L, TimeUnit.SECONDS))
+
+        // We don't expect the observer to have fired.
+        assertFalse(editorObserver.stateChangeObserved())
+
+        // The style change should not have been applied to the watchface.
+        assertThat(editorDelegate.userStyle[colorStyleSetting]!!.id).isEqualTo(redStyleOption.id)
+        assertThat(editorDelegate.userStyle[watchHandStyleSetting]!!.id)
+            .isEqualTo(classicStyleOption.id)
+
+        EditorService.globalEditorService.unregisterObserver(observerId)
+    }
+
+    @Test
+    public fun closeEditorSessionBeforeWatchFaceDelegateCreated() {
+        val session: ActivityScenario<OnWatchFaceEditingTestActivity> = ActivityScenario.launch(
+            WatchFaceEditorContract().createIntent(
+                ApplicationProvider.getApplicationContext<Context>(),
+                EditorRequest(
+                    testComponentName,
+                    testEditorPackageName,
+                    null,
+                    WatchFaceId("instanceId")
+                )
+            ).apply {
+                component = ComponentName(
+                    ApplicationProvider.getApplicationContext<Context>(),
+                    OnWatchFaceEditingTestActivity::class.java
+                )
+            }
+        )
+
+        session.onActivity { activity ->
+            // This shouldn't throw an exception.
+            activity.editorSession.close()
         }
     }
 }

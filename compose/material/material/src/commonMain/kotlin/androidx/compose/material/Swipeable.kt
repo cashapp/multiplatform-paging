@@ -17,12 +17,12 @@
 package androidx.compose.material
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationEndReason
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.SpringSpec
-import androidx.compose.foundation.InteractionState
 import androidx.compose.foundation.gestures.DraggableState
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.SwipeableDefaults.AnimationSpec
 import androidx.compose.material.SwipeableDefaults.StandardResistanceFactor
 import androidx.compose.material.SwipeableDefaults.VelocityThreshold
@@ -31,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -40,12 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.gesture.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.gesture.nestedscroll.NestedScrollSource
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Density
@@ -55,6 +54,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.abs
@@ -121,6 +124,11 @@ open class SwipeableState<T>(
 
     internal var anchors by mutableStateOf(emptyMap<Float, T>())
 
+    private val latestNonEmptyAnchorsFlow: Flow<Map<Float, T>> =
+        snapshotFlow { anchors }
+            .filter { it.isNotEmpty() }
+            .take(1)
+
     internal var minBound = Float.NEGATIVE_INFINITY
     internal var maxBound = Float.POSITIVE_INFINITY
 
@@ -159,14 +167,15 @@ open class SwipeableState<T>(
             maxBound = Float.POSITIVE_INFINITY
             val targetOffset = newAnchors.getOffset(currentValue)
                 ?: newAnchors.keys.minByOrNull { abs(it - offset.value) }!!
-            val result = animateInternalToOffset(targetOffset, animationSpec)
+            try {
+                animateInternalToOffset(targetOffset, animationSpec)
+            } catch (c: CancellationException) {
+                // If the animation was interrupted for any reason, snap as a last resort.
+                snapInternalToOffset(targetOffset)
+            }
             currentValue = newAnchors.getValue(targetOffset)
             minBound = newAnchors.keys.minOrNull()!!
             maxBound = newAnchors.keys.maxOrNull()!!
-            // If the animation was interrupted for any reason, snap as a last resort.
-            if (result == AnimationEndReason.Interrupted) {
-                snapInternalToOffset(targetOffset)
-            }
         }
     }
 
@@ -192,28 +201,21 @@ open class SwipeableState<T>(
         }
     }
 
-    private suspend fun animateInternalToOffset(
-        target: Float,
-        spec: AnimationSpec<Float>
-    ): AnimationEndReason {
-        var result: AnimationEndReason = AnimationEndReason.Interrupted
+    private suspend fun animateInternalToOffset(target: Float, spec: AnimationSpec<Float>) {
         draggableState.drag {
             var prevValue = absoluteOffset.value
             animationTarget.value = target
             isAnimationRunning = true
             try {
-                result = Animatable(prevValue).animateTo(target, spec) {
+                Animatable(prevValue).animateTo(target, spec) {
                     dragBy(this.value - prevValue)
                     prevValue = this.value
-                }.endReason
-            } catch (c: CancellationException) {
-                result = AnimationEndReason.Interrupted
+                }
             } finally {
                 animationTarget.value = null
                 isAnimationRunning = false
             }
         }
-        return result
     }
 
     /**
@@ -293,16 +295,14 @@ open class SwipeableState<T>(
      */
     @ExperimentalMaterialApi
     suspend fun snapTo(targetValue: T) {
-        val targetOffset = anchors.getOffset(targetValue)
-        require(anchors.isNotEmpty()) {
-            "State $this is not attached to a component. Have you passed state object to " +
-                "a component?"
+        latestNonEmptyAnchorsFlow.collect { anchors ->
+            val targetOffset = anchors.getOffset(targetValue)
+            requireNotNull(targetOffset) {
+                "The target value must have an associated anchor."
+            }
+            snapInternalToOffset(targetOffset)
+            currentValue = targetValue
         }
-        requireNotNull(targetOffset) {
-            "The target value must have an associated anchor."
-        }
-        snapInternalToOffset(targetOffset)
-        currentValue = targetValue
     }
 
     /**
@@ -310,31 +310,24 @@ open class SwipeableState<T>(
      *
      * @param targetValue The new value to animate to.
      * @param anim The animation that will be used to animate to the new value.
-     *
-     * @return animation end reason
      */
     @ExperimentalMaterialApi
-    suspend fun animateTo(
-        targetValue: T,
-        anim: AnimationSpec<Float> = animationSpec
-    ): AnimationEndReason {
-        try {
-            val targetOffset = anchors.getOffset(targetValue)
-            require(anchors.isNotEmpty()) {
-                "State $this is not attached to a component. Have you passed state object to " +
-                    "a component?"
+    suspend fun animateTo(targetValue: T, anim: AnimationSpec<Float> = animationSpec) {
+        latestNonEmptyAnchorsFlow.collect { anchors ->
+            try {
+                val targetOffset = anchors.getOffset(targetValue)
+                requireNotNull(targetOffset) {
+                    "The target value must have an associated anchor."
+                }
+                animateInternalToOffset(targetOffset, anim)
+            } finally {
+                val endOffset = absoluteOffset.value
+                val endValue = anchors
+                    // fighting rounding error once again, anchor should be as close as 0.5 pixels
+                    .filterKeys { anchorOffset -> abs(anchorOffset - endOffset) < 0.5f }
+                    .values.firstOrNull() ?: currentValue
+                currentValue = endValue
             }
-            requireNotNull(targetOffset) {
-                "The target value must have an associated anchor."
-            }
-            return animateInternalToOffset(targetOffset, anim)
-        } finally {
-            val endOffset = absoluteOffset.value
-            val endValue = anchors
-                // fighting rounding error once again, anchor should be as close as 0.5 pixels
-                .filterKeys { anchorOffset -> abs(anchorOffset - endOffset) < 0.5f }
-                .values.firstOrNull() ?: currentValue
-            currentValue = endValue
         }
     }
 
@@ -351,22 +344,21 @@ open class SwipeableState<T>(
      *
      * @return the reason fling ended
      */
-    suspend fun performFling(velocity: Float): AnimationEndReason {
-        val lastAnchor = anchors.getOffset(currentValue)!!
-        val targetValue = computeTarget(
-            offset = offset.value,
-            lastValue = lastAnchor,
-            anchors = anchors.keys,
-            thresholds = thresholds,
-            velocity = velocity,
-            velocityThreshold = velocityThreshold
-        )
-        val targetState = anchors[targetValue]
-        return if (targetState != null && confirmStateChange(targetState)) {
-            animateTo(targetState)
-        } else {
+    suspend fun performFling(velocity: Float) {
+        latestNonEmptyAnchorsFlow.collect { anchors ->
+            val lastAnchor = anchors.getOffset(currentValue)!!
+            val targetValue = computeTarget(
+                offset = offset.value,
+                lastValue = lastAnchor,
+                anchors = anchors.keys,
+                thresholds = thresholds,
+                velocity = velocity,
+                velocityThreshold = velocityThreshold
+            )
+            val targetState = anchors[targetValue]
+            if (targetState != null && confirmStateChange(targetState)) animateTo(targetState)
             // If the user vetoed the state change, rollback to the previous state.
-            animateInternalToOffset(lastAnchor, animationSpec)
+            else animateInternalToOffset(lastAnchor, animationSpec)
         }
     }
 
@@ -545,7 +537,8 @@ internal fun <T : Any> rememberSwipeableStateFor(
  * @param enabled Whether this [swipeable] is enabled and should react to the user's input.
  * @param reverseDirection Whether to reverse the direction of the swipe, so a top to bottom
  * swipe will behave like bottom to top, and a left to right swipe will behave like right to left.
- * @param interactionState Optional [InteractionState] that will passed on to [Modifier.draggable].
+ * @param interactionSource Optional [MutableInteractionSource] that will passed on to
+ * the internal [Modifier.draggable].
  * @param resistance Controls how much resistance will be applied when swiping past the bounds.
  * @param velocityThreshold The threshold (in dp per second) that the end velocity has to exceed
  * in order to animate to the next state, even if the positional [thresholds] have not been reached.
@@ -558,7 +551,7 @@ fun <T> Modifier.swipeable(
     orientation: Orientation,
     enabled: Boolean = true,
     reverseDirection: Boolean = false,
-    interactionState: InteractionState? = null,
+    interactionSource: MutableInteractionSource? = null,
     thresholds: (from: T, to: T) -> ThresholdConfig = { _, _ -> FixedThreshold(56.dp) },
     resistance: ResistanceConfig? = resistanceConfig(anchors.keys),
     velocityThreshold: Dp = VelocityThreshold
@@ -570,7 +563,7 @@ fun <T> Modifier.swipeable(
         properties["orientation"] = orientation
         properties["enabled"] = enabled
         properties["reverseDirection"] = reverseDirection
-        properties["interactionState"] = interactionState
+        properties["interactionSource"] = interactionSource
         properties["thresholds"] = thresholds
         properties["resistance"] = resistance
         properties["velocityThreshold"] = velocityThreshold
@@ -584,10 +577,10 @@ fun <T> Modifier.swipeable(
     }
     val density = LocalDensity.current
     state.ensureInit(anchors)
-    val oldAnchors = state.anchors
-    state.anchors = anchors
     LaunchedEffect(anchors) {
-        state.processNewAnchors(oldAnchors, anchors)
+        val oldAnchors = state.anchors
+        state.anchors = anchors
+        state.resistance = resistance
         state.thresholds = { a, b ->
             val from = anchors.getValue(a)
             val to = anchors.getValue(b)
@@ -596,16 +589,14 @@ fun <T> Modifier.swipeable(
         with(density) {
             state.velocityThreshold = velocityThreshold.toPx()
         }
-    }
-    SideEffect {
-        state.resistance = resistance
+        state.processNewAnchors(oldAnchors, anchors)
     }
 
     Modifier.draggable(
         orientation = orientation,
         enabled = enabled,
         reverseDirection = reverseDirection,
-        interactionState = interactionState,
+        interactionSource = interactionSource,
         startDragImmediately = state.isAnimationRunning,
         onDragStopped = { velocity -> launch { state.performFling(velocity) } },
         state = state.draggableState

@@ -1074,6 +1074,7 @@ package androidx.core.content.pm {
 
   public static class ShortcutInfoCompat.Builder {
     ctor public ShortcutInfoCompat.Builder(android.content.Context, String);
+    method public androidx.core.content.pm.ShortcutInfoCompat.Builder addCapabilityBinding(String, java.util.Map<java.lang.String!,java.util.List<java.lang.String!>!>?);
     method public androidx.core.content.pm.ShortcutInfoCompat build();
     method public androidx.core.content.pm.ShortcutInfoCompat.Builder setActivity(android.content.ComponentName);
     method public androidx.core.content.pm.ShortcutInfoCompat.Builder setAlwaysBadged();
@@ -1092,6 +1093,7 @@ package androidx.core.content.pm {
     method public androidx.core.content.pm.ShortcutInfoCompat.Builder setPersons(androidx.core.app.Person![]);
     method public androidx.core.content.pm.ShortcutInfoCompat.Builder setRank(int);
     method public androidx.core.content.pm.ShortcutInfoCompat.Builder setShortLabel(CharSequence);
+    method public androidx.core.content.pm.ShortcutInfoCompat.Builder setSliceUri(android.net.Uri);
   }
 
   public class ShortcutManagerCompat {
@@ -1550,15 +1552,15 @@ package androidx.core.os {
     field public static final String MEDIA_UNKNOWN = "unknown";
   }
 
+  public final class ExecutorCompat {
+    method public static java.util.concurrent.Executor create(android.os.Handler);
+  }
+
   public final class HandlerCompat {
     method public static android.os.Handler createAsync(android.os.Looper);
     method public static android.os.Handler createAsync(android.os.Looper, android.os.Handler.Callback);
+    method @RequiresApi(16) public static boolean hasCallbacks(android.os.Handler, Runnable);
     method public static boolean postDelayed(android.os.Handler, Runnable, Object?, long);
-  }
-
-  public class HandlerExecutor implements java.util.concurrent.Executor {
-    ctor public HandlerExecutor(android.os.Handler);
-    method public void execute(Runnable);
   }
 
   public final class LocaleListCompat {
@@ -1938,14 +1940,13 @@ package androidx.core.view {
   }
 
   public final class DisplayCompat {
-    method public static androidx.core.view.DisplayCompat.ModeCompat getMode(android.content.Context, android.view.Display);
     method public static androidx.core.view.DisplayCompat.ModeCompat![] getSupportedModes(android.content.Context, android.view.Display);
   }
 
   public static final class DisplayCompat.ModeCompat {
     method public int getPhysicalHeight();
     method public int getPhysicalWidth();
-    method @Deprecated public boolean isNative();
+    method public boolean isNative();
     method @RequiresApi(android.os.Build.VERSION_CODES.M) public android.view.Display.Mode? toMode();
   }
 

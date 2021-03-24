@@ -170,6 +170,21 @@ class SliderTest {
     }
 
     @Test
+    fun slider_semantics_disabled() {
+        rule.setMaterialContent {
+            Slider(
+                value = 0f,
+                onValueChange = {},
+                modifier = Modifier.testTag(tag),
+                enabled = false
+            )
+        }
+
+        rule.onNodeWithTag(tag)
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
+    }
+
+    @Test
     fun slider_drag() {
         val state = mutableStateOf(0f)
         var slop = 0f
@@ -225,6 +240,38 @@ class SliderTest {
                 up()
                 expected = calculateFraction(left, right, centerX + 50)
             }
+        rule.runOnIdle {
+            Truth.assertThat(abs(state.value - expected)).isLessThan(0.001f)
+        }
+    }
+
+    @Test
+    fun slider_tap_rangeChange() {
+        val state = mutableStateOf(0f)
+        val rangeEnd = mutableStateOf(0.25f)
+
+        rule.setMaterialContent {
+            Slider(
+                modifier = Modifier.testTag(tag),
+                value = state.value,
+                onValueChange = { state.value = it },
+                valueRange = 0f..rangeEnd.value
+            )
+        }
+        // change to 1 since [calculateFraction] coerces between 0..1
+        rule.runOnUiThread {
+            rangeEnd.value = 1f
+        }
+
+        var expected = 0f
+
+        rule.onNodeWithTag(tag)
+            .performGesture {
+                down(Offset(centerX + 50, centerY))
+                up()
+                expected = calculateFraction(left, right, centerX + 50)
+            }
+
         rule.runOnIdle {
             Truth.assertThat(abs(state.value - expected)).isLessThan(0.001f)
         }

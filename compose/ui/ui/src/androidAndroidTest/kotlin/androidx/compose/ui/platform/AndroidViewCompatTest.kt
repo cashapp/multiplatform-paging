@@ -26,14 +26,16 @@ import android.view.View.MeasureSpec
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +68,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.espresso.Espresso
 import androidx.test.espresso.assertion.ViewAssertions.matches
@@ -495,7 +498,6 @@ class AndroidViewCompatTest {
     }
 
     @Test
-    @OptIn(ExperimentalComposeApi::class)
     fun testComposeInsideView_attachingAndDetaching() {
         var composeContent by mutableStateOf(true)
         var node: LayoutNode? = null
@@ -516,7 +518,7 @@ class AndroidViewCompatTest {
                                 factory = LayoutNode.Constructor,
                                 update = {
                                     init { node = this }
-                                    set(noOpMeasureBlocks, ComposeUiNode.SetMeasureBlocks)
+                                    set(noOpMeasurePolicy, ComposeUiNode.SetMeasurePolicy)
                                 }
                             )
                         }
@@ -562,6 +564,81 @@ class AndroidViewCompatTest {
         }
     }
 
+    @Test
+    fun testAndroidViewHolder_size() {
+        val size = 100
+
+        rule.runOnUiThread {
+            val root = FrameLayout(rule.activity)
+            val composeView = ComposeView(rule.activity)
+            composeView.layoutParams = FrameLayout.LayoutParams(size, size)
+            root.addView(composeView)
+            rule.activity.setContentView(root)
+            composeView.setContent {
+                AndroidView(::View, Modifier.size(10.dp))
+            }
+        }
+
+        Espresso.onView(withClassName(endsWith("AndroidViewsHandler"))).check { view, exception ->
+            view as AndroidViewsHandler
+            // The views handler should match the size of the ComposeView.
+            if (view.width != size || view.height != size) throw exception
+        }
+    }
+
+    @Test
+    fun testRedraw_withoutSizeChangeOrStateRead() {
+        val squareRef = Ref<ColoredSquareView>()
+        var expectedColor = Color.Blue
+        rule.setContent {
+            AndroidView(::ColoredSquareView) {
+                it.color = expectedColor
+                it.ref = squareRef
+            }
+        }
+        val squareView = squareRef.value
+        assertNotNull(squareView)
+
+        rule.runOnUiThread {
+            assertTrue(squareView!!.drawnAfterLastColorChange)
+            // Change view attribute using recomposition.
+            squareView.color = Color.Green
+            expectedColor = Color.Green
+        }
+
+        rule.runOnUiThread {
+            assertTrue(squareView!!.drawnAfterLastColorChange)
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
+    fun testMove_withoutRedraw() {
+        var offset by mutableStateOf(0)
+        rule.setContent {
+            Box(Modifier.testTag("box").fillMaxSize()) {
+                val offsetDp = with(rule.density) { offset.toDp() }
+                Box(Modifier.offset(offsetDp, offsetDp)) {
+                    AndroidView(::ColoredSquareView, Modifier.graphicsLayer())
+                }
+            }
+        }
+        val offsetColorProvider: (IntOffset) -> Color? = {
+            if (it.x >= offset && it.x < offset + 100 && it.y >= offset && it.y < offset + 100) {
+                Color.Blue
+            } else {
+                null
+            }
+        }
+        rule.onNodeWithTag("box").captureToImage()
+            .assertPixels(expectedColorProvider = offsetColorProvider)
+        rule.runOnUiThread {
+            offset = 100
+        }
+        rule.onNodeWithTag("box").captureToImage()
+            .assertPixels(expectedColorProvider = offsetColorProvider)
+    }
+
     class ColoredSquareView(context: Context) : View(context) {
         var size: Int = 100
             set(value) {
@@ -575,9 +652,12 @@ class AndroidViewCompatTest {
             set(value) {
                 if (value != field) {
                     field = value
+                    drawnAfterLastColorChange = false
                     invalidate()
                 }
             }
+
+        var drawnAfterLastColorChange = false
 
         var ref: Ref<ColoredSquareView>? = null
             set(value) {
@@ -592,6 +672,7 @@ class AndroidViewCompatTest {
 
         override fun draw(canvas: Canvas?) {
             super.draw(canvas)
+            drawnAfterLastColorChange = true
             canvas!!.drawRect(
                 Rect(0, 0, size, size),
                 Paint().apply { color = this@ColoredSquareView.color.toArgb() }
@@ -641,9 +722,8 @@ class AndroidViewCompatTest {
         }
     }
 
-    private val noOpMeasureBlocks = object : LayoutNode.NoIntrinsicsMeasureBlocks("") {
-        override fun measure(
-            measureScope: MeasureScope,
+    private val noOpMeasurePolicy = object : LayoutNode.NoIntrinsicsMeasurePolicy("") {
+        override fun MeasureScope.measure(
             measurables: List<Measurable>,
             constraints: Constraints
         ): MeasureResult {

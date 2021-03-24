@@ -18,21 +18,21 @@ package androidx.compose.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationEndReason
-import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.AnimationVector2D
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.LayoutModifier
-import androidx.compose.ui.layout.Measurable
-import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutModifier
+import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -93,6 +93,12 @@ sealed class EnterTransition {
         )
     }
     // TODO: Support EnterTransition.None
+
+    override fun equals(other: Any?): Boolean {
+        return other is EnterTransition && other.data == data
+    }
+
+    override fun hashCode(): Int = data.hashCode()
 }
 
 /**
@@ -143,7 +149,13 @@ sealed class ExitTransition {
             )
         )
     }
+
     // TODO: Support ExitTransition.None
+    override fun equals(other: Any?): Boolean {
+        return other is ExitTransition && other.data == data
+    }
+
+    override fun hashCode(): Int = data.hashCode()
 }
 
 /**
@@ -481,8 +493,8 @@ fun shrinkVertically(
 }
 
 /**
- * This slides in the content horizontally, from a starting offset defined in
- * [initialOffsetX] to `0`. The direction of the slide can be controlled by configuring the
+ * This slides in the content horizontally, from a starting offset defined in [initialOffsetX] to
+ * `0` **pixels**. The direction of the slide can be controlled by configuring the
  * [initialOffsetX]. A positive value means sliding from right to left, whereas a negative
  * value would slide the content from left to right.
  *
@@ -493,7 +505,7 @@ fun shrinkVertically(
  *
  * @sample androidx.compose.animation.samples.SlideTransition
  *
- * @param initialOffsetX a lambda that takes the full width of the content and returns the
+ * @param initialOffsetX a lambda that takes the full width of the content in pixels and returns the
  *                             initial offset for the slide-in, by default it returns `-fullWidth/2`
  * @param animationSpec the animation used for the slide-in, [spring] by default.
  */
@@ -509,8 +521,8 @@ fun slideInHorizontally(
     )
 
 /**
- * This slides in the content vertically, from a starting offset defined in
- * [initialOffsetY] to `0`. The direction of the slide can be controlled by configuring the
+ * This slides in the content vertically, from a starting offset defined in [initialOffsetY] to `0`
+ * in **pixels**. The direction of the slide can be controlled by configuring the
  * [initialOffsetY]. A positive initial offset means sliding up, whereas a negative value would
  * slide the content down.
  *
@@ -537,8 +549,8 @@ fun slideInVertically(
     )
 
 /**
- * This slides out the content horizontally, from 0 to a target offset defined in
- * [targetOffsetX]. The direction of the slide can be controlled by configuring the
+ * This slides out the content horizontally, from 0 to a target offset defined in [targetOffsetX]
+ * in **pixels**. The direction of the slide can be controlled by configuring the
  * [targetOffsetX]. A positive value means sliding to the right, whereas a negative
  * value would slide the content towards the left.
  *
@@ -565,8 +577,8 @@ fun slideOutHorizontally(
     )
 
 /**
- * This slides out the content vertically, from 0 to a target offset defined in
- * [targetOffsetY]. The direction of the slide-out can be controlled by configuring the
+ * This slides out the content vertically, from 0 to a target offset defined in [targetOffsetY]
+ * in **pixels**. The direction of the slide-out can be controlled by configuring the
  * [targetOffsetY]. A positive target offset means sliding down, whereas a negative value would
  * slide the content up.
  *
@@ -673,6 +685,11 @@ internal interface SizeAnimation {
         scope: CoroutineScope,
     ): SizeAnimation
 
+    /**
+     * Returns what the offset will be once the target size is applied.
+     */
+    fun snapTo(target: IntSize, scope: CoroutineScope): IntOffset
+
     val alignment: Alignment
 }
 
@@ -716,6 +733,13 @@ private class AlignmentBasedSizeAnimation(
             val offset = this.offset(fullSize)
             return RectBasedSizeAnimation(anim, offset, clip, scope, listener)
         }
+    }
+
+    override fun snapTo(target: IntSize, scope: CoroutineScope): IntOffset {
+        scope.launch {
+            anim.snapTo(target)
+        }
+        return alignment.align(target, target, LayoutDirection.Ltr)
     }
 
     override val isAnimating: Boolean
@@ -777,6 +801,15 @@ private class RectBasedSizeAnimation(
         return this
     }
 
+    override fun snapTo(target: IntSize, scope: CoroutineScope): IntOffset {
+        val targetOffSet = alignment.align(target, target, LayoutDirection.Ltr)
+        scope.launch {
+            offsetAnim.snapTo(targetOffSet)
+            anim.snapTo(target)
+        }
+        return targetOffSet
+    }
+
     override val isAnimating: Boolean
         get() = (anim.isRunning || offsetAnim.isRunning)
 }
@@ -804,12 +837,8 @@ private class FadeTransition(
     override val isRunning: Boolean
         get() = alphaAnim.isRunning
     override val modifier: Modifier
-        get() = if (alphaAnim.isRunning || (state == AnimStates.Exiting && exit != null)) {
-            // Only add graphics layer if the animation is running, or if it's waiting for other
-            // exit animations to finish.
-            Modifier.graphicsLayer(alpha = alphaAnim.value)
-        } else {
-            Modifier
+        get() = Modifier.graphicsLayer {
+            alpha = alphaAnim.value
         }
 
     override var state: AnimStates = AnimStates.Gone
@@ -830,8 +859,8 @@ private class FadeTransition(
                     enter?.apply {
                         // If fade in is defined start from pre-defined `alphaFrom`. If no fade in is defined,
                         // snap the alpha to 1f
+                        alphaAnim = Animatable(alpha, 0.02f)
                         scope.launch {
-                            alphaAnim.snapTo(alpha)
                             alphaAnim.animateTo(1f, animationSpec)
                             listener(AnimationEndReason.Finished, alphaAnim.value)
                         }
@@ -856,6 +885,7 @@ private class FadeTransition(
             }
             field = value
         }
+
     private fun animateTo(
         target: Float,
         animationSpec: FiniteAnimationSpec<Float> = spring(visibilityThreshold = 0.02f),
@@ -867,7 +897,7 @@ private class FadeTransition(
         }
     }
 
-    val alphaAnim = Animatable(1f, visibilityThreshold = 0.02f)
+    var alphaAnim = Animatable(1f, visibilityThreshold = 0.02f)
 }
 
 private class SlideTransition(
@@ -919,12 +949,15 @@ private class SlideTransition(
             // Animation is interrupted from slide out, now slide in
             enter?.apply {
                 // If slide in animation specified, use that. Otherwise use default.
-                val anim = slideAnim
-                    ?: Animatable(
+                val anim = if (slideAnim?.isRunning != true) {
+                    Animatable(
                         slideOffset(fullSize), IntOffset.VectorConverter, IntOffset(1, 1)
                     )
+                } else {
+                    slideAnim
+                }
                 scope.launch {
-                    anim.animateTo(IntOffset.Zero, animationSpec)
+                    anim!!.animateTo(IntOffset.Zero, animationSpec)
                     listener(AnimationEndReason.Finished, anim.value)
                 }
                 slideAnim = anim
@@ -991,6 +1024,11 @@ private class ChangeSizeTransition(
         sizeAnim?.apply {
             if (state == currentState) {
                 // If no state change, return the current size animation value.
+                if (state == AnimStates.Entering) {
+                    animateTo(fullSize, alignment, fullSize, spring(), scope)
+                } else if (state == AnimStates.Visible) {
+                    return snapTo(fullSize, scope) to fullSize
+                }
                 return offset(fullSize) to size
             }
         }
@@ -1002,10 +1040,11 @@ private class ChangeSizeTransition(
                 val anim = sizeAnim?.run {
                     // If the animation is not running and the alignment isn't the same, prefer
                     // AlignmentBasedSizeAnimation over rect based animation.
-                    if (!isRunning && alignment != enter.alignment) {
+                    if (!isAnimating) {
                         null
-                    } else
+                    } else {
                         this
+                    }
                 } ?: AlignmentBasedSizeAnimation(
                     Animatable(
                         enter.startSize.invoke(fullSize),
@@ -1102,11 +1141,6 @@ internal class TransitionAnimations constructor(
     init {
         animations = mutableListOf()
         // Only set up animations when either enter or exit transition is defined.
-        if (enter.data.fade != null || exit.data.fade != null) {
-            animations.add(
-                FadeTransition(enter.data.fade, exit.data.fade, scope, listener)
-            )
-        }
         if (enter.data.slide != null || exit.data.slide != null) {
             animations.add(
                 SlideTransition(enter.data.slide, exit.data.slide, scope, listener)
@@ -1115,6 +1149,11 @@ internal class TransitionAnimations constructor(
         if (enter.data.changeSize != null || exit.data.changeSize != null) {
             animations.add(
                 ChangeSizeTransition(enter.data.changeSize, exit.data.changeSize, scope, listener)
+            )
+        }
+        if (enter.data.fade != null || exit.data.fade != null) {
+            animations.add(
+                FadeTransition(enter.data.fade, exit.data.fade, scope, listener)
             )
         }
     }

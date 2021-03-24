@@ -16,9 +16,10 @@
 
 package androidx.compose.foundation.text
 
-import androidx.compose.foundation.InteractionState
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -30,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
 import androidx.compose.ui.layout.LayoutModifier
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
@@ -51,13 +51,13 @@ import kotlin.math.roundToInt
 // Scrollable
 internal fun Modifier.textFieldScrollable(
     scrollerPosition: TextFieldScrollerPosition,
-    interactionState: InteractionState? = null,
+    interactionSource: MutableInteractionSource? = null,
     enabled: Boolean = true
 ) = composed(
     inspectorInfo = debugInspectorInfo {
         name = "textFieldScrollable"
         properties["scrollerPosition"] = scrollerPosition
-        properties["interactionState"] = interactionState
+        properties["interactionSource"] = interactionSource
         properties["enabled"] = enabled
     }
 ) {
@@ -79,7 +79,7 @@ internal fun Modifier.textFieldScrollable(
         orientation = scrollerPosition.orientation,
         reverseDirection = reverseDirection,
         state = controller,
-        interactionState = interactionState,
+        interactionSource = interactionSource,
         enabled = enabled && scrollerPosition.maximum != 0f
     )
     scroll
@@ -229,13 +229,13 @@ internal class TextFieldScrollerPosition(
      * Taken with the opposite sign defines the x or y position of the text field in the
      * horizontal or vertical scroller container correspondingly.
      */
-    var offset by mutableStateOf(initial, structuralEqualityPolicy())
+    var offset by mutableStateOf(initial)
 
     /**
      * Maximum length by which the text field can be scrolled. Defined as a difference in
      * size between the scroller container and the text field.
      */
-    var maximum by mutableStateOf(Float.POSITIVE_INFINITY, structuralEqualityPolicy())
+    var maximum by mutableStateOf(0f)
         private set
 
     /**

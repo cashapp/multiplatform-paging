@@ -16,14 +16,16 @@
 
 package androidx.compose.material
 
-import androidx.compose.foundation.Interaction
-import androidx.compose.foundation.InteractionState
+import androidx.compose.foundation.interaction.Interaction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.defaultMinSizeConstraints
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.TextFieldDefaults.MinHeight
+import androidx.compose.material.TextFieldDefaults.MinWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -41,7 +43,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.text.SoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -87,39 +88,31 @@ import kotlin.math.roundToInt
  * container
  * @param trailingIcon the optional trailing icon to be displayed at the end of the text field
  * container
- * @param isErrorValue indicates if the text field's current value is in error. If set to true, the
- * label, bottom indicator and trailing icon will be displayed in [errorColor] color
- * @param visualTransformation transforms the visual representation of the input [value].
+ * @param isError indicates if the text field's current value is in error. If set to true, the
+ * label, bottom indicator and trailing icon by default will be displayed in error color
+ * @param visualTransformation transforms the visual representation of the input [value]
  * For example, you can use [androidx.compose.ui.text.input.PasswordVisualTransformation] to create a password
  * text field. By default no visual transformation is applied
  * @param keyboardOptions software keyboard options that contains configuration such as
- * [KeyboardType] and [ImeAction].
+ * [KeyboardType] and [ImeAction]
  * @param keyboardActions when the input service emits an IME action, the corresponding callback
  * is called. Note that this IME action may be different from what you specified in
- * [KeyboardOptions.imeAction].
+ * [KeyboardOptions.imeAction]
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
- * maxLines attribute will be automatically set to 1.
+ * maxLines attribute will be automatically set to 1
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
- * set to 1 if [singleLine] is set to true.
- * [KeyboardOptions.imeAction] field. The callback also exposes a [SoftwareKeyboardController]
- * instance as a parameter that can be used to request to hide the software keyboard
- * @param onTextInputStarted a callback to be invoked when the connection with the platform's text
- * input service (e.g. software keyboard on Android) has been established. Called with the
- * [SoftwareKeyboardController] instance that can be used to request to show or hide the software
- * keyboard
- * @param interactionState the [InteractionState] representing the different [Interaction]s
- * present on this OutlinedTextField. You can create and pass in your own remembered
- * [InteractionState] if you want to read the [InteractionState] and customize the appearance /
- * behavior of this OutlinedTextField in different [Interaction]s.
- * @param activeColor the color of the label, bottom indicator and the cursor when the text field is
- * in focus
- * @param inactiveColor the color of either the input text or placeholder when the text field is in
- * focus, and the color of the label and bottom indicator when the text field is not in focus
- * @param errorColor the alternative color of the label, bottom indicator, cursor and trailing icon
- * used when [isErrorValue] is set to true
+ * set to 1 if [singleLine] is set to true
+ * [KeyboardOptions.imeAction] field.
+ * @param interactionSource the [MutableInteractionSource] representing the stream of
+ * [Interaction]s for this OutlinedTextField. You can create and pass in your own remembered
+ * [MutableInteractionSource] if you want to observe [Interaction]s and customize the
+ * appearance / behavior of this OutlinedTextField in different [Interaction]s.
+ * @param colors [TextFieldColors] that will be used to resolve color of the text and content
+ * (including label, placeholder, leading and trailing icons, border) for this text field in
+ * different states. See [TextFieldDefaults.outlinedTextFieldColors]
  */
 @Composable
 fun OutlinedTextField(
@@ -133,23 +126,19 @@ fun OutlinedTextField(
     placeholder: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
-    isErrorValue: Boolean = false,
+    isError: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
-    interactionState: InteractionState = remember { InteractionState() },
-    activeColor: Color = MaterialTheme.colors.primary,
-    inactiveColor: Color = MaterialTheme.colors.onSurface,
-    errorColor: Color = MaterialTheme.colors.error
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    colors: TextFieldColors = TextFieldDefaults.outlinedTextFieldColors()
 ) {
     var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = value)) }
     val textFieldValue = textFieldValueState.copy(text = value)
 
-    TextFieldImpl(
-        type = TextFieldType.Outlined,
+    OutlinedTextField(
         enabled = enabled,
         readOnly = readOnly,
         value = textFieldValue,
@@ -164,20 +153,15 @@ fun OutlinedTextField(
         textStyle = textStyle,
         label = label,
         placeholder = placeholder,
-        leading = leadingIcon,
-        trailing = trailingIcon,
-        isErrorValue = isErrorValue,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        isError = isError,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         maxLines = maxLines,
-        onTextInputStarted = onTextInputStarted,
-        interactionState = interactionState,
-        activeColor = activeColor,
-        inactiveColor = inactiveColor,
-        errorColor = errorColor,
-        backgroundColor = Color.Unspecified,
-        shape = RectangleShape
+        interactionSource = interactionSource,
+        colors = colors
     )
 }
 
@@ -213,39 +197,30 @@ fun OutlinedTextField(
  * container
  * @param trailingIcon the optional trailing icon to be displayed at the end of the text field
  * container
- * @param isErrorValue indicates if the text field's current value is in error state. If set to
- * true, the label, bottom indicator and trailing icon will be displayed in [errorColor] color
- * @param visualTransformation transforms the visual representation of the input [value].
+ * @param isError indicates if the text field's current value is in error state. If set to
+ * true, the label, bottom indicator and trailing icon by default will be displayed in error color
+ * @param visualTransformation transforms the visual representation of the input [value]
  * For example, you can use [androidx.compose.ui.text.input.PasswordVisualTransformation] to create a password
  * text field. By default no visual transformation is applied
  * @param keyboardOptions software keyboard options that contains configuration such as
- * [KeyboardType] and [ImeAction].
+ * [KeyboardType] and [ImeAction]
  * @param keyboardActions when the input service emits an IME action, the corresponding callback
  * is called. Note that this IME action may be different from what you specified in
- * [KeyboardOptions.imeAction].
+ * [KeyboardOptions.imeAction]
  * @param singleLine when set to true, this text field becomes a single horizontally scrolling
  * text field instead of wrapping onto multiple lines. The keyboard will be informed to not show
  * the return key as the [ImeAction]. Note that [maxLines] parameter will be ignored as the
- * maxLines attribute will be automatically set to 1.
+ * maxLines attribute will be automatically set to 1
  * @param maxLines the maximum height in terms of maximum number of visible lines. Should be
  * equal or greater than 1. Note that this parameter will be ignored and instead maxLines will be
- * set to 1 if [singleLine] is set to true.
- * [KeyboardOptions.imeAction] field. The callback also exposes a [SoftwareKeyboardController]
- * instance as a parameter that can be used to request to hide the software keyboard.
- * @param onTextInputStarted a callback to be invoked when the connection with the platform's text
- * input service (e.g. software keyboard on Android) has been established. Called with the
- * [SoftwareKeyboardController] instance that can be used to request to show or hide the software
- * keyboard
- * @param interactionState the [InteractionState] representing the different [Interaction]s
- * present on this OutlinedTextField. You can create and pass in your own remembered
- * [InteractionState] if you want to read the [InteractionState] and customize the appearance /
- * behavior of this OutlinedTextField in different [Interaction]s.
- * @param activeColor the color of the label, bottom indicator and the cursor when the text field is
- * in focus
- * @param inactiveColor the color of either the input text or placeholder when the text field is in
- * focus, and the color of the label and bottom indicator when the text field is not in focus
- * @param errorColor the alternative color of the label, bottom indicator, cursor and trailing icon
- * used when [isErrorValue] is set to true
+ * set to 1 if [singleLine] is set to true
+ * @param interactionSource the [MutableInteractionSource] representing the stream of
+ * [Interaction]s for this OutlinedTextField. You can create and pass in your own remembered
+ * [MutableInteractionSource] if you want to observe [Interaction]s and customize the
+ * appearance / behavior of this OutlinedTextField in different [Interaction]s.
+ * @param colors [TextFieldColors] that will be used to resolve color of the text and content
+ * (including label, placeholder, leading and trailing icons, border) for this text field in
+ * different states. See [TextFieldDefaults.outlinedTextFieldColors]
  */
 @Composable
 fun OutlinedTextField(
@@ -259,17 +234,14 @@ fun OutlinedTextField(
     placeholder: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
-    isErrorValue: Boolean = false,
+    isError: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
-    onTextInputStarted: (SoftwareKeyboardController) -> Unit = {},
-    interactionState: InteractionState = remember { InteractionState() },
-    activeColor: Color = MaterialTheme.colors.primary,
-    inactiveColor: Color = MaterialTheme.colors.onSurface,
-    errorColor: Color = MaterialTheme.colors.error
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    colors: TextFieldColors = TextFieldDefaults.outlinedTextFieldColors()
 ) {
     TextFieldImpl(
         type = TextFieldType.Outlined,
@@ -284,18 +256,14 @@ fun OutlinedTextField(
         placeholder = placeholder,
         leading = leadingIcon,
         trailing = trailingIcon,
-        isErrorValue = isErrorValue,
+        isError = isError,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         maxLines = maxLines,
-        onTextInputStarted = onTextInputStarted,
-        interactionState = interactionState,
-        activeColor = activeColor,
-        inactiveColor = inactiveColor,
-        errorColor = errorColor,
-        backgroundColor = Color.Unspecified,
-        shape = RectangleShape
+        interactionSource = interactionSource,
+        shape = RectangleShape,
+        colors = colors
     )
 }
 
@@ -312,8 +280,7 @@ internal fun OutlinedTextFieldLayout(
     singleLine: Boolean,
     maxLines: Int = Int.MAX_VALUE,
     visualTransformation: VisualTransformation,
-    onTextInputStarted: (SoftwareKeyboardController) -> Unit,
-    interactionState: InteractionState,
+    interactionSource: MutableInteractionSource,
     decoratedPlaceholder: @Composable ((Modifier) -> Unit)?,
     decoratedLabel: @Composable (() -> Unit)?,
     leading: @Composable (() -> Unit)?,
@@ -341,9 +308,9 @@ internal fun OutlinedTextFieldLayout(
     BasicTextField(
         value = value,
         modifier = modifier
-            .defaultMinSizeConstraints(
-                minWidth = TextFieldMinWidth,
-                minHeight = TextFieldMinHeight + OutlinedTextFieldTopPadding,
+            .defaultMinSize(
+                minWidth = MinWidth,
+                minHeight = MinHeight + OutlinedTextFieldTopPadding,
             )
             .padding(top = OutlinedTextFieldTopPadding)
             .drawOutlinedBorder(outlinedBorderParams),
@@ -355,8 +322,7 @@ internal fun OutlinedTextFieldLayout(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        interactionState = interactionState,
-        onTextInputStarted = onTextInputStarted,
+        interactionSource = interactionSource,
         singleLine = singleLine,
         maxLines = maxLines,
         decorationBox = @Composable { coreTextField ->
@@ -719,6 +685,7 @@ private class OutlinedBorderParams(
 // TODO(b/158077409) support shape in OutlinedTextField
 private val OutlinedTextFieldCornerRadius = 4.dp
 private val OutlinedTextFieldInnerPadding = 4.dp
+
 /*
 This padding is used to allow label not overlap with the content above it. This 8.dp will work
 for default cases when developers do not override the label's font size. If they do, they will

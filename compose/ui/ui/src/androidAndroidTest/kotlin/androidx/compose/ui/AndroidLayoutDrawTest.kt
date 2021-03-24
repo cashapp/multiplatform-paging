@@ -36,9 +36,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -73,6 +72,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.LayoutModifier
 import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.ParentDataModifier
@@ -105,6 +105,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.toOffset
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
 import org.junit.Assert.assertEquals
@@ -443,7 +444,7 @@ class AndroidLayoutDrawTest {
                             modifier = Modifier.fillColor(model, isInner = true)
                         ) { }
                     },
-                    measureBlock = { measurables, constraints ->
+                    measurePolicy = { measurables, constraints ->
                         val placeables = measurables.map { it.measure(constraints) }
                         layout(placeables[0].width, placeables[0].height) {
                             placeables[0].place(0, 0)
@@ -529,7 +530,7 @@ class AndroidLayoutDrawTest {
             activity.setContent {
                 val header = @Composable {
                     Layout(
-                        measureBlock = { _, constraints ->
+                        measurePolicy = { _, constraints ->
                             assertEquals(childConstraints[0], constraints)
                             layout(0, 0) {}
                         },
@@ -538,14 +539,14 @@ class AndroidLayoutDrawTest {
                 }
                 val footer = @Composable {
                     Layout(
-                        measureBlock = { _, constraints ->
+                        measurePolicy = { _, constraints ->
                             assertEquals(childConstraints[1], constraints)
                             layout(0, 0) {}
                         },
                         content = {}, modifier = Modifier.layoutId("footer")
                     )
                     Layout(
-                        measureBlock = { _, constraints ->
+                        measurePolicy = { _, constraints ->
                             assertEquals(childConstraints[2], constraints)
                             layout(0, 0) {}
                         },
@@ -586,8 +587,10 @@ class AndroidLayoutDrawTest {
         activityTestRule.runOnUiThreadIR {
             activity.setContent {
                 Layout(
-                    modifier = Modifier.drawBehind {
-                        drawRect(model.outerColor)
+                    modifier = remember {
+                        Modifier.drawBehind {
+                            drawRect(model.outerColor)
+                        }
                     },
                     content = {
                         AtLeastSize(
@@ -598,16 +601,18 @@ class AndroidLayoutDrawTest {
                             }
                         )
                     },
-                    measureBlock = { measurables, constraints ->
-                        measureCalls++
-                        layout(30, 30) {
-                            layoutCalls++
-                            layoutLatch.countDown()
-                            val placeable = measurables[0].measure(constraints)
-                            placeable.place(
-                                (30 - placeable.width) / 2,
-                                (30 - placeable.height) / 2
-                            )
+                    measurePolicy = remember {
+                        MeasurePolicy { measurables, constraints ->
+                            measureCalls++
+                            layout(30, 30) {
+                                layoutCalls++
+                                layoutLatch.countDown()
+                                val placeable = measurables[0].measure(constraints)
+                                placeable.place(
+                                    (30 - placeable.width) / 2,
+                                    (30 - placeable.height) / 2
+                                )
+                            }
                         }
                     }
                 )
@@ -639,7 +644,7 @@ class AndroidLayoutDrawTest {
         ) {
             Layout(
                 content = content,
-                measureBlock = { measurables, constraints ->
+                measurePolicy = { measurables, constraints ->
                     val resolvedWidth = constraints.constrainWidth(width)
                     val resolvedHeight = constraints.constrainHeight(height)
                     layout(resolvedWidth, resolvedHeight) {
@@ -677,7 +682,7 @@ class AndroidLayoutDrawTest {
                     drawn.value = true
                     latch.countDown()
                 },
-                measureBlock = { _, constraints ->
+                measurePolicy = { _, constraints ->
                     measured.value = true
                     val resolvedWidth = constraints.constrainWidth(width)
                     val resolvedHeight = constraints.minHeight
@@ -1958,7 +1963,7 @@ class AndroidLayoutDrawTest {
                         FixedSize(size, layoutModifier)
                         FixedSize(size, parentDataModifier)
                     },
-                    measureBlock = { measurables, constraints ->
+                    measurePolicy = { measurables, constraints ->
                         for (i in 0 until measurables.size) {
                             val child = measurables[i]
                             val placeable = child.measure(constraints)
@@ -2385,7 +2390,6 @@ class AndroidLayoutDrawTest {
                     val firstPlaceable = first.measure(constraints)
                     // switch frame, as inside the measure block we changed the model value
                     // this will trigger requestRemeasure on this first layout
-                    @OptIn(ExperimentalComposeApi::class)
                     Snapshot.sendApplyNotifications()
                     val secondPlaceable = second.measure(constraints)
                     layout(30, 30) {
@@ -2852,6 +2856,7 @@ class AndroidLayoutDrawTest {
         validateSquareColors(outerColor = Color.Blue, innerColor = Color.White, size = 10)
     }
 
+    @FlakyTest
     @Test
     fun makingItemLarger() {
         var height by mutableStateOf(30)
@@ -3048,7 +3053,7 @@ class AndroidLayoutDrawTest {
                     Box(
                         Modifier
                             .background(Color.Blue)
-                            .size(30.toDp())
+                            .requiredSize(30.toDp())
                             .padding(10.toDp())
                             .background(Color.White)
                             .drawLatchModifier()
@@ -3092,7 +3097,7 @@ class AndroidLayoutDrawTest {
                     Box(
                         Modifier
                             .background(Color.Blue)
-                            .size(30.toDp())
+                            .requiredSize(30.toDp())
                             .padding(10.toDp())
                             .drawBehind {
                                 drawRect(innerColor)
@@ -3347,7 +3352,7 @@ class AndroidLayoutDrawTest {
                 FixedSize(30, Modifier.background(Color.Blue)) {
                     FixedSize(30, Modifier.graphicsLayer()) {
                         with(LocalDensity.current) {
-                            Canvas(Modifier.size(10.toDp())) {
+                            Canvas(Modifier.requiredSize(10.toDp())) {
                                 drawRect(color)
                                 drawLatch.countDown()
                             }
@@ -3367,6 +3372,33 @@ class AndroidLayoutDrawTest {
             view.invalidateDescendants()
         }
         validateSquareColors(outerColor = Color.Blue, innerColor = Color.Yellow, size = 10)
+    }
+
+    @Test
+    fun placeableMeasuredSize() = with(density) {
+        val realSize = 100.dp
+        val constrainedSize = 50.dp
+        val latch = CountDownLatch(1)
+        activityTestRule.runOnUiThread {
+            activity.setContent {
+                Layout(
+                    content = {
+                        Box(Modifier.requiredSize(realSize))
+                    }
+                ) { measurables, _ ->
+                    val placeable = measurables[0].measure(
+                        Constraints.fixed(constrainedSize.roundToPx(), constrainedSize.roundToPx())
+                    )
+                    assertEquals(realSize.roundToPx(), placeable.measuredWidth)
+                    assertEquals(realSize.roundToPx(), placeable.measuredHeight)
+                    assertEquals(constrainedSize.roundToPx(), placeable.width)
+                    assertEquals(constrainedSize.roundToPx(), placeable.height)
+                    latch.countDown()
+                    layout(1, 1) { }
+                }
+            }
+        }
+        assertTrue(latch.await(1, TimeUnit.SECONDS))
     }
 
     private fun composeSquares(model: SquareModel) {
@@ -3601,7 +3633,7 @@ fun AtLeastSize(
     content: @Composable () -> Unit = {}
 ) {
     Layout(
-        measureBlock = { measurables, constraints ->
+        measurePolicy = { measurables, constraints ->
             val newConstraints = Constraints(
                 minWidth = max(size, constraints.minWidth),
                 maxWidth = if (constraints.hasBoundedWidth) {
@@ -3659,7 +3691,7 @@ fun FixedSize(
 fun Align(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Layout(
         modifier = modifier,
-        measureBlock = { measurables, constraints ->
+        measurePolicy = { measurables, constraints ->
             val newConstraints = Constraints(
                 minWidth = 0,
                 maxWidth = constraints.maxWidth,
@@ -3693,7 +3725,7 @@ internal fun Padding(
 ) {
     Layout(
         modifier = modifier,
-        measureBlock = { measurables, constraints ->
+        measurePolicy = { measurables, constraints ->
             val totalDiff = size * 2
             val targetMinWidth = constraints.minWidth - totalDiff
             val targetMaxWidth = if (constraints.hasBoundedWidth) {

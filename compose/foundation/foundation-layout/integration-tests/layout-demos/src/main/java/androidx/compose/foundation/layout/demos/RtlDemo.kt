@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.preferredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.Text
@@ -88,7 +88,7 @@ fun StackExample() {
     }
 }
 
-private val boxSize = Modifier.preferredSize(50.dp, 20.dp)
+private val boxSize = Modifier.size(50.dp, 20.dp)
 
 @Composable
 private fun TestRow() {
@@ -136,13 +136,13 @@ private fun TestText() {
 private fun TestSiblings() {
     Column {
         Box(
-            boxSize.background(color = Color.Red).alignBy { p -> p.width }
+            boxSize.background(color = Color.Red).alignBy { p -> p.measuredWidth }
         ) {}
         Box(
-            boxSize.background(color = Color.Green).alignBy { p -> p.width / 2 }
+            boxSize.background(color = Color.Green).alignBy { p -> p.measuredWidth / 2 }
         ) {}
         Box(
-            boxSize.background(color = Color.Blue).alignBy { p -> p.width / 4 }
+            boxSize.background(color = Color.Blue).alignBy { p -> p.measuredWidth / 4 }
         ) {}
     }
 }
@@ -184,7 +184,7 @@ private fun LayoutWithConstraints(text: String) {
         } else {
             Color.Magenta
         }
-        Box(Modifier.preferredSize(w, 20.dp).background(color)) {
+        Box(Modifier.size(w, 20.dp).background(color)) {
             Text(text, Modifier.align(Alignment.Center))
         }
     }

@@ -28,30 +28,38 @@ import androidx.compose.ui.unit.LayoutDirection
  *
  * A `Placeable` should never be stored between measure calls.
  */
-abstract class Placeable {
+abstract class Placeable : Measured {
     /**
-     * The width, in pixels, of the measured layout, as seen by the parent. This is usually the
-     * `width` value passed into [MeasureScope.layout], but will be different if the layout does
-     * not respect its incoming constraints, so the width will be coerced inside the min and
-     * max width.
+     * The width, in pixels, of the measured layout, as seen by the parent. This will usually
+     * coincide with the measured width of the layout (aka the `width` value passed into
+     * [MeasureScope.layout]), but can be different if the layout does not respect its
+     * incoming constraints: in these cases the width will be coerced inside the min and
+     * max width constraints - to access the actual width that the layout measured itself to,
+     * use [measuredWidth].
      */
     var width: Int = 0
         private set
 
     /**
-     * The height, in pixels, of the measured layout, as seen by the parent. This is usually the
-     * `height` value passed into [MeasureScope.layout], but can be different if the layout does
-     * not respect its incoming constraints, so the height will be coerced inside the min and
-     * max height.
+     * The height, in pixels, of the measured layout, as seen by the parent. This will usually
+     * coincide with the measured height of the layout (aka the `height` value passed
+     * into [MeasureScope.layout]), but can be different if the layout does not respect its
+     * incoming constraints: in these cases the height will be coerced inside the min and
+     * max height constraints - to access the actual height that the layout measured itself to,
+     * use [measuredHeight].
      */
     var height: Int = 0
         private set
 
     /**
-     * Returns the position of an [alignment line][AlignmentLine],
-     * or [AlignmentLine.Unspecified] if the line is not provided.
+     * The measured width of the layout. This might not respect the measurement constraints.
      */
-    abstract operator fun get(line: AlignmentLine): Int
+    override val measuredWidth: Int get() = measuredSize.width
+
+    /**
+     * The measured height of the layout. This might not respect the measurement constraints.
+     */
+    override val measuredHeight: Int get() = measuredSize.height
 
     /**
      * The measured size of this Placeable. This might not respect [measurementConstraints].
@@ -68,10 +76,6 @@ abstract class Placeable {
                 measurementConstraints.maxHeight
             )
         }
-
-    internal val measuredWidth get() = measuredSize.width
-
-    internal val measuredHeight get() = measuredSize.height
 
     /**
      * Positions the [Placeable] at [position] in its parent's coordinate system.
@@ -93,7 +97,7 @@ abstract class Placeable {
     /**
      * The constraints used for the measurement made to obtain this [Placeable].
      */
-    protected var measurementConstraints: Constraints = Constraints()
+    protected var measurementConstraints: Constraints = DefaultConstraints
 
     /**
      * The offset to be added to an apparent position assigned to this [Placeable] to make it real.
@@ -161,7 +165,7 @@ abstract class Placeable {
          * have the same [zIndex] the order in which the items were placed is used.
          */
         fun Placeable.placeRelative(x: Int, y: Int, zIndex: Float = 0f) =
-            placeRelative(IntOffset(x, y), zIndex)
+            placeAutoMirrored(IntOffset(x, y), zIndex, null)
 
         /**
          * Place a [Placeable] at [x], [y] in its parent's coordinate system.
@@ -172,7 +176,8 @@ abstract class Placeable {
          * [zIndex] will be drawn on top of all the children with smaller [zIndex]. When children
          * have the same [zIndex] the order in which the items were placed is used.
          */
-        fun Placeable.place(x: Int, y: Int, zIndex: Float = 0f) = place(IntOffset(x, y), zIndex)
+        fun Placeable.place(x: Int, y: Int, zIndex: Float = 0f) =
+            placeApparentToRealOffset(IntOffset(x, y), zIndex, null)
 
         /**
          * Place a [Placeable] at [position] in its parent's coordinate system.
@@ -231,7 +236,7 @@ abstract class Placeable {
             y: Int,
             zIndex: Float = 0f,
             layerBlock: GraphicsLayerScope.() -> Unit = DefaultLayerBlock
-        ) = placeRelativeWithLayer(IntOffset(x, y), zIndex, layerBlock)
+        ) = placeAutoMirrored(IntOffset(x, y), zIndex, layerBlock)
 
         /**
          * Place a [Placeable] at [x], [y] in its parent's coordinate system with an introduced
@@ -251,7 +256,7 @@ abstract class Placeable {
             y: Int,
             zIndex: Float = 0f,
             layerBlock: GraphicsLayerScope.() -> Unit = DefaultLayerBlock
-        ) = placeWithLayer(IntOffset(x, y), zIndex, layerBlock)
+        ) = placeApparentToRealOffset(IntOffset(x, y), zIndex, layerBlock)
 
         /**
          * Place a [Placeable] at [position] in its parent's coordinate system with an introduced
@@ -272,10 +277,11 @@ abstract class Placeable {
             layerBlock: GraphicsLayerScope.() -> Unit = DefaultLayerBlock
         ) = placeApparentToRealOffset(position, zIndex, layerBlock)
 
-        private fun Placeable.placeAutoMirrored(
+        @Suppress("NOTHING_TO_INLINE")
+        internal inline fun Placeable.placeAutoMirrored(
             position: IntOffset,
             zIndex: Float,
-            layerBlock: (GraphicsLayerScope.() -> Unit)?
+            noinline layerBlock: (GraphicsLayerScope.() -> Unit)?
         ) {
             if (parentLayoutDirection == LayoutDirection.Ltr || parentWidth == 0) {
                 placeApparentToRealOffset(position, zIndex, layerBlock)
@@ -288,10 +294,11 @@ abstract class Placeable {
             }
         }
 
-        private fun Placeable.placeApparentToRealOffset(
+        @Suppress("NOTHING_TO_INLINE")
+        internal inline fun Placeable.placeApparentToRealOffset(
             position: IntOffset,
             zIndex: Float,
-            layerBlock: (GraphicsLayerScope.() -> Unit)?
+            noinline layerBlock: (GraphicsLayerScope.() -> Unit)?
         ) {
             placeAt(position + apparentToRealOffset, zIndex, layerBlock)
         }
@@ -323,3 +330,5 @@ abstract class Placeable {
  * Block on [GraphicsLayerScope] which applies the default layer parameters.
  */
 private val DefaultLayerBlock: GraphicsLayerScope.() -> Unit = {}
+
+private val DefaultConstraints = Constraints()

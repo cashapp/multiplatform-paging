@@ -21,7 +21,7 @@ import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.preferredHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
 import com.google.common.truth.Truth.assertThat
@@ -101,24 +102,15 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         // TODO: Find out if we can set "settings put global debug_view_attributes 1" in tests
         view.setTag(R.id.inspection_slot_table_set, slotTableRecord.store)
-        val viewWidth = with(density) { view.width.toDp() }
-        val viewHeight = with(density) { view.height.toDp() }
         val builder = LayoutInspectorTree()
         val nodes = builder.convert(view)
         dumpNodes(nodes, builder)
 
         validate(nodes, builder, checkParameters = false) {
             node(
-                name = "Content",
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
-                children = listOf("Box")
-            )
-            node(
-                name = "Box",
-                isRenderNode = true,
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
+                name = "Inspectable",
+                fileName = "LayoutInspectorTreeTest.kt",
+                left = 0.0.dp, top = 0.0.dp, width = 72.0.dp, height = 78.9.dp,
                 children = listOf("Column")
             )
             node(
@@ -181,31 +173,22 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         // TODO: Find out if we can set "settings put global debug_view_attributes 1" in tests
         view.setTag(R.id.inspection_slot_table_set, slotTableRecord.store)
-        val viewWidth = with(density) { view.width.toDp() }
-        val viewHeight = with(density) { view.height.toDp() }
         val builder = LayoutInspectorTree()
         val nodes = builder.convert(view)
         dumpNodes(nodes, builder)
 
         validate(nodes, builder, checkParameters = false) {
             node(
-                name = "Content",
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
-                children = listOf("Box")
-            )
-            node(
-                name = "Box",
-                isRenderNode = true,
-                fileName = "",
-                left = 0.0.dp, top = 0.0.dp, width = viewWidth, height = viewHeight,
+                name = "Inspectable",
+                hasTransformations = true,
+                fileName = "LayoutInspectorTreeTest.kt",
                 children = listOf("MaterialTheme")
             )
             node(
                 name = "MaterialTheme",
                 hasTransformations = true,
                 fileName = "LayoutInspectorTreeTest.kt",
-                left = 68.0.dp, top = 49.7.dp, width = 88.5.dp, height = 21.7.dp,
+                left = 65.0.dp, top = 49.7.dp, width = 86.dp, height = 21.7.dp,
                 children = listOf("Text")
             )
             node(
@@ -213,7 +196,7 @@ class LayoutInspectorTreeTest : ToolingTest() {
                 isRenderNode = true,
                 hasTransformations = true,
                 fileName = "LayoutInspectorTreeTest.kt",
-                left = 68.0.dp, top = 49.7.dp, width = 88.5.dp, height = 21.7.dp,
+                left = 65.0.dp, top = 49.7.dp, width = 86.dp, height = 21.7.dp,
             )
         }
     }
@@ -243,6 +226,7 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         if (DEBUG) {
             validate(nodes, builder, checkParameters = false) {
+                node("Inspectable", children = listOf("Box"))
                 node("Box", children = listOf("ModalDrawer"))
                 node("ModalDrawer", children = listOf("Column", "Text"))
                 node("Column", children = listOf("Text", "Button"))
@@ -255,6 +239,7 @@ class LayoutInspectorTreeTest : ToolingTest() {
         assertThat(nodes.size).isEqualTo(1)
     }
 
+    @LargeTest
     @Test
     fun testStitchTreeFromModelDrawerLayoutWithSystemNodes() {
         val slotTableRecord = CompositionDataRecord.create()
@@ -281,6 +266,7 @@ class LayoutInspectorTreeTest : ToolingTest() {
 
         if (DEBUG) {
             validate(nodes, builder, checkParameters = false) {
+                node("Inspectable", children = listOf("Box"))
                 node("Box", children = listOf("ModalDrawer"))
                 node("ModalDrawer", children = listOf("WithConstraints"))
                 node("WithConstraints", children = listOf("SubcomposeLayout"))
@@ -318,7 +304,7 @@ class LayoutInspectorTreeTest : ToolingTest() {
             Inspectable(slotTableRecord) {
                 Column {
                     Text(text = "Hello World", color = Color.Green)
-                    Spacer(Modifier.preferredHeight(16.dp))
+                    Spacer(Modifier.height(16.dp))
                     Image(Icons.Filled.Call, null)
                 }
             }
@@ -433,15 +419,16 @@ class LayoutInspectorTreeTest : ToolingTest() {
                 assertWithMessage(message).that(node.bounds).isEmpty()
             }
             if (left != Dp.Unspecified) {
+                val tolerance = 5.0f
                 with(density) {
                     assertWithMessage(message).that(node.left.toDp().value)
-                        .isWithin(2.0f).of(left.value)
+                        .isWithin(tolerance).of(left.value)
                     assertWithMessage(message).that(node.top.toDp().value)
-                        .isWithin(2.0f).of(top.value)
+                        .isWithin(tolerance).of(top.value)
                     assertWithMessage(message).that(node.width.toDp().value)
-                        .isWithin(2.0f).of(width.value)
+                        .isWithin(tolerance).of(width.value)
                     assertWithMessage(message).that(node.height.toDp().value)
-                        .isWithin(2.0f).of(height.value)
+                        .isWithin(tolerance).of(height.value)
                 }
             }
 

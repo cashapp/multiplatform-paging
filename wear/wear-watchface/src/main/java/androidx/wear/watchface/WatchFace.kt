@@ -41,13 +41,12 @@ import androidx.annotation.RestrictTo
 import androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
+import androidx.wear.utility.TraceEvent
 import androidx.wear.complications.SystemProviders
 import androidx.wear.complications.data.ComplicationData
-import androidx.wear.complications.data.IdAndComplicationData
-import androidx.wear.complications.data.NoDataComplicationData
-import androidx.wear.watchface.control.IInteractiveWatchFaceSysUI
 import androidx.wear.watchface.style.UserStyle
 import androidx.wear.watchface.style.UserStyleRepository
+import androidx.wear.watchface.style.UserStyleSchema
 import androidx.wear.watchface.style.data.UserStyleWireFormat
 import kotlinx.coroutines.CompletableDeferred
 import java.io.FileNotFoundException
@@ -114,25 +113,29 @@ private fun writePrefs(context: Context, fileName: String, style: UserStyle) {
 /**
  * The return value of [WatchFaceService.createWatchFace] which brings together rendering, styling,
  * complications and state observers.
+ *
+ * @param watchFaceType The type of watch face, whether it's digital or analog. Used to determine
+ *     the default time for editor preview screenshots.
+ * @param userStyleRepository The [UserStyleRepository] for this WatchFace.
+ * @param renderer The [Renderer] for this WatchFace.
+ * @param complicationsManager The [ComplicationsManager] for this WatchFace.
  */
 public class WatchFace @JvmOverloads constructor(
-    /**
-     * The type of watch face, whether it's digital or analog. Used to determine the
-     * default time for editor preview screenshots.
-     */
     @WatchFaceType internal var watchFaceType: Int,
-
-    /** The [UserStyleRepository] for this WatchFace. */
     public val userStyleRepository: UserStyleRepository,
-
-    /** The [Renderer] for this WatchFace. */
     internal val renderer: Renderer,
-
-    /** The [ComplicationsManager] for this WatchFace. */
     internal var complicationsManager: ComplicationsManager =
         ComplicationsManager(emptyList(), userStyleRepository)
 ) {
     internal var tapListener: TapListener? = null
+
+    init {
+        if (renderer is Renderer.GlesRenderer) {
+            require(renderer.initDone) {
+                "Did you forget to call GlesRenderer.initOpenGLContext?"
+            }
+        }
+    }
 
     public companion object {
         /** Returns whether [LegacyWatchFaceOverlayStyle] is supported on this device. */
@@ -202,8 +205,11 @@ public class WatchFace @JvmOverloads constructor(
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public interface EditorDelegate {
-        /** The [WatchFace]'s [UserStyleRepository]. */
-        public val userStyleRepository: UserStyleRepository
+        /** The [WatchFace]'s [UserStyleSchema]. */
+        public val userStyleSchema: UserStyleSchema
+
+        /** The watch face's  [UserStyle]. */
+        public var userStyle: UserStyle
 
         /** The [WatchFace]'s [ComplicationsManager]. */
         public val complicationsManager: ComplicationsManager
@@ -214,8 +220,8 @@ public class WatchFace @JvmOverloads constructor(
         /** The UTC reference time to use for previews in milliseconds since the epoch. */
         public val previewReferenceTimeMillis: Long
 
-        /** Takes a screenshot with the [UserStyleRepository]'s [UserStyle]. */
-        public fun takeScreenshot(
+        /** Renders the watchface to a [Bitmap] with the [UserStyleRepository]'s [UserStyle]. */
+        public fun renderWatchFaceToBitmap(
             renderParameters: RenderParameters,
             calendarTimeMillis: Long,
             idToComplicationData: Map<Int, ComplicationData>?
@@ -249,44 +255,30 @@ public class WatchFace @JvmOverloads constructor(
     /**
      * Legacy Wear 2.0 watch face styling. These settings will be ignored on Wear 3.0 devices.
      *
+     * @param viewProtectionMode The view protection mode bit field, must be a combination of
+     *     zero or more of [PROTECT_STATUS_BAR], [PROTECT_HOTWORD_INDICATOR],
+     *     [PROTECT_WHOLE_SCREEN].
+     * @param statusBarGravity Controls the position of status icons (battery state, lack of
+     *     connection) on the screen. This must be any combination of horizontal Gravity constant:
+     *         ([Gravity.LEFT], [Gravity.CENTER_HORIZONTAL], [Gravity.RIGHT])
+     *         and vertical Gravity constants ([Gravity.TOP], [Gravity,CENTER_VERTICAL},
+     *         [Gravity,BOTTOM]), e.g. {@code Gravity.LEFT | Gravity.BOTTOM}. On circular screens,
+     *          only the vertical gravity is respected.
+     * @param tapEventsAccepted Controls whether this watch face accepts tap events. Watchfaces
+     *     that set this {@code true} are indicating they are prepared to receive
+     *     [IInteractiveWatchFaceSysUI.TAP_TYPE_DOWN],
+     *     [IInteractiveWatchFaceSysUI.TAP_TYPE_CANCEL], and
+     *     [IInteractiveWatchFaceSysUI.TAP_TYPE_UP] events.
+     * @param accentColor The accent color which will be used when drawing the unread notification
+     *     indicator. Default color is white.
      * @throws IllegalArgumentException if [viewProtectionMode] has an unexpected value
      */
     public class LegacyWatchFaceOverlayStyle @JvmOverloads constructor(
-        /**
-         * The view protection mode bit field, must be a combination of
-         *     zero or more of [PROTECT_STATUS_BAR], [PROTECT_HOTWORD_INDICATOR],
-         *     [PROTECT_WHOLE_SCREEN].
-         */
         public val viewProtectionMode: Int,
-
-        /**
-         * Controls the position of status icons (battery state, lack of connection) on the screen.
-         *
-         * This must be any combination of horizontal Gravity constant
-         *     ([Gravity.LEFT], [Gravity.CENTER_HORIZONTAL], [Gravity.RIGHT])
-         *     and vertical Gravity constants ([Gravity.TOP], [Gravity,CENTER_VERTICAL},
-         *     [Gravity,BOTTOM]), e.g. {@code Gravity.LEFT | Gravity.BOTTOM}. On circular screens,
-         *     only the vertical gravity is respected.
-         */
         public val statusBarGravity: Int,
-
-        /**
-         * Controls whether this watch face accepts tap events.
-         *
-         * Watchfaces that set this {@code true} are indicating they are prepared to receive
-         * [IInteractiveWatchFaceSysUI.TAP_TYPE_TOUCH],
-         * [IInteractiveWatchFaceSysUI.TAP_TYPE_TOUCH_CANCEL], and
-         * [IInteractiveWatchFaceSysUI.TAP_TYPE_TAP] events.
-         */
         @get:JvmName("isTapEventsAccepted")
         public val tapEventsAccepted: Boolean,
-
-        /**
-         * The accent color which will be used when drawing the unread notification indicator.
-         * Default color is white.
-         */
-        @ColorInt
-        public val accentColor: Int = WatchFaceStyle.DEFAULT_ACCENT_COLOR
+        @ColorInt public val accentColor: Int = WatchFaceStyle.DEFAULT_ACCENT_COLOR
     ) {
         init {
             if (viewProtectionMode < 0 ||
@@ -425,8 +417,6 @@ internal class WatchFaceImpl(
     private val pendingSingleTap: CancellableUniqueTask =
         CancellableUniqueTask(watchFaceHostApi.getHandler())
     private val pendingUpdateTime: CancellableUniqueTask =
-        CancellableUniqueTask(watchFaceHostApi.getHandler())
-    private val pendingPostDoubleTap: CancellableUniqueTask =
         CancellableUniqueTask(watchFaceHostApi.getHandler())
 
     internal val componentName =
@@ -638,8 +628,15 @@ internal class WatchFaceImpl(
     internal fun createWFEditorDelegate() = WFEditorDelegate() as WatchFace.EditorDelegate
 
     internal inner class WFEditorDelegate : WatchFace.EditorDelegate {
-        override val userStyleRepository: UserStyleRepository
-            get() = this@WatchFaceImpl.userStyleRepository
+        override val userStyleSchema: UserStyleSchema
+            get() = userStyleRepository.schema
+
+        override var userStyle: UserStyle
+            get() = userStyleRepository.userStyle
+            set(value) {
+                userStyleRepository.userStyle = value
+                watchFaceHostApi.onUserStyleChanged()
+            }
 
         override val complicationsManager: ComplicationsManager
             get() = this@WatchFaceImpl.complicationsManager
@@ -650,24 +647,20 @@ internal class WatchFaceImpl(
         override val previewReferenceTimeMillis
             get() = this@WatchFaceImpl.previewReferenceTimeMillis
 
-        override fun takeScreenshot(
+        override fun renderWatchFaceToBitmap(
             renderParameters: RenderParameters,
             calendarTimeMillis: Long,
             idToComplicationData: Map<Int, ComplicationData>?
-        ): Bitmap {
+        ): Bitmap = TraceEvent("WFEditorDelegate.takeScreenshot").use {
             val oldComplicationData =
-                complicationsManager.complications.values.map {
-                    it.renderer.idAndData ?: IdAndComplicationData(
-                        it.id,
-                        NoDataComplicationData()
-                    )
-                }
+                complicationsManager.complications.values.associateBy(
+                    { it.id },
+                    { it.renderer.getData() }
+                )
 
             idToComplicationData?.let {
                 for ((id, complicationData) in it) {
-                    complicationsManager[id]!!.renderer.setIdComplicationDataSync(
-                        IdAndComplicationData(id, complicationData)
-                    )
+                    complicationsManager[id]!!.renderer.loadData(complicationData, false)
                 }
             }
             val screenShot = renderer.takeScreenshot(
@@ -677,15 +670,14 @@ internal class WatchFaceImpl(
                 renderParameters
             )
             if (idToComplicationData != null) {
-                for (idAndData in oldComplicationData) {
-                    complicationsManager[idAndData.complicationId]!!.renderer
-                        .setIdComplicationDataSync(idAndData)
+                for ((id, data) in oldComplicationData) {
+                    complicationsManager[id]!!.renderer.loadData(data, false)
                 }
             }
             return screenShot
         }
 
-        override fun onDestroy() {
+        override fun onDestroy(): Unit = TraceEvent("WFEditorDelegate.onDestroy").use {
             if (watchState.isHeadless) {
                 this@WatchFaceImpl.onDestroy()
             }
@@ -720,7 +712,6 @@ internal class WatchFaceImpl(
     internal fun onDestroy() {
         pendingSingleTap.cancel()
         pendingUpdateTime.cancel()
-        pendingPostDoubleTap.cancel()
         renderer.onDestroy()
         watchState.isAmbient.removeObserver(ambientObserver)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !watchState.isHeadless) {
@@ -875,6 +866,13 @@ internal class WatchFaceImpl(
         watchFaceHostApi.invalidate()
     }
 
+    /** Clears all [ComplicationData]. */
+    @UiThread
+    internal fun clearComplicationData() {
+        complicationsManager.clearComplicationData()
+        watchFaceHostApi.invalidate()
+    }
+
     /**
      * Called when a tap or touch related event occurs. Detects double and single taps on
      * complications and triggers the associated action.
@@ -901,13 +899,13 @@ internal class WatchFaceImpl(
         // TODO(alexclarke): Revisit this
         var tapType = originalTapType
         when (tapType) {
-            TapType.TOUCH -> {
+            TapType.DOWN -> {
                 lastTappedPosition = Point(x, y)
             }
-            TapType.TOUCH_CANCEL -> {
+            TapType.CANCEL -> {
                 lastTappedPosition?.let { safeLastTappedPosition ->
                     if ((safeLastTappedPosition.x == x) && (safeLastTappedPosition.y == y)) {
-                        tapType = TapType.TAP
+                        tapType = TapType.UP
                     }
                 }
                 lastTappedPosition = null
@@ -915,32 +913,17 @@ internal class WatchFaceImpl(
         }
 
         when (tapType) {
-            TapType.TAP -> {
+            TapType.UP -> {
                 if (tappedComplication.id != lastTappedComplicationId &&
                     lastTappedComplicationId != null
                 ) {
                     clearGesture()
                     return
                 }
-                if (pendingPostDoubleTap.isPending()) {
-                    return
-                }
-                if (pendingSingleTap.isPending()) {
-                    // The user tapped twice rapidly on the same complication so treat this as
-                    // a double tap.
-                    complicationsManager.onComplicationDoubleTapped(tappedComplication.id)
-                    clearGesture()
-
-                    // Block subsequent taps for a short time, to prevent accidental triple taps.
-                    pendingPostDoubleTap.postDelayedUnique(
-                        ViewConfiguration.getDoubleTapTimeout().toLong()
-                    ) {
-                        // NOP.
-                    }
-                } else {
+                if (!pendingSingleTap.isPending()) {
                     // Give the user immediate visual feedback, the UI feels sluggish if we defer
                     // this.
-                    complicationsManager.bringAttentionToComplication(tappedComplication.id)
+                    complicationsManager.displayPressedAnimation(tappedComplication.id)
 
                     lastTappedComplicationId = tappedComplication.id
 
@@ -955,7 +938,7 @@ internal class WatchFaceImpl(
                     }
                 }
             }
-            TapType.TOUCH -> {
+            TapType.DOWN -> {
                 // Make sure the user isn't doing a swipe.
                 if (tappedComplication.id != lastTappedComplicationId &&
                     lastTappedComplicationId != null
@@ -971,5 +954,27 @@ internal class WatchFaceImpl(
     private fun clearGesture() {
         lastTappedComplicationId = null
         pendingSingleTap.cancel()
+    }
+
+    @UiThread
+    fun dump(writer: IndentingPrintWriter) {
+        writer.println("WatchFaceImpl ($componentName): ")
+        writer.increaseIndent()
+        writer.println("calendar=$calendar")
+        writer.println("mockTime.maxTime=${mockTime.maxTime}")
+        writer.println("mockTime.minTime=${mockTime.minTime}")
+        writer.println("mockTime.speed=${mockTime.speed}")
+        writer.println("nextDrawTimeMillis=$nextDrawTimeMillis")
+        writer.println("muteMode=$muteMode")
+        writer.println("pendingSingleTap=${pendingSingleTap.isPending()}")
+        writer.println("pendingUpdateTime=${pendingUpdateTime.isPending()}")
+        writer.println("lastTappedComplicationId=$lastTappedComplicationId")
+        writer.println("lastTappedPosition=$lastTappedPosition")
+        writer.println("userStyleRepository.userStyle=${userStyleRepository.userStyle}")
+        writer.println("userStyleRepository.schema=${userStyleRepository.schema}")
+        watchState.dump(writer)
+        complicationsManager.dump(writer)
+        renderer.dump(writer)
+        writer.decreaseIndent()
     }
 }

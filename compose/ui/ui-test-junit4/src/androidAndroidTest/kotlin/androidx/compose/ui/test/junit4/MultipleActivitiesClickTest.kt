@@ -20,19 +20,18 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.SemanticsNodeInteractionCollection
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performGesture
-import androidx.test.filters.FlakyTest
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.google.common.truth.Truth.assertThat
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -41,13 +40,16 @@ class MultipleActivitiesClickTest {
     @get:Rule
     val rule = createAndroidComposeRule<Activity1>()
 
-    @Ignore("b/178044284")
     @Test
-    @FlakyTest(bugId = 178003554)
     fun test() {
         lateinit var activity1: Activity1
         rule.activityRule.scenario.onActivity { activity1 = it }
+
         activity1.startNewActivity()
+        rule.waitUntil {
+            rule.onAllNodesWithTag("activity2").isNotEmpty()
+        }
+
         rule.onNodeWithTag("activity2").performGesture { click() }
         val activity2 = getCurrentActivity() as Activity2
 
@@ -55,6 +57,10 @@ class MultipleActivitiesClickTest {
             assertThat(activity1.clickCounter).isEqualTo(0)
             assertThat(activity2.clickCounter).isEqualTo(1)
         }
+    }
+
+    private fun SemanticsNodeInteractionCollection.isNotEmpty(): Boolean {
+        return fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
     }
 
     // In general this method to retrieve the current activity may fail, because the presence of

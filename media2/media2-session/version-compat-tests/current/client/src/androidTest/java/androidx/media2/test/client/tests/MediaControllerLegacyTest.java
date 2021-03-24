@@ -16,6 +16,8 @@
 
 package androidx.media2.test.client.tests;
 
+import static androidx.media2.common.BaseResult.RESULT_INFO_SKIPPED;
+import static androidx.media2.session.SessionResult.RESULT_SUCCESS;
 import static androidx.media2.test.common.CommonConstants.DEFAULT_TEST_NAME;
 import static androidx.media2.test.common.CommonConstants.SERVICE_PACKAGE_NAME;
 
@@ -24,14 +26,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.MediaSessionCompat.QueueItem;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -42,11 +47,13 @@ import androidx.annotation.NonNull;
 import androidx.media.VolumeProviderCompat;
 import androidx.media2.common.MediaItem;
 import androidx.media2.common.MediaMetadata;
+import androidx.media2.common.Rating;
 import androidx.media2.common.SessionPlayer;
 import androidx.media2.session.MediaController;
 import androidx.media2.session.MediaController.ControllerCallback;
 import androidx.media2.session.MediaSession.CommandButton;
 import androidx.media2.session.MediaUtils;
+import androidx.media2.session.PercentageRating;
 import androidx.media2.session.RemoteSessionPlayer;
 import androidx.media2.session.SessionCommand;
 import androidx.media2.session.SessionCommandGroup;
@@ -58,6 +65,8 @@ import androidx.media2.test.common.PollingCheck;
 import androidx.media2.test.common.TestUtils;
 import androidx.test.filters.MediumTest;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,6 +74,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -75,6 +85,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @MediumTest
 public class MediaControllerLegacyTest extends MediaSessionTestBase {
     private static final String TAG = "MediaControllerLegacyTest";
+    private static final long EXPECTED_TIMEOUT_MS = 100;
 
     AudioManager mAudioManager;
     RemoteMediaSessionCompat mSession;
@@ -104,14 +115,19 @@ public class MediaControllerLegacyTest extends MediaSessionTestBase {
         final long bufferedPosition = 900000;
         final long timeDiff = 102;
         final float speed = 0.5f;
+        final int shuffleMode = SessionPlayer.SHUFFLE_MODE_GROUP;
+        final int repeatMode = SessionPlayer.REPEAT_MODE_ALL;
         final MediaMetadataCompat metadata = MediaUtils.convertToMediaMetadataCompat(
                 MediaTestUtils.createMetadata());
 
-        mSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                .setState(PlaybackStateCompat.STATE_PLAYING, position, speed)
-                .setBufferedPosition(bufferedPosition)
-                .build());
+        mSession.setPlaybackState(
+                new PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_PLAYING, position, speed)
+                        .setBufferedPosition(bufferedPosition).build());
         mSession.setMetadata(metadata);
+        mSession.setShuffleMode(shuffleMode);
+        mSession.setRepeatMode(repeatMode);
+        mSession.setRatingType(RatingCompat.RATING_PERCENTAGE);
 
         mController = createController(mSession.getSessionToken());
         mController.setTimeDiff(timeDiff);
@@ -125,6 +141,12 @@ public class MediaControllerLegacyTest extends MediaSessionTestBase {
                 (double) mController.getCurrentPosition(), 100.0 /* 100 ms */);
         assertEquals(metadata.getDescription().getMediaId(),
                 mController.getCurrentMediaItem().getMediaId());
+        Rating rating = mController.getCurrentMediaItem().getMetadata()
+                .getRating(MediaMetadata.METADATA_KEY_USER_RATING);
+        assertTrue(rating instanceof PercentageRating);
+        assertFalse(rating.isRated());
+        assertEquals(shuffleMode, mController.getShuffleMode());
+        assertEquals(repeatMode, mController.getRepeatMode());
     }
 
     @Test
@@ -259,6 +281,69 @@ public class MediaControllerLegacyTest extends MediaSessionTestBase {
 
         mController = createController(mSession.getSessionToken(), true, null);
         assertEquals(testMediaId, mController.getCurrentMediaItem().getMediaId());
+    }
+
+    @Test
+    public void setMediaUri_resultSetAfterPrepare() throws Exception {
+        mController = createController(mSession.getSessionToken(), true, null);
+
+        Uri testUri = Uri.parse("androidx://test");
+        ListenableFuture<SessionResult> future =
+                mController.setMediaUri(testUri, /* extras= */ null);
+
+        SessionResult result;
+        try {
+            result = future.get(EXPECTED_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            fail("TimeoutException is expected");
+        } catch (TimeoutException e) {
+            // expected.
+        }
+
+        mController.prepare();
+
+        result = future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertEquals(RESULT_SUCCESS, result.getResultCode());
+    }
+
+    @Test
+    public void setMediaUri_resultSetAfterPlay() throws Exception {
+        mController = createController(mSession.getSessionToken(), true, null);
+
+        Uri testUri = Uri.parse("androidx://test");
+        ListenableFuture<SessionResult> future =
+                mController.setMediaUri(testUri, /* extras= */ null);
+
+        SessionResult result;
+        try {
+            result = future.get(EXPECTED_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            fail("TimeoutException is expected");
+        } catch (TimeoutException e) {
+            // expected.
+        }
+
+        mController.play();
+
+        result = future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertEquals(RESULT_SUCCESS, result.getResultCode());
+    }
+
+    @Test
+    public void setMediaUris_multipleCalls_previousCallReturnsResultInfoSkipped() throws Exception {
+        mController = createController(mSession.getSessionToken(), true, null);
+
+        Uri testUri1 = Uri.parse("androidx://test1");
+        Uri testUri2 = Uri.parse("androidx://test2");
+        ListenableFuture<SessionResult> future1 =
+                mController.setMediaUri(testUri1, /* extras= */ null);
+        ListenableFuture<SessionResult> future2 =
+                mController.setMediaUri(testUri2, /* extras= */ null);
+
+        mController.prepare();
+
+        SessionResult result1 = future1.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        SessionResult result2 = future2.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertEquals(RESULT_INFO_SKIPPED, result1.getResultCode());
+        assertEquals(RESULT_SUCCESS, result2.getResultCode());
     }
 
     @Test
@@ -583,7 +668,7 @@ public class MediaControllerLegacyTest extends MediaSessionTestBase {
                         break;
                 }
                 latch.countDown();
-                return SessionResult.RESULT_SUCCESS;
+                return RESULT_SUCCESS;
             }
         };
         mSession.setPlaybackState(new PlaybackStateCompat.Builder()
@@ -682,7 +767,7 @@ public class MediaControllerLegacyTest extends MediaSessionTestBase {
                 assertEquals(sessionCommandOnCaptioningEnabledChanged, command.getCustomAction());
                 assertEquals(true, args.getBoolean(argumentCaptioningEnabled, false));
                 latch.countDown();
-                return new SessionResult(SessionResult.RESULT_SUCCESS, null);
+                return new SessionResult(RESULT_SUCCESS, null);
             }
         };
         mController = createController(mSession.getSessionToken(), true, callback);

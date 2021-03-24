@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -79,15 +80,17 @@ public fun NavHost(
 @Composable
 public fun NavHost(navController: NavHostController, graph: NavGraph) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val viewModelStore = LocalViewModelStoreOwner.current.viewModelStore
+    val viewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "NavHost requires a ViewModelStoreOwner to be provided via LocalViewModelStoreOwner"
+    }
     val onBackPressedDispatcher = LocalOnBackPressedDispatcherOwner.current.onBackPressedDispatcher
     val rememberedGraph = remember { graph }
 
     // on successful recompose we setup the navController with proper inputs
     // after the first time, this will only happen again if one of the inputs changes
-    DisposableEffect(navController, lifecycleOwner, viewModelStore, onBackPressedDispatcher) {
+    DisposableEffect(navController, lifecycleOwner, viewModelStoreOwner, onBackPressedDispatcher) {
         navController.setLifecycleOwner(lifecycleOwner)
-        navController.setViewModelStore(viewModelStore)
+        navController.setViewModelStore(viewModelStoreOwner.viewModelStore)
         navController.setOnBackPressedDispatcher(onBackPressedDispatcher)
 
         onDispose { }
@@ -113,9 +116,9 @@ public fun NavHost(navController: NavHostController, graph: NavGraph) {
             // while in the scope of the composable, we provide the navBackStackEntry as the
             // ViewModelStoreOwner and LifecycleOwner
             CompositionLocalProvider(
-                LocalViewModelStoreOwner.asProvidableCompositionLocal()
-                    provides currentNavBackStackEntry,
-                LocalLifecycleOwner provides currentNavBackStackEntry
+                LocalViewModelStoreOwner provides currentNavBackStackEntry,
+                LocalLifecycleOwner provides currentNavBackStackEntry,
+                LocalSavedStateRegistryOwner provides currentNavBackStackEntry
             ) {
                 saveableStateHolder.SaveableStateProvider {
                     destination.content(currentNavBackStackEntry)

@@ -21,17 +21,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.icu.util.Calendar
-import android.os.Bundle
 import android.support.wearable.watchface.accessibility.AccessibilityUtils
 import android.support.wearable.watchface.accessibility.ContentDescriptionLabel
+import androidx.annotation.Px
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import androidx.wear.complications.ComplicationBounds
 import androidx.wear.complications.ComplicationHelperActivity
-import androidx.wear.complications.DefaultComplicationProviderPolicy
 import androidx.wear.complications.data.ComplicationData
 import androidx.wear.complications.data.ComplicationType
-import androidx.wear.complications.data.IdAndComplicationData
+import androidx.wear.complications.data.EmptyComplicationData
 import androidx.wear.watchface.data.ComplicationBoundsType
 import androidx.wear.watchface.style.UserStyle
 import androidx.wear.watchface.style.UserStyleRepository
@@ -46,15 +45,13 @@ private fun getComponentName(context: Context) = ComponentName(
 /**
  * The [Complication]s associated with the [WatchFace]. Dynamic creation of complications isn't
  * supported, however complications can be enabled and disabled by [ComplicationsUserStyleSetting].
+ *
+ * @param complicationCollection The complications associated with the watch face, may be empty.
+ * @param userStyleRepository The [UserStyleRepository] used to listen for
+ *     [ComplicationsUserStyleSetting] changes and apply them.
  */
 public class ComplicationsManager(
-    /** The complications associated with the watch face, may be empty. */
     complicationCollection: Collection<Complication>,
-
-    /**
-     * The [UserStyleRepository] used to listen for [ComplicationsUserStyleSetting] changes and
-     * apply them.
-     */
     private val userStyleRepository: UserStyleRepository
 ) {
     /**
@@ -65,17 +62,9 @@ public class ComplicationsManager(
         /**
          * Called when the user single taps on a complication.
          *
-         * @param complicationId The watch face's id for the complication single tapped
+         * @param complicationId The watch face's id for the complication that was tapped
          */
-        public fun onComplicationSingleTapped(complicationId: Int) {}
-
-        /**
-         * Called when the user double taps on a complication, launches the complication
-         * configuration activity.
-         *
-         * @param complicationId The watch face's id for the complication double tapped
-         */
-        public fun onComplicationDoubleTapped(complicationId: Int) {}
+        public fun onComplicationTapped(complicationId: Int) {}
     }
 
     private lateinit var watchFaceHostApi: WatchFaceHostApi
@@ -89,10 +78,7 @@ public class ComplicationsManager(
 
     private class InitialComplicationConfig(
         val complicationBounds: ComplicationBounds,
-        val enabled: Boolean,
-        val supportedTypes: List<ComplicationType>,
-        val defaultProviderPolicy: DefaultComplicationProviderPolicy,
-        val defaultProviderType: ComplicationType
+        val enabled: Boolean
     )
 
     // Copy of the original complication configs. This is necessary because the semantics of
@@ -104,10 +90,7 @@ public class ComplicationsManager(
             {
                 InitialComplicationConfig(
                     it.complicationBounds,
-                    it.enabled,
-                    it.supportedTypes,
-                    it.defaultProviderPolicy,
-                    it.defaultProviderType
+                    it.enabled
                 )
             }
         )
@@ -207,12 +190,12 @@ public class ComplicationsManager(
                 if (complication.boundsType == ComplicationBoundsType.BACKGROUND) {
                     ComplicationBoundsType.BACKGROUND
                 } else {
-                    complication.renderer.idAndData?.let {
+                    complication.renderer.getData()?.let {
                         labels.add(
                             ContentDescriptionLabel(
                                 watchFaceHostApi.getContext(),
                                 complication.computeBounds(renderer.screenBounds),
-                                it.complicationData.asWireComplicationData()
+                                it.asWireComplicationData()
                             )
                         )
                     }
@@ -238,8 +221,7 @@ public class ComplicationsManager(
                 activeKeys.add(id)
 
                 labelsDirty =
-                    labelsDirty || complication.dataDirty ||
-                    complication.complicationBoundsDirty
+                    labelsDirty || complication.dataDirty || complication.complicationBoundsDirty
 
                 if (complication.defaultProviderPolicyDirty ||
                     complication.defaultProviderTypeDirty
@@ -248,7 +230,7 @@ public class ComplicationsManager(
                         complication.id,
                         complication.defaultProviderPolicy.providersAsList(),
                         complication.defaultProviderPolicy.systemProviderFallback,
-                        complication.defaultProviderType.asWireComplicationType()
+                        complication.defaultProviderType.toWireComplicationType()
                     )
                 }
 
@@ -286,21 +268,30 @@ public class ComplicationsManager(
     @UiThread
     internal fun onComplicationDataUpdate(watchFaceComplicationId: Int, data: ComplicationData) {
         val complication = complications[watchFaceComplicationId] ?: return
-        complication.dataDirty =
-            complication.dataDirty || (complication.renderer.idAndData?.complicationData != data)
-        complication.renderer.idAndData = IdAndComplicationData(watchFaceComplicationId, data)
+        complication.dataDirty = complication.dataDirty ||
+            (complication.renderer.getData() != data)
+        complication.renderer.loadData(data, true)
         (complication.complicationData as MutableObservableWatchData<ComplicationData>).value =
             data
     }
 
+    @UiThread
+    internal fun clearComplicationData() {
+        for ((_, complication) in complications) {
+            complication.renderer.loadData(null, false)
+            (complication.complicationData as MutableObservableWatchData).value =
+                EmptyComplicationData()
+        }
+    }
+
     /**
-     * Brings attention to the complication by briefly highlighting it to provide visual feedback
+     * Starts a short animation, briefly highlighting the complication to provide visual feedback
      * when the user has tapped on it.
      *
      * @param complicationId The watch face's ID of the complication to briefly highlight
      */
     @UiThread
-    public fun bringAttentionToComplication(complicationId: Int) {
+    public fun displayPressedAnimation(complicationId: Int) {
         val complication = requireNotNull(complications[complicationId]) {
             "No complication found with ID $complicationId"
         }
@@ -325,7 +316,7 @@ public class ComplicationsManager(
      * @param y The y coordinate of the point to perform a hit test
      * @return The complication at coordinates x, y or {@code null} if there isn't one
      */
-    public fun getComplicationAt(x: Int, y: Int): Complication? =
+    public fun getComplicationAt(@Px x: Int, @Px y: Int): Complication? =
         complications.entries.firstOrNull {
             it.value.enabled && it.value.boundsType != ComplicationBoundsType.BACKGROUND &&
                 it.value.computeBounds(renderer.screenBounds).contains(x, y)
@@ -351,8 +342,8 @@ public class ComplicationsManager(
     @UiThread
     internal fun onComplicationSingleTapped(complicationId: Int) {
         // Check if the complication is missing permissions.
-        val data = complications[complicationId]?.renderer?.idAndData ?: return
-        if (data.complicationData.type == ComplicationType.NO_PERMISSION) {
+        val data = complications[complicationId]?.renderer?.getData() ?: return
+        if (data.type == ComplicationType.NO_PERMISSION) {
             watchFaceHostApi.getContext().startActivity(
                 ComplicationHelperActivity.createPermissionRequestHelperIntent(
                     watchFaceHostApi.getContext(),
@@ -362,51 +353,9 @@ public class ComplicationsManager(
             return
         }
 
-        data.complicationData.tapAction?.send()
+        data.tapAction?.send()
         for (complicationListener in complicationListeners) {
-            complicationListener.onComplicationSingleTapped(complicationId)
-        }
-    }
-
-    /**
-     * Called when the user double taps on a complication, launches the complication
-     * configuration activity unless the complication is fixed in which case it does
-     * nothing.
-     *
-     * @param complicationId The watch face's id for the complication double tapped
-     */
-    @SuppressWarnings("SyntheticAccessor")
-    @UiThread
-    internal fun onComplicationDoubleTapped(complicationId: Int) {
-        // Check if the complication is missing permissions.
-        val complication = complications[complicationId] ?: return
-        if (complication.fixedComplicationProvider) {
-            return
-        }
-        val data = complication.renderer.idAndData ?: return
-        if (data.complicationData.type == ComplicationType.NO_PERMISSION) {
-            watchFaceHostApi.getContext().startActivity(
-                ComplicationHelperActivity.createPermissionRequestHelperIntent(
-                    watchFaceHostApi.getContext(),
-                    getComponentName(watchFaceHostApi.getContext())
-                )
-            )
-            return
-        }
-        watchFaceHostApi.getContext().startActivity(
-            ComplicationHelperActivity.createProviderChooserHelperIntent(
-                watchFaceHostApi.getContext(),
-                getComponentName(watchFaceHostApi.getContext()),
-                complicationId,
-                complication.supportedTypes
-            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).apply {
-                complication.complicationConfigExtras?.let {
-                    replaceExtras(Bundle(it).apply { putAll(extras!!) })
-                }
-            }
-        )
-        for (complicationListener in complicationListeners) {
-            complicationListener.onComplicationDoubleTapped(complicationId)
+            complicationListener.onComplicationTapped(complicationId)
         }
     }
 
@@ -425,5 +374,15 @@ public class ComplicationsManager(
     @UiThread
     public fun removeTapListener(tapCallback: TapCallback) {
         complicationListeners.remove(tapCallback)
+    }
+
+    @UiThread
+    internal fun dump(writer: IndentingPrintWriter) {
+        writer.println("ComplicationsManager:")
+        writer.increaseIndent()
+        for ((_, complication) in complications) {
+            complication.dump(writer)
+        }
+        writer.decreaseIndent()
     }
 }
