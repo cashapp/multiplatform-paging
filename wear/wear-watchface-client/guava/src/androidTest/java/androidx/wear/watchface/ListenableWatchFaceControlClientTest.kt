@@ -31,7 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.wear.watchface.client.DeviceConfig
 import androidx.wear.watchface.client.ListenableWatchFaceControlClient
-import androidx.wear.watchface.client.SystemState
+import androidx.wear.watchface.client.WatchUiState
 import androidx.wear.watchface.control.WatchFaceControlServiceFactory
 import androidx.wear.watchface.samples.createExampleCanvasAnalogWatchFaceBuilder
 import com.google.common.truth.Truth.assertThat
@@ -56,7 +56,7 @@ public class ListenableWatchFaceControlClientTest {
     private lateinit var surface: Surface
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         MockitoAnnotations.initMocks(this)
         Mockito.`when`(surfaceHolder.surfaceFrame)
             .thenReturn(Rect(0, 0, 400, 400))
@@ -83,7 +83,7 @@ public class ListenableWatchFaceControlClientTest {
             400
         )!!
 
-        assertThat(headlessInstance.userStyleSchema.userStyleSettings.map { it.id })
+        assertThat(headlessInstance.userStyleSchema.userStyleSettings.map { it.id.value })
             .containsExactly(
                 "color_style_setting",
                 "draw_hour_pips_style_setting",
@@ -126,7 +126,7 @@ public class ListenableWatchFaceControlClientTest {
         ).get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
         val interactiveInstanceFuture =
-            client.listenableGetOrCreateWallpaperServiceBackedInteractiveWatchFaceWcsClient(
+            client.listenableGetOrCreateInteractiveWatchFaceClient(
                 "listenableTestId",
                 DeviceConfig(
                     false,
@@ -134,7 +134,7 @@ public class ListenableWatchFaceControlClientTest {
                     0,
                     0
                 ),
-                SystemState(false, 0),
+                WatchUiState(false, 0),
                 null,
                 null
             )
@@ -152,7 +152,7 @@ public class ListenableWatchFaceControlClientTest {
         )
 
         val interactiveInstance = interactiveInstanceFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        assertThat(interactiveInstance.userStyleSchema.userStyleSettings.map { it.id })
+        assertThat(interactiveInstance.userStyleSchema.userStyleSettings.map { it.id.value })
             .containsExactly(
                 "color_style_setting",
                 "draw_hour_pips_style_setting",
@@ -221,7 +221,7 @@ public class ListenableWatchFaceControlClientTest {
         ).get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
         val interactiveInstanceFuture =
-            client.listenableGetOrCreateWallpaperServiceBackedInteractiveWatchFaceWcsClient(
+            client.listenableGetOrCreateInteractiveWatchFaceClient(
                 "listenableTestId",
                 DeviceConfig(
                     false,
@@ -229,7 +229,7 @@ public class ListenableWatchFaceControlClientTest {
                     0,
                     0
                 ),
-                SystemState(false, 0),
+                WatchUiState(false, 0),
                 null,
                 null
             )
@@ -271,7 +271,7 @@ public class ListenableWatchFaceControlClientTest {
             context.packageName
         ).get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
-        assertNull(client.getInteractiveWatchFaceSysUiClientInstance("I do not exist"))
+        assertNull(client.getInteractiveWatchFaceClientInstance("I do not exist"))
     }
 }
 

@@ -82,13 +82,12 @@ class WatchFaceConfigActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         handler = Handler(Looper.getMainLooper())
         coroutineScope = CoroutineScope(handler.asCoroutineDispatcher().immediate)
-        val deferredEditorSession = EditorSession.createOnWatchEditingSessionAsync(
-            this@WatchFaceConfigActivity,
-            intent!!
-        )
         coroutineScope.launch {
             init(
-                deferredEditorSession.await()!!,
+                EditorSession.createOnWatchEditingSession(
+                    this@WatchFaceConfigActivity,
+                    intent!!
+                )!!,
                 object : FragmentController {
                     @SuppressLint("SyntheticAccessor")
                     override fun showConfigFragment() {
@@ -118,7 +117,7 @@ class WatchFaceConfigActivity : FragmentActivity() {
                     @SuppressWarnings("deprecation")
                     override suspend fun showComplicationConfig(
                         complicationId: Int
-                    ) = editorSession.launchComplicationProviderChooser(complicationId)
+                    ) = editorSession.openComplicationProviderChooser(complicationId)
                 }
             )
         }
@@ -203,7 +202,7 @@ class WatchFaceConfigActivity : FragmentActivity() {
                 // There should only be a single userStyle setting if we get here.
                 val onlyStyleSetting = editorSession.userStyleSchema.userStyleSettings.first()
                 fragmentController.showStyleConfigFragment(
-                    onlyStyleSetting.id,
+                    onlyStyleSetting.id.value,
                     editorSession.userStyleSchema,
                     editorSession.userStyle
                 )

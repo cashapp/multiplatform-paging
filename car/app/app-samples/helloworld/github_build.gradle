@@ -20,7 +20,7 @@ android {
     compileSdkVersion 29
 
     defaultConfig {
-        applicationId "androidx.car.app.samples.helloworld"
+        applicationId "androidx.car.app.sample.helloworld"
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
@@ -34,7 +34,7 @@ android {
 }
 
 dependencies {
-    implementation "androidx.car.app:app:1.0.0-beta01"
+    implementation "androidx.car.app:app:1.0.0-rc01"
 }
 
 
