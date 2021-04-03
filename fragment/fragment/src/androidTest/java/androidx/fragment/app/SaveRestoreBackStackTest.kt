@@ -23,7 +23,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.testutils.withActivity
 import com.google.common.truth.Truth.assertThat
-import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,14 +55,8 @@ class SaveRestoreBackStackTest {
             fm.saveBackStack("replacement")
             executePendingTransactions()
 
-            assertWithMessage("Saved Fragments should have their state saved")
-                .that(fragmentReplacement.calledOnSaveInstanceState)
-                .isTrue()
-
             // Saved Fragments should be destroyed
-            assertWithMessage("Saved Fragments should be destroyed")
-                .that(fragmentReplacement.calledOnDestroy)
-                .isTrue()
+            assertThat(fragmentReplacement.calledOnDestroy).isTrue()
         }
     }
 

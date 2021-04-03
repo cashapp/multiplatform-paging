@@ -32,7 +32,6 @@ import androidx.compose.ui.node.UiApplier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 
 /**
@@ -66,11 +65,7 @@ fun <T : View> AndroidView(
     update: (T) -> Unit = NoOpUpdate
 ) {
     val context = LocalContext.current
-    // Create a semantics node for accessibility. Semantics modifier is composed and need to be
-    // materialized. So it can't be added in AndroidViewHolder when assigning modifier to layout
-    // node, which is after the materialize call.
-    val modifierWithSemantics = modifier.semantics(true) {}
-    val materialized = currentComposer.materialize(modifierWithSemantics)
+    val materialized = currentComposer.materialize(modifier)
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val parentReference = rememberCompositionContext()

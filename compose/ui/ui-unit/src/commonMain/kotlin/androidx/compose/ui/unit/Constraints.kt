@@ -186,7 +186,7 @@ inline class Constraints(
     companion object {
         /**
          * A value that [maxWidth] or [maxHeight] will be set to when the constraint should
-         * be considered infinite. [hasBoundedWidth] or [hasBoundedHeight] will be
+         * be considered infinite. [hasBoundedHeight] or [hasBoundedWidth] will be
          * `false` when [maxWidth] or [maxHeight] is [Infinity], respectively.
          */
         const val Infinity = Int.MAX_VALUE

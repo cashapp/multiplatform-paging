@@ -77,7 +77,7 @@ public final class ExtensionDisplayFeatureTest {
         Rect rect = new Rect(1, 0, 1, 10);
         int type = ExtensionFoldingFeature.TYPE_FOLD;
         int originalState = ExtensionFoldingFeature.STATE_FLAT;
-        int otherState = ExtensionFoldingFeature.STATE_HALF_OPENED;
+        int otherState = ExtensionFoldingFeature.STATE_FLIPPED;
 
         ExtensionFoldingFeature original = new ExtensionFoldingFeature(rect, type,
                 originalState);

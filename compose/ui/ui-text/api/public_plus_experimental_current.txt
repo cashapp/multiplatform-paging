@@ -488,9 +488,6 @@ package androidx.compose.ui.text.android {
   public final class LayoutIntrinsicsKt {
   }
 
-  public final class SpannedExtensionsKt {
-  }
-
   public final class TempListUtilsKt {
   }
 

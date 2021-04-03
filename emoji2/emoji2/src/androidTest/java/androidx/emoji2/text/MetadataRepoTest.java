@@ -24,6 +24,7 @@ import android.graphics.Typeface;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
+import androidx.text.emoji.flatbuffer.MetadataList;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class MetadataRepoTest {
 
     @Before
     public void clearResourceIndex() {
-        mMetadataRepo = MetadataRepo.create(mock(Typeface.class));
+        mMetadataRepo = MetadataRepo.create(mock(Typeface.class), new MetadataList());
     }
 
     @Test(expected = NullPointerException.class)

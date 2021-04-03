@@ -335,8 +335,7 @@ public final class CarAppActivity extends Activity {
             //TODO("b/177083268: Multiple hosts support is not implemented")
         }
 
-        if (!bindService(rendererIntent, mServiceConnectionImpl,
-                Context.BIND_AUTO_CREATE | Context.BIND_INCLUDE_CAPABILITIES)) {
+        if (!bindService(rendererIntent, mServiceConnectionImpl, Context.BIND_AUTO_CREATE)) {
             onServiceConnectionError(
                     "Cannot bind to the renderer host with intent: " + rendererIntent);
         }
@@ -403,6 +402,7 @@ public final class CarAppActivity extends Activity {
         } catch (RemoteException e) {
             // We are already unbinding (maybe because the host has already cut the connection)
             // Let's not log more errors unnecessarily.
+            //TODO(179506019): Revisit calls to unbindService()
         }
 
         unbindService(mServiceConnectionImpl);

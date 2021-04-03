@@ -25,14 +25,18 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 
 /**
  * The {@link ContentProvider} which discovers {@link Initializer}s in an application and
  * initializes them before {@link Application#onCreate()}.
+ *
+ * @hide
  */
-public class InitializationProvider extends ContentProvider {
+@RestrictTo(RestrictTo.Scope.LIBRARY)
+public final class InitializationProvider extends ContentProvider {
     @Override
-    public final boolean onCreate() {
+    public boolean onCreate() {
         Context context = getContext();
         if (context != null) {
             AppInitializer.getInstance(context).discoverAndInitialize();
@@ -44,7 +48,7 @@ public class InitializationProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public final Cursor query(
+    public Cursor query(
             @NonNull Uri uri,
             @Nullable String[] projection,
             @Nullable String selection,
@@ -55,18 +59,18 @@ public class InitializationProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public final String getType(@NonNull Uri uri) {
+    public String getType(@NonNull Uri uri) {
         throw new IllegalStateException("Not allowed.");
     }
 
     @Nullable
     @Override
-    public final Uri insert(@NonNull Uri uri, @Nullable ContentValues values) {
+    public Uri insert(@NonNull Uri uri, @Nullable ContentValues values) {
         throw new IllegalStateException("Not allowed.");
     }
 
     @Override
-    public final int delete(
+    public int delete(
             @NonNull Uri uri,
             @Nullable String selection,
             @Nullable String[] selectionArgs) {
@@ -74,7 +78,7 @@ public class InitializationProvider extends ContentProvider {
     }
 
     @Override
-    public final int update(
+    public int update(
             @NonNull Uri uri,
             @Nullable ContentValues values,
             @Nullable String selection,

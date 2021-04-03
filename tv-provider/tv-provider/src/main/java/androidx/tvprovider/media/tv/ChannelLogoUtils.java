@@ -27,7 +27,6 @@ import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import java.io.FileNotFoundException;
@@ -151,17 +150,16 @@ public class ChannelLogoUtils {
      * @see #storeChannelLogo(Context, long, Uri)
      * @see #storeChannelLogo(Context, long, Bitmap)
      */
-    @Nullable
     @WorkerThread
     @SuppressLint("WrongThread") // TODO https://issuetracker.google.com/issues/116776070
     public static Bitmap loadChannelLogo(@NonNull Context context, long channelId) {
         Bitmap channelLogo = null;
-        Uri logoUri = TvContract.buildChannelLogoUri(channelId);
-        try (InputStream is = context.getContentResolver().openInputStream(logoUri)) {
-            channelLogo = BitmapFactory.decodeStream(is);
-        } catch (IOException e) {
+        try {
+            channelLogo = BitmapFactory.decodeStream(context.getContentResolver().openInputStream(
+                    TvContract.buildChannelLogoUri(channelId)));
+        } catch (FileNotFoundException e) {
             // Channel logo is not found in the content provider.
-            Log.i(TAG, "Could not load channel logo for channel (ID:" + channelId + ").", e);
+            Log.i(TAG, "Channel logo for channel (ID:" + channelId + ") not found.", e);
         }
         return channelLogo;
     }

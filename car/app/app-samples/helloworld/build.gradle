@@ -1,4 +1,7 @@
-import static androidx.build.dependencies.DependenciesKt.*
+import static androidx.build.dependencies.DependenciesKt.ANDROIDX_TEST_CORE
+import static androidx.build.dependencies.DependenciesKt.JUNIT
+import static androidx.build.dependencies.DependenciesKt.ROBOLECTRIC
+import static androidx.build.dependencies.DependenciesKt.TRUTH
 
 /*
  * Copyright (C) 2021 The Android Open Source Project
@@ -23,7 +26,7 @@ plugins {
 
 android {
     defaultConfig {
-        applicationId "androidx.car.app.sample.helloworld"
+        applicationId "androidx.car.app.samples.helloworld"
         minSdkVersion 23
         versionCode 1
         versionName "1.0"

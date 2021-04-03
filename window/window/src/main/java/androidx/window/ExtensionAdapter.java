@@ -116,6 +116,9 @@ final class ExtensionAdapter {
             case ExtensionFoldingFeature.STATE_FLAT:
                 state = FoldingFeature.STATE_FLAT;
                 break;
+            case ExtensionFoldingFeature.STATE_FLIPPED:
+                state = FoldingFeature.STATE_FLIPPED;
+                break;
             case ExtensionFoldingFeature.STATE_HALF_OPENED:
                 state = FoldingFeature.STATE_HALF_OPENED;
                 break;

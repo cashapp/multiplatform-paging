@@ -113,9 +113,7 @@ public class ProxyOverrideActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (mProxy != null) {
-            mProxy.shutdown();
-        }
+        mProxy.shutdown();
         super.onDestroy();
     }
 }

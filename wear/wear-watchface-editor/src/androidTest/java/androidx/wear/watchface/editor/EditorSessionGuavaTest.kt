@@ -37,7 +37,7 @@ import androidx.wear.watchface.MutableWatchState
 import androidx.wear.watchface.WatchFace
 import androidx.wear.watchface.client.WatchFaceId
 import androidx.wear.watchface.complications.rendering.ComplicationDrawable
-import androidx.wear.watchface.style.CurrentUserStyleRepository
+import androidx.wear.watchface.style.UserStyleRepository
 import androidx.wear.watchface.style.UserStyleSchema
 import androidx.wear.watchface.style.UserStyleSetting
 import com.google.common.truth.Truth
@@ -102,7 +102,7 @@ public class EditorSessionGuavaTest {
         watchFaceId: WatchFaceId = testInstanceId,
         previewReferenceTimeMillis: Long = 12345
     ): ActivityScenario<OnWatchFaceEditingTestActivity> {
-        val userStyleRepository = CurrentUserStyleRepository(UserStyleSchema(userStyleSettings))
+        val userStyleRepository = UserStyleRepository(UserStyleSchema(userStyleSettings))
         val complicationsManager = ComplicationsManager(complications, userStyleRepository)
 
         WatchFace.registerEditorDelegate(testComponentName, editorDelegate)
@@ -156,7 +156,7 @@ public class EditorSessionGuavaTest {
     }
 
     @Test
-    public fun listenableOpenComplicationProviderChooser() {
+    public fun listenableLaunchComplicationProviderChooser() {
         ComplicationProviderChooserContract.useTestComplicationHelperActivity = true
         val scenario = createOnWatchFaceEditingTestActivity(
             emptyList(),
@@ -173,7 +173,7 @@ public class EditorSessionGuavaTest {
          * the preview data) for [LEFT_COMPLICATION_ID].
          */
         assertTrue(
-            listenableEditorSession.listenableOpenComplicationProviderChooser(
+            listenableEditorSession.listenableLaunchComplicationProviderChooser(
                 LEFT_COMPLICATION_ID
             ).get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
         )

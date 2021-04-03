@@ -43,7 +43,7 @@ internal class InteractiveInstanceManager {
 
     class PendingWallpaperInteractiveWatchFaceInstance(
         val params: WallpaperInteractiveWatchFaceInstanceParams,
-        val callback: IPendingInteractiveWatchFace
+        val callback: IPendingInteractiveWatchFaceWCS
     )
 
     companion object {
@@ -108,11 +108,11 @@ internal class InteractiveInstanceManager {
         @RequiresApi(27)
         fun getExistingInstanceOrSetPendingWallpaperInteractiveWatchFaceInstance(
             value: PendingWallpaperInteractiveWatchFaceInstance
-        ): IInteractiveWatchFace? {
+        ): IInteractiveWatchFaceWCS? {
             synchronized(pendingWallpaperInteractiveWatchFaceInstanceLock) {
                 val instance = instances[value.params.instanceId]
                 return if (instance != null) {
-                    instance.impl
+                    instance.impl.createWCSApi()
                 } else {
                     pendingWallpaperInteractiveWatchFaceInstance = value
                     null

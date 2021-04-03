@@ -16,7 +16,8 @@
 -->
 
 <resources>
-  <style name="CarAppTheme">
+  <style name="CarAppTheme"
+      xmlns:custom="http://schemas.android.com/apk/res-auto">
     <item name="carColorPrimary">#ff41af6a</item>
     <item name="carColorPrimaryDark">#ff41af6a</item>
     <item name="carColorSecondary">#fff3b713</item>

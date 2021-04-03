@@ -20,7 +20,6 @@ import android.content.res.Resources
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 
@@ -31,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
  * @return the string data associated with the resource
  */
 @Composable
-@ReadOnlyComposable
 fun stringResource(@StringRes id: Int): String {
     val resources = resources()
     return resources.getString(id)
@@ -45,7 +43,6 @@ fun stringResource(@StringRes id: Int): String {
  * @return the string data associated with the resource
  */
 @Composable
-@ReadOnlyComposable
 fun stringResource(@StringRes id: Int, vararg formatArgs: Any): String {
     val resources = resources()
     return resources.getString(id, *formatArgs)
@@ -58,7 +55,6 @@ fun stringResource(@StringRes id: Int, vararg formatArgs: Any): String {
  * @return the string data associated with the resource
  */
 @Composable
-@ReadOnlyComposable
 fun stringArrayResource(@ArrayRes id: Int): Array<String> {
     val resources = resources()
     return resources.getStringArray(id)
@@ -69,7 +65,6 @@ fun stringArrayResource(@ArrayRes id: Int): Array<String> {
  * gets updated.
  */
 @Composable
-@ReadOnlyComposable
 private fun resources(): Resources {
     LocalConfiguration.current
     return LocalContext.current.resources

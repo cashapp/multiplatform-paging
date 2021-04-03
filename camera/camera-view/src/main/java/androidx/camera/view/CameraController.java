@@ -28,9 +28,9 @@ import androidx.annotation.IntDef;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.annotation.RestrictTo;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.experimental.UseExperimental;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraControl;
 import androidx.camera.core.CameraInfo;
@@ -113,7 +113,7 @@ public abstract class CameraController {
      *
      * @hide
      */
-    @OptIn(markerClass = ExperimentalVideo.class)
+    @UseExperimental(markerClass = ExperimentalVideo.class)
     @Retention(RetentionPolicy.SOURCE)
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     @IntDef(flag = true, value = {IMAGE_CAPTURE, IMAGE_ANALYSIS, VIDEO_CAPTURE})
@@ -330,7 +330,7 @@ public abstract class CameraController {
      * @see ImageAnalysis
      */
     @MainThread
-    @OptIn(markerClass = ExperimentalVideo.class)
+    @UseExperimental(markerClass = ExperimentalVideo.class)
     public void setEnabledUseCases(@UseCases int enabledUseCases) {
         Threads.checkMainThread();
         if (enabledUseCases == mEnabledUseCases) {
@@ -359,9 +359,9 @@ public abstract class CameraController {
      * Same as {@link #isVideoCaptureEnabled()}.
      *
      * <p> This wrapper method is to workaround the limitation that currently only one
-     * UseExperimental mark class is allowed per method.
+     * {@link UseExperimental} mark class is allowed per method.
      */
-    @OptIn(markerClass = ExperimentalVideo.class)
+    @UseExperimental(markerClass = ExperimentalVideo.class)
     private boolean isVideoCaptureEnabledInternal() {
         return isVideoCaptureEnabled();
     }
@@ -375,7 +375,7 @@ public abstract class CameraController {
      */
     @SuppressLint({"MissingPermission", "WrongConstant"})
     @MainThread
-    @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+    @UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
     void attachPreviewSurface(@NonNull Preview.SurfaceProvider surfaceProvider,
             @NonNull ViewPort viewPort, @NonNull Display display) {
         Threads.checkMainThread();
@@ -1125,7 +1125,7 @@ public abstract class CameraController {
      */
     @Nullable
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+    @UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
     protected UseCaseGroup createUseCaseGroup() {
         if (!isCameraInitialized()) {
             Logger.d(TAG, CAMERA_NOT_INITIALIZED);
@@ -1182,7 +1182,7 @@ public abstract class CameraController {
 
         @SuppressLint("WrongConstant")
         @Override
-        @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+        @UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
         public void onDisplayChanged(int displayId) {
             if (mPreviewDisplay != null && mPreviewDisplay.getDisplayId() == displayId) {
                 mPreview.setTargetRotation(mPreviewDisplay.getRotation());

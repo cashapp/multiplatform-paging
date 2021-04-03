@@ -36,7 +36,6 @@ class FragmentStore {
 
     private final ArrayList<Fragment> mAdded = new ArrayList<>();
     private final HashMap<String, FragmentStateManager> mActive = new HashMap<>();
-    private final HashMap<String, FragmentState> mSavedState = new HashMap<>();
 
     private FragmentManagerViewModel mNonConfig;
 
@@ -168,47 +167,18 @@ class FragmentStore {
         values.removeAll(Collections.singleton(null));
     }
 
-    @Nullable
-    FragmentState getSavedState(@NonNull String who) {
-        return mSavedState.get(who);
-    }
-
-    /**
-     * Sets the saved state, returning the previously set FragmentState, if any.
-     */
-    @Nullable
-    FragmentState setSavedState(@NonNull String who, @Nullable FragmentState fragmentState) {
-        if (fragmentState != null) {
-            return mSavedState.put(who, fragmentState);
-        } else {
-            return mSavedState.remove(who);
-        }
-    }
-
-    void restoreSaveState(@NonNull ArrayList<FragmentState> savedState) {
-        mSavedState.clear();
-        for (FragmentState fs : savedState) {
-            mSavedState.put(fs.mWho, fs);
-        }
-    }
-
     @NonNull
-    ArrayList<FragmentState> getAllSavedState() {
-        return new ArrayList<>(mSavedState.values());
-    }
-
-    @NonNull
-    ArrayList<String> saveActiveFragments() {
-        ArrayList<String> active = new ArrayList<>(mActive.size());
+    ArrayList<FragmentState> saveActiveFragments() {
+        ArrayList<FragmentState> active = new ArrayList<>(mActive.size());
         for (FragmentStateManager fragmentStateManager : mActive.values()) {
             if (fragmentStateManager != null) {
                 Fragment f = fragmentStateManager.getFragment();
 
-                fragmentStateManager.saveState();
-                active.add(f.mWho);
+                FragmentState fs = fragmentStateManager.saveState();
+                active.add(fs);
 
                 if (FragmentManager.isLoggingEnabled(Log.VERBOSE)) {
-                    Log.v(TAG, "Saved state of " + f + ": " + f.mSavedFragmentState);
+                    Log.v(TAG, "Saved state of " + f + ": " + fs.mSavedFragmentState);
                 }
             }
         }

@@ -19,7 +19,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.desktop.AppWindow
 import androidx.compose.desktop.DesktopMaterialTheme
-import androidx.compose.desktop.LocalAppWindow
 import androidx.compose.desktop.Window
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -180,10 +179,8 @@ private fun ScrollableContent(scrollState: ScrollState) {
     val amount = remember { mutableStateOf(0) }
     val animation = remember { mutableStateOf(true) }
     Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-        val window = LocalAppWindow.current.window
-        val info = "${window.renderApi} (${window.windowHandle})"
         Text(
-            text = "Привет! 你好! Desktop Compose use $info: ${amount.value}",
+            text = "Привет! 你好! Desktop Compose ${amount.value}",
             color = Color.Black,
             modifier = Modifier
                 .background(Color.Blue)

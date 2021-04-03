@@ -21,7 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import android.os.Build;
 
-import androidx.annotation.OptIn;
+import androidx.annotation.experimental.UseExperimental;
 import androidx.camera.core.impl.CameraControlInternal;
 import androidx.camera.core.impl.CameraInternal;
 import androidx.camera.testing.fakes.FakeCamera;
@@ -98,7 +98,7 @@ public class CameraSelectorTest {
         cameraSelectorBuilder.build().getLensFacing();
     }
 
-    @OptIn(markerClass = ExperimentalCameraFilter.class)
+    @UseExperimental(markerClass = ExperimentalCameraFilter.class)
     @Test
     public void canAppendFilters() {
         CameraFilter filter0 = mock(CameraFilter.class);
@@ -124,7 +124,7 @@ public class CameraSelectorTest {
         assertThat(CameraSelector.DEFAULT_FRONT_CAMERA.select(mCameras)).isEqualTo(mFrontCamera);
     }
 
-    @OptIn(markerClass = ExperimentalCameraFilter.class)
+    @UseExperimental(markerClass = ExperimentalCameraFilter.class)
     @Test(expected = IllegalArgumentException.class)
     public void exception_extraOutputCamera() {
         CameraSelector.Builder cameraSelectorBuilder = new CameraSelector.Builder();
@@ -137,7 +137,7 @@ public class CameraSelectorTest {
         cameraSelectorBuilder.build().select(mCameras);
     }
 
-    @OptIn(markerClass = ExperimentalCameraFilter.class)
+    @UseExperimental(markerClass = ExperimentalCameraFilter.class)
     @Test(expected = UnsupportedOperationException.class)
     public void exception_extraInputCamera() {
         CameraSelector.Builder cameraSelectorBuilder = new CameraSelector.Builder();

@@ -49,6 +49,8 @@ import kotlin.math.min
  *
  * @see VerticalAlignmentLine
  * @see HorizontalAlignmentLine
+ *
+ * @param merger Defines the position of an alignment line inherited from more than one child.
  */
 @Immutable
 sealed class AlignmentLine(

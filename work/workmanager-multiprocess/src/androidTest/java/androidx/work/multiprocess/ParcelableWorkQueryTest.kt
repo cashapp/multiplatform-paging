@@ -16,7 +16,6 @@
 
 package androidx.work.multiprocess
 
-import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.work.WorkInfo
@@ -34,11 +33,6 @@ public class ParcelableWorkQueryTest {
     @Test
     @SmallTest
     public fun converterTest1() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val workQuery = WorkQuery.Builder.fromUniqueWorkNames(listOf("name1"))
             .addTags(listOf("tag1", "tag2"))
             .addIds(listOf(UUID.randomUUID()))
@@ -51,11 +45,6 @@ public class ParcelableWorkQueryTest {
     @Test
     @SmallTest
     public fun converterTest2() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val workQuery = WorkQuery.Builder.fromUniqueWorkNames(listOf("name1"))
             .build()
 
@@ -65,11 +54,6 @@ public class ParcelableWorkQueryTest {
     @Test
     @SmallTest
     public fun converterTest3() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val workQuery = WorkQuery.Builder.fromTags(listOf("tag1", "tag2"))
             .build()
 
@@ -79,11 +63,6 @@ public class ParcelableWorkQueryTest {
     @Test
     @SmallTest
     public fun converterTest4() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val workQuery = WorkQuery.Builder.fromStates(listOf(WorkInfo.State.ENQUEUED))
             .build()
 

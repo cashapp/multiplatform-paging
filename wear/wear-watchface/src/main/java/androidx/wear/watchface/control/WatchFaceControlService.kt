@@ -103,10 +103,10 @@ private class IWatchFaceInstanceServiceStub(
 ) : IWatchFaceControlService.Stub() {
     override fun getApiVersion() = IWatchFaceControlService.API_VERSION
 
-    override fun getInteractiveWatchFaceInstance(instanceId: String) =
-        TraceEvent("IWatchFaceInstanceServiceStub.getInteractiveWatchFaceInstance").use {
+    override fun getInteractiveWatchFaceInstanceSysUI(instanceId: String) =
+        TraceEvent("IWatchFaceInstanceServiceStub.getInteractiveWatchFaceInstanceSysUI").use {
             // This call is thread safe so we don't need to trampoline via the UI thread.
-            InteractiveInstanceManager.getAndRetainInstance(instanceId)
+            InteractiveInstanceManager.getAndRetainInstance(instanceId)?.createSysUiApi()
         }
 
     override fun createHeadlessWatchFaceInstance(
@@ -144,25 +144,25 @@ private class IWatchFaceInstanceServiceStub(
         }
     }
 
-    override fun getOrCreateInteractiveWatchFace(
+    override fun getOrCreateInteractiveWatchFaceWCS(
         params: WallpaperInteractiveWatchFaceInstanceParams,
-        callback: IPendingInteractiveWatchFace
-    ): IInteractiveWatchFace? {
+        callback: IPendingInteractiveWatchFaceWCS
+    ): IInteractiveWatchFaceWCS? {
         val asyncTraceEvent =
             AsyncTraceEvent("IWatchFaceInstanceServiceStub.getOrCreateInteractiveWatchFaceWCS")
         return InteractiveInstanceManager
             .getExistingInstanceOrSetPendingWallpaperInteractiveWatchFaceInstance(
                 InteractiveInstanceManager.PendingWallpaperInteractiveWatchFaceInstance(
                     params,
-                    // Wrapped IPendingInteractiveWatchFace to support tracing.
-                    object : IPendingInteractiveWatchFace.Stub() {
+                    // Wrapped IPendingInteractiveWatchFaceWCS to support tracing.
+                    object : IPendingInteractiveWatchFaceWCS.Stub() {
                         override fun getApiVersion() = callback.apiVersion
 
-                        override fun onInteractiveWatchFaceCreated(
-                            iInteractiveWatchFaceWcs: IInteractiveWatchFace?
+                        override fun onInteractiveWatchFaceWcsCreated(
+                            iInteractiveWatchFaceWcs: IInteractiveWatchFaceWCS?
                         ) {
                             asyncTraceEvent.close()
-                            callback.onInteractiveWatchFaceCreated(iInteractiveWatchFaceWcs)
+                            callback.onInteractiveWatchFaceWcsCreated(iInteractiveWatchFaceWcs)
                         }
                     }
                 )

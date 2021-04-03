@@ -48,9 +48,8 @@ class BackStackStateTest {
             setMaxLifecycle(fragment, Lifecycle.State.STARTED)
         }
 
-        fragmentManager.fragmentStore.setSavedState(fragment.mWho, FragmentState(fragment))
         val backStackState = BackStackState(
-            listOf(fragment.mWho),
+            listOf(FragmentState(fragment)),
             listOf(BackStackRecordState(backStackRecord))
         )
 

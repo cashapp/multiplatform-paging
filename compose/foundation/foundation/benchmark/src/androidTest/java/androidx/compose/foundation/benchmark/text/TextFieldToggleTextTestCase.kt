@@ -21,9 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -74,7 +72,7 @@ class TextFieldToggleTextTestCase(
     @Composable
     override fun ContentWrappers(content: @Composable () -> Unit) {
         Column(
-            modifier = Modifier.width(width).verticalScroll(rememberScrollState())
+            modifier = Modifier.width(width)
         ) {
             CompositionLocalProvider(LocalTextInputService provides textInputService) {
                 content()

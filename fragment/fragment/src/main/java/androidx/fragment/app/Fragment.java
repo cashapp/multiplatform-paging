@@ -167,8 +167,6 @@ public class Fragment implements ComponentCallbacks, OnCreateContextMenuListener
     // If set this fragment is being removed from its activity.
     boolean mRemoving;
 
-    boolean mBeingSaved;
-
     // Set to true if this fragment was instantiated from a layout file.
     boolean mFromLayout;
 
@@ -284,10 +282,6 @@ public class Fragment implements ComponentCallbacks, OnCreateContextMenuListener
     // fragments can have mRetaining set to true without going through creation, so we must
     // track it separately.
     boolean mIsCreated;
-
-    // True if the fragment was already added to a FragmentManager, but has since been removed
-    // again.
-    boolean mRemoved;
 
     // Max Lifecycle state this Fragment can achieve.
     Lifecycle.State mMaxState = Lifecycle.State.RESUMED;
@@ -2190,7 +2184,6 @@ public class Fragment implements ComponentCallbacks, OnCreateContextMenuListener
         mTag = null;
         mHidden = false;
         mDetached = false;
-        mRemoved = true;
     }
 
     /**

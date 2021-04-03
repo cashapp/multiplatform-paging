@@ -127,7 +127,7 @@ package androidx.camera.view {
 
 package androidx.camera.view.video {
 
-  @RequiresOptIn @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.CLASS) public @interface ExperimentalVideo {
+  @experimental.Experimental @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.CLASS) public @interface ExperimentalVideo {
   }
 
   @androidx.camera.view.video.ExperimentalVideo @com.google.auto.value.AutoValue public abstract class Metadata {

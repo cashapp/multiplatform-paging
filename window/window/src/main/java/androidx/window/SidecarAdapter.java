@@ -274,8 +274,10 @@ final class SidecarAdapter {
         switch (devicePosture) {
             case SidecarDeviceState.POSTURE_CLOSED:
             case SidecarDeviceState.POSTURE_UNKNOWN:
-            case SidecarDeviceState.POSTURE_FLIPPED:
                 return null;
+            case SidecarDeviceState.POSTURE_FLIPPED:
+                state = FoldingFeature.STATE_FLIPPED;
+                break;
             case SidecarDeviceState.POSTURE_HALF_OPENED:
                 state = FoldingFeature.STATE_HALF_OPENED;
                 break;

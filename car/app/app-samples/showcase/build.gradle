@@ -21,7 +21,7 @@ plugins {
 
 android {
     defaultConfig {
-        applicationId "androidx.car.app.sample.showcase"
+        applicationId "androidx.car.app.samples.showcase"
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
@@ -43,5 +43,4 @@ dependencies {
     implementation(project(":car:app:app"))
 
     implementation("androidx.core:core:1.5.0-alpha01")
-    implementation project(path: ':annotation:annotation-experimental')
 }

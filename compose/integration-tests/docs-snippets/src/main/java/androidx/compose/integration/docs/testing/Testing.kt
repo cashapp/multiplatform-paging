@@ -66,6 +66,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -261,6 +262,7 @@ private object TestingSemanticsSnippet3 {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private object TestingSnippets13 {
     class MyTest() {
 

@@ -160,7 +160,7 @@ class TextLayout constructor(
                 start = 0,
                 end = charSequence.length,
                 paint = textPaint,
-                width = widthInt,
+                width = ceil(width).toInt(),
                 textDir = frameworkTextDir,
                 alignment = frameworkAlignment,
                 maxLines = maxLines,

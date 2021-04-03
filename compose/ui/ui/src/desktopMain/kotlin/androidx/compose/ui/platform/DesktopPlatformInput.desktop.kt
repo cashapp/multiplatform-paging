@@ -85,9 +85,11 @@ internal class DesktopPlatformInput(val component: DesktopComponent) :
     }
 
     override fun showSoftwareKeyboard() {
+        println("DesktopPlatformInput.showSoftwareKeyboard")
     }
 
     override fun hideSoftwareKeyboard() {
+        println("DesktopPlatformInput.hideSoftwareKeyboard")
     }
 
     override fun updateState(oldValue: TextFieldValue?, newValue: TextFieldValue) {
@@ -107,6 +109,7 @@ internal class DesktopPlatformInput(val component: DesktopComponent) :
     ) {
         // Which OSes and which input method could produce such events? We need to have some
         // specific cases in mind before implementing this
+        println("DesktopInputComponent.inputMethodCaretPositionChanged")
     }
 
     internal fun replaceInputMethodText(event: InputMethodEvent) {

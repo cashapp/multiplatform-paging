@@ -208,8 +208,7 @@ public final class NavigationTemplate implements Template {
          * Sets the {@link TravelEstimate} to the final destination.
          *
          * @throws IllegalArgumentException if the {@link TravelEstimate}'s remaining time is
-         *                                  {@link TravelEstimate#REMAINING_TIME_UNKNOWN} or less
-         *                                  than zero
+         *                                  less than zero
          * @throws NullPointerException     if {@code destinationTravelEstimate} is {@code null}
          */
         @NonNull

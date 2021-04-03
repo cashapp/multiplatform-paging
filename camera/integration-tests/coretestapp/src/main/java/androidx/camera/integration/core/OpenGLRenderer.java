@@ -28,8 +28,8 @@ import android.view.Surface;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.annotation.WorkerThread;
+import androidx.annotation.experimental.UseExperimental;
 import androidx.camera.core.ExperimentalUseCaseGroup;
 import androidx.camera.core.Preview;
 import androidx.concurrent.futures.CallbackToFutureAdapter;
@@ -101,7 +101,7 @@ final class OpenGLRenderer {
         mExecutor.execute(() -> mNativeContext = initContext());
     }
 
-    @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+    @UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
     @MainThread
     void attachInputPreview(@NonNull Preview preview) {
         preview.setSurfaceProvider(
