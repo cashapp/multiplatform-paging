@@ -18,6 +18,7 @@ package androidx.compose.foundation
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @Suppress("RemoveExplicitTypeArguments")
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(JUnit4::class)
 class MutatorMutexTest {
     interface MutateCaller {
@@ -40,12 +42,12 @@ class MutatorMutexTest {
         ): R
     }
 
-    class MutateWithoutReceiverCaller(private val mutex: MutatorMutex) : MutateCaller {
+    class MutateWithoutReceiverCaller(val mutex: MutatorMutex) : MutateCaller {
         override suspend fun <R> mutate(priority: MutatePriority, block: suspend () -> R): R =
             mutex.mutate(priority, block)
     }
 
-    class MutateWithReceiverCaller(private val mutex: MutatorMutex) : MutateCaller {
+    class MutateWithReceiverCaller(val mutex: MutatorMutex) : MutateCaller {
         override suspend fun <R> mutate(priority: MutatePriority, block: suspend () -> R): R {
             val receiver = Any()
             return mutex.mutateWith(receiver, priority) {

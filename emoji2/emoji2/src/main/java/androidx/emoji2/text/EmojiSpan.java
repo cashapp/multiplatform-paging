@@ -16,7 +16,6 @@
 package androidx.emoji2.text;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY;
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 import static androidx.annotation.RestrictTo.Scope.TESTS;
 
 import android.annotation.SuppressLint;
@@ -103,9 +102,8 @@ public abstract class EmojiSpan extends ReplacementSpan {
     /**
      * @hide
      */
-    @NonNull
-    @RestrictTo(LIBRARY_GROUP)
-    public final EmojiMetadata getMetadata() {
+    @RestrictTo(LIBRARY)
+    final EmojiMetadata getMetadata() {
         return mMetadata;
     }
 
@@ -124,8 +122,8 @@ public abstract class EmojiSpan extends ReplacementSpan {
      *
      * @hide
      */
-    @RestrictTo(TESTS)
-    public final int getHeight() {
+    @RestrictTo(LIBRARY)
+    final int getHeight() {
         return mHeight;
     }
 

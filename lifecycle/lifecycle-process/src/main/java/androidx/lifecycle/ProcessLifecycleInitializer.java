@@ -19,15 +19,19 @@ package androidx.lifecycle;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
 import androidx.startup.Initializer;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Initializes {@link ProcessLifecycleOwner} using {@code androidx.startup}.
+ * Internal class to initialize Lifecycles.
+ *
+ * @hide
  */
-public final class ProcessLifecycleInitializer implements Initializer<LifecycleOwner> {
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+public class ProcessLifecycleInitializer implements Initializer<LifecycleOwner> {
 
     @NonNull
     @Override

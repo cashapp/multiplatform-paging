@@ -1033,13 +1033,8 @@ public open class NavController(
         val deepLinkMatch = _graph!!.matchDeepLink(request)
         if (deepLinkMatch != null) {
             val destination = deepLinkMatch.destination
-            val args = destination.addInDefaultArgs(deepLinkMatch.matchingArgs) ?: Bundle()
+            val args = destination.addInDefaultArgs(deepLinkMatch.matchingArgs)
             val node = deepLinkMatch.destination
-            val intent = Intent().apply {
-                setDataAndType(request.uri, request.mimeType)
-                action = request.action
-            }
-            args.putParcelable(KEY_DEEP_LINK_INTENT, intent)
             navigate(node, args, navOptions, navigatorExtras)
         } else {
             throw IllegalArgumentException(

@@ -19,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,9 +29,19 @@ import org.junit.runner.RunWith;
 @SdkSuppress(minSdkVersion = 19)
 public class UninitializedStateTest {
 
+    private TestConfigBuilder.WaitingDataLoader mWaitingDataLoader;
+
     @Before
     public void setup() {
-        EmojiCompat.reset(NoFontTestEmojiConfig.neverLoadsConfig());
+        mWaitingDataLoader = new TestConfigBuilder.WaitingDataLoader(true);
+        final EmojiCompat.Config config = new TestConfigBuilder.TestConfig(mWaitingDataLoader);
+        EmojiCompat.reset(config);
+    }
+
+    @After
+    public void after() {
+        mWaitingDataLoader.getLoaderLatch().countDown();
+        mWaitingDataLoader.getTestLatch().countDown();
     }
 
     @Test(expected = IllegalStateException.class)

@@ -17,73 +17,90 @@
 package androidx.wear.watchface.style
 
 import androidx.wear.watchface.style.UserStyleSetting.DoubleRangeUserStyleSetting
-import androidx.wear.watchface.style.UserStyleSetting.Option
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(StyleTestRunner::class)
-public class UserStyleSettingTest {
+class UserStyleSettingTest {
 
     @Test
-    public fun rangedUserStyleSetting_getOptionForId_returns_default_for_bad_input() {
+    fun rangedUserStyleSetting_getOptionForId_returns_default_for_bad_input() {
         val defaultValue = 0.75
         val rangedUserStyleSetting =
             DoubleRangeUserStyleSetting(
-                UserStyleSetting.Id("example_setting"),
+                "example_setting",
                 "Example Ranged Setting",
                 "An example setting",
                 null,
                 0.0,
                 1.0,
-                listOf(Layer.BASE),
+                listOf(Layer.BASE_LAYER),
                 defaultValue
             )
 
-        assertThat(rangedUserStyleSetting.getOptionForId("not a number").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("not a number").id)
             .isEqualTo(defaultValue.toString())
 
-        assertThat(rangedUserStyleSetting.getOptionForId("-1").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("-1").id)
             .isEqualTo(defaultValue.toString())
 
-        assertThat(rangedUserStyleSetting.getOptionForId("10").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("10").id)
             .isEqualTo(defaultValue.toString())
     }
 
     @Test
-    public fun rangedUserStyleSetting_getOptionForId() {
+    fun rangedUserStyleSetting_getOptionForId() {
         val defaultValue = 0.75
         val rangedUserStyleSetting =
             DoubleRangeUserStyleSetting(
-                UserStyleSetting.Id("example_setting"),
+                "example_setting",
                 "Example Ranged Setting",
                 "An example setting",
                 null,
                 0.0,
                 1.0,
-                listOf(Layer.BASE),
+                listOf(Layer.BASE_LAYER),
                 defaultValue
             )
 
-        assertThat(rangedUserStyleSetting.getOptionForId("0").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("0").id)
             .isEqualTo("0.0")
 
-        assertThat(rangedUserStyleSetting.getOptionForId("0.5").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("0.5").id)
             .isEqualTo("0.5")
 
-        assertThat(rangedUserStyleSetting.getOptionForId("1").id.value)
+        assertThat(rangedUserStyleSetting.getOptionForId("1").id)
             .isEqualTo("1.0")
     }
 
     @Test
-    public fun maximumUserStyleSettingIdLength() {
+    fun maximumUserStyleSettingIdLength() {
         // OK.
-        UserStyleSetting.Id("x".repeat(UserStyleSetting.Id.MAX_LENGTH))
+        DoubleRangeUserStyleSetting(
+            "x".repeat(UserStyleSetting.maxIdLength),
+            "",
+            "",
+            null,
+            0.0,
+            1.0,
+            emptyList(),
+            1.0
+        )
 
         try {
             // Not OK.
-            UserStyleSetting.Id("x".repeat(UserStyleSetting.Id.MAX_LENGTH + 1))
+            DoubleRangeUserStyleSetting(
+                "x".repeat(UserStyleSetting.maxIdLength + 1),
+                "",
+                "",
+                null,
+                0.0,
+                1.0,
+                emptyList(),
+                1.0
+            )
             fail("Should have thrown an exception")
         } catch (e: Exception) {
             // Expected
@@ -91,13 +108,21 @@ public class UserStyleSettingTest {
     }
 
     @Test
-    public fun maximumOptionIdLength() {
+    fun maximumOptionIdLength() {
         // OK.
-        Option.Id("x".repeat(Option.Id.MAX_LENGTH))
+        UserStyleSetting.ListUserStyleSetting.ListOption(
+            "x".repeat(UserStyleSetting.Option.maxIdLength),
+            "",
+            null
+        )
 
         try {
             // Not OK.
-            Option.Id("x".repeat(Option.Id.MAX_LENGTH + 1))
+            UserStyleSetting.ListUserStyleSetting.ListOption(
+                "x".repeat(UserStyleSetting.Option.maxIdLength + 1),
+                "",
+                null
+            )
             fail("Should have thrown an exception")
         } catch (e: Exception) {
             // Expected

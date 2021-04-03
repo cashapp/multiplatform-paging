@@ -14,11 +14,4 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="androidx.compose.ui.viewbinding.samples">
-    <application>
-        <activity android:name="androidx.compose.ui.samples.InflatedFragmentActivity"/>
-        <activity android:name="androidx.compose.ui.samples.ChildInflatedFragmentActivity"/>
-        <activity android:name="androidx.compose.ui.samples.EmptyFragmentActivity"/>
-    </application>
-</manifest>
+<manifest package="androidx.compose.ui.viewbinding.samples" />

@@ -30,7 +30,7 @@ import androidx.versionedparcelable.VersionedParcelize;
 import androidx.wear.watchface.control.IWatchFaceControlService;
 import androidx.wear.watchface.data.DeviceConfig;
 import androidx.wear.watchface.data.IdAndComplicationDataWireFormat;
-import androidx.wear.watchface.data.WatchUiState;
+import androidx.wear.watchface.data.SystemState;
 import androidx.wear.watchface.style.data.UserStyleWireFormat;
 
 import java.util.List;
@@ -56,10 +56,10 @@ public class WallpaperInteractiveWatchFaceInstanceParams
     @NonNull
     DeviceConfig mDeviceConfig;
 
-    /** The {@link WatchUiState} for the host wearable. */
+    /** The {@link SystemState} for the host wearable. */
     @ParcelField(3)
     @NonNull
-    WatchUiState mWatchUiState;
+    SystemState mSystemState;
 
     /** The initial {@link UserStyleWireFormat}. */
     @ParcelField(4)
@@ -78,12 +78,12 @@ public class WallpaperInteractiveWatchFaceInstanceParams
     public WallpaperInteractiveWatchFaceInstanceParams(
             @NonNull String instanceId,
             @NonNull DeviceConfig deviceConfig,
-            @NonNull WatchUiState watchUiState,
+            @NonNull SystemState systemState,
             @NonNull UserStyleWireFormat userStyle,
             @Nullable List<IdAndComplicationDataWireFormat> idAndComplicationDataWireFormats) {
         mInstanceId = instanceId;
         mDeviceConfig = deviceConfig;
-        mWatchUiState = watchUiState;
+        mSystemState = systemState;
         mUserStyle = userStyle;
         mIdAndComplicationDataWireFormats = idAndComplicationDataWireFormats;
     }
@@ -99,8 +99,8 @@ public class WallpaperInteractiveWatchFaceInstanceParams
     }
 
     @NonNull
-    public WatchUiState getWatchUiState() {
-        return mWatchUiState;
+    public SystemState getSystemState() {
+        return mSystemState;
     }
 
     @NonNull

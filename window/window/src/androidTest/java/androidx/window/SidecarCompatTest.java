@@ -431,10 +431,16 @@ public final class SidecarCompatTest extends WindowTestBase
                 .get(0);
         assertEquals(FoldingFeature.STATE_HALF_OPENED, capturedFoldingFeature.getState());
 
-        // No display features must be reported in closed state or flipped state.
+        reset(mockCallback);
+        fakeSidecarImp.triggerDeviceState(newDeviceState(SidecarDeviceState.POSTURE_FLIPPED));
+        verify(mockCallback).onWindowLayoutChanged(eq(mActivity), windowLayoutCaptor.capture());
+        capturedFoldingFeature = (FoldingFeature) windowLayoutCaptor.getValue().getDisplayFeatures()
+                .get(0);
+        assertEquals(FoldingFeature.STATE_FLIPPED, capturedFoldingFeature.getState());
+
+        // No display features must be reported in closed state
         reset(mockCallback);
         fakeSidecarImp.triggerDeviceState(newDeviceState(SidecarDeviceState.POSTURE_CLOSED));
-        fakeSidecarImp.triggerDeviceState(newDeviceState(SidecarDeviceState.POSTURE_FLIPPED));
         verify(mockCallback).onWindowLayoutChanged(eq(mActivity), windowLayoutCaptor.capture());
         assertTrue(windowLayoutCaptor.getValue().getDisplayFeatures().isEmpty());
     }

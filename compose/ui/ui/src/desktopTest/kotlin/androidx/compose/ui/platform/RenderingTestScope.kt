@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.swing.Swing
@@ -32,6 +33,7 @@ import org.jetbrains.skija.Surface
 import org.jetbrains.skiko.FrameDispatcher
 import kotlin.coroutines.CoroutineContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal fun renderingTest(
     width: Int,
     height: Int,

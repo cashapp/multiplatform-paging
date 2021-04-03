@@ -159,7 +159,7 @@ class FragmentStoreTest {
         val savedActiveFragments = fragmentStore.saveActiveFragments()
         assertThat(savedActiveFragments)
             .hasSize(1)
-        assertThat(savedActiveFragments[0])
+        assertThat(savedActiveFragments[0].mWho)
             .isEqualTo(emptyFragment.mWho)
     }
 

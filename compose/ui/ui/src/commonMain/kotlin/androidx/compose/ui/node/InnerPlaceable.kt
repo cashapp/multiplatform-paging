@@ -108,7 +108,7 @@ internal class InnerPlaceable(
         layoutNode.onNodePlaced()
     }
 
-    override fun calculateAlignmentLine(alignmentLine: AlignmentLine): Int {
+    override operator fun get(alignmentLine: AlignmentLine): Int {
         return layoutNode.calculateAlignmentLines()[alignmentLine] ?: AlignmentLine.Unspecified
     }
 

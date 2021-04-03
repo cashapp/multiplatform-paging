@@ -19,7 +19,6 @@ package androidx.compose.ui.res
 import android.content.Context
 import androidx.annotation.GuardedBy
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Typeface
 import androidx.compose.ui.text.font.FontFamily
@@ -42,7 +41,6 @@ private val syncLoadedTypefaces = mutableMapOf<FontFamily, Typeface>()
  * @return the decoded image data associated with the resource
  */
 @Composable
-@ReadOnlyComposable
 fun fontResource(fontFamily: FontFamily): Typeface {
     return fontResourceFromContext(LocalContext.current, fontFamily)
 }

@@ -56,10 +56,9 @@ import androidx.wear.watchface.WatchFaceType
 import androidx.wear.watchface.WatchState
 import androidx.wear.watchface.style.Layer
 import androidx.wear.watchface.style.UserStyle
-import androidx.wear.watchface.style.CurrentUserStyleRepository
+import androidx.wear.watchface.style.UserStyleRepository
 import androidx.wear.watchface.style.UserStyleSchema
 import androidx.wear.watchface.style.UserStyleSetting
-import androidx.wear.watchface.style.UserStyleSetting.Option
 import kotlin.math.max
 import kotlin.math.min
 
@@ -472,30 +471,30 @@ class ExampleCanvasDigitalWatchFaceService : WatchFaceService() {
     ): WatchFace {
         val watchFaceStyle = WatchFaceColorStyle.create(this, RED_STYLE)
         val colorStyleSetting = UserStyleSetting.ListUserStyleSetting(
-            UserStyleSetting.Id(COLOR_STYLE_SETTING),
+            COLOR_STYLE_SETTING,
             getString(R.string.colors_style_setting),
             getString(R.string.colors_style_setting_description),
             icon = null,
             options = listOf(
                 UserStyleSetting.ListUserStyleSetting.ListOption(
-                    Option.Id(RED_STYLE),
+                    RED_STYLE,
                     getString(R.string.colors_style_red),
                     Icon.createWithResource(this, R.drawable.red_style)
                 ),
                 UserStyleSetting.ListUserStyleSetting.ListOption(
-                    Option.Id(GREEN_STYLE),
+                    GREEN_STYLE,
                     getString(R.string.colors_style_green),
                     Icon.createWithResource(this, R.drawable.green_style)
                 ),
                 UserStyleSetting.ListUserStyleSetting.ListOption(
-                    Option.Id(BLUE_STYLE),
+                    BLUE_STYLE,
                     getString(R.string.colors_style_blue),
                     Icon.createWithResource(this, R.drawable.blue_style)
                 )
             ),
-            listOf(Layer.BASE, Layer.COMPLICATIONS, Layer.COMPLICATIONS_OVERLAY)
+            listOf(Layer.BASE_LAYER, Layer.COMPLICATIONS, Layer.TOP_LAYER)
         )
-        val userStyleRepository = CurrentUserStyleRepository(
+        val userStyleRepository = UserStyleRepository(
             UserStyleSchema(listOf(colorStyleSetting))
         )
         val leftComplication = Complication.createRoundRectComplicationBuilder(
@@ -635,13 +634,13 @@ class ExampleDigitalWatchCanvasRenderer(
     surfaceHolder: SurfaceHolder,
     private val context: Context,
     private var watchFaceColorStyle: WatchFaceColorStyle,
-    currentUserStyleRepository: CurrentUserStyleRepository,
+    userStyleRepository: UserStyleRepository,
     watchState: WatchState,
     private val colorStyleSetting: UserStyleSetting.ListUserStyleSetting,
     private val complicationsManager: ComplicationsManager
 ) : Renderer.CanvasRenderer(
     surfaceHolder,
-    currentUserStyleRepository,
+    userStyleRepository,
     watchState,
     CanvasType.HARDWARE,
     INTERACTIVE_UPDATE_RATE_MS
@@ -748,14 +747,14 @@ class ExampleDigitalWatchCanvasRenderer(
 
     init {
         // Listen for style changes.
-        currentUserStyleRepository.addUserStyleChangeListener(
-            object : CurrentUserStyleRepository.UserStyleChangeListener {
+        userStyleRepository.addUserStyleListener(
+            object : UserStyleRepository.UserStyleListener {
                 @SuppressLint("SyntheticAccessor")
                 override fun onUserStyleChanged(userStyle: UserStyle) {
                     watchFaceColorStyle =
                         WatchFaceColorStyle.create(
                             context,
-                            userStyle[colorStyleSetting]!!.id.value
+                            userStyle[colorStyleSetting]!!.id
                         )
 
                     // Apply the userStyle to the complications. ComplicationDrawables for each of
@@ -827,13 +826,13 @@ class ExampleDigitalWatchCanvasRenderer(
 
         applyColorStyleAndDrawMode(renderParameters.drawMode)
 
-        if (renderParameters.layerParameters[Layer.BASE] != LayerMode.HIDE) {
+        if (renderParameters.layerParameters[Layer.BASE_LAYER] != LayerMode.HIDE) {
             drawBackground(canvas)
         }
 
         drawComplications(canvas, calendar)
 
-        if (renderParameters.layerParameters[Layer.BASE] != LayerMode.HIDE) {
+        if (renderParameters.layerParameters[Layer.BASE_LAYER] != LayerMode.HIDE) {
             val is24Hour: Boolean = DateFormat.is24HourFormat(context)
 
             nextSecondTime.timeInMillis = calendar.timeInMillis

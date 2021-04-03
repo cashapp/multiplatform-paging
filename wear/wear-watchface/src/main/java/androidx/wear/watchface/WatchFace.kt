@@ -45,7 +45,7 @@ import androidx.wear.utility.TraceEvent
 import androidx.wear.complications.SystemProviders
 import androidx.wear.complications.data.ComplicationData
 import androidx.wear.watchface.style.UserStyle
-import androidx.wear.watchface.style.CurrentUserStyleRepository
+import androidx.wear.watchface.style.UserStyleRepository
 import androidx.wear.watchface.style.UserStyleSchema
 import androidx.wear.watchface.style.data.UserStyleWireFormat
 import kotlinx.coroutines.CompletableDeferred
@@ -102,9 +102,9 @@ private fun readPrefs(context: Context, fileName: String): UserStyleWireFormat {
 private fun writePrefs(context: Context, fileName: String, style: UserStyle) {
     val writer = context.openFileOutput(fileName, Context.MODE_PRIVATE).bufferedWriter()
     for ((key, value) in style.selectedOptions) {
-        writer.write(key.id.value)
+        writer.write(key.id)
         writer.newLine()
-        writer.write(value.id.value)
+        writer.write(value.id)
         writer.newLine()
     }
     writer.close()
@@ -116,16 +116,16 @@ private fun writePrefs(context: Context, fileName: String, style: UserStyle) {
  *
  * @param watchFaceType The type of watch face, whether it's digital or analog. Used to determine
  *     the default time for editor preview screenshots.
- * @param currentUserStyleRepository The [CurrentUserStyleRepository] for this WatchFace.
+ * @param userStyleRepository The [UserStyleRepository] for this WatchFace.
  * @param renderer The [Renderer] for this WatchFace.
  * @param complicationsManager The [ComplicationsManager] for this WatchFace.
  */
 public class WatchFace @JvmOverloads constructor(
     @WatchFaceType internal var watchFaceType: Int,
-    public val currentUserStyleRepository: CurrentUserStyleRepository,
+    public val userStyleRepository: UserStyleRepository,
     internal val renderer: Renderer,
     internal var complicationsManager: ComplicationsManager =
-        ComplicationsManager(emptyList(), currentUserStyleRepository)
+        ComplicationsManager(emptyList(), userStyleRepository)
 ) {
     internal var tapListener: TapListener? = null
 
@@ -220,7 +220,7 @@ public class WatchFace @JvmOverloads constructor(
         /** The UTC reference time to use for previews in milliseconds since the epoch. */
         public val previewReferenceTimeMillis: Long
 
-        /** Renders the watchface to a [Bitmap] with the [CurrentUserStyleRepository]'s [UserStyle]. */
+        /** Renders the watchface to a [Bitmap] with the [UserStyleRepository]'s [UserStyle]. */
         public fun renderWatchFaceToBitmap(
             renderParameters: RenderParameters,
             calendarTimeMillis: Long,
@@ -392,7 +392,7 @@ internal class WatchFaceImpl(
 
     private val systemTimeProvider = watchface.systemTimeProvider
     private val legacyWatchFaceStyle = watchface.legacyWatchFaceStyle
-    internal val userStyleRepository = watchface.currentUserStyleRepository
+    internal val userStyleRepository = watchface.userStyleRepository
     internal val renderer = watchface.renderer
     internal val complicationsManager = watchface.complicationsManager
     private val tapListener = watchface.tapListener
@@ -519,8 +519,8 @@ internal class WatchFaceImpl(
                 userStyleRepository.schema
             )
 
-            userStyleRepository.addUserStyleChangeListener(
-                object : CurrentUserStyleRepository.UserStyleChangeListener {
+            userStyleRepository.addUserStyleListener(
+                object : UserStyleRepository.UserStyleListener {
                     @SuppressLint("SyntheticAccessor")
                     override fun onUserStyleChanged(userStyle: UserStyle) {
                         writePrefs(watchFaceHostApi.getContext(), preferencesFile, userStyle)
@@ -970,8 +970,8 @@ internal class WatchFaceImpl(
         writer.println("pendingUpdateTime=${pendingUpdateTime.isPending()}")
         writer.println("lastTappedComplicationId=$lastTappedComplicationId")
         writer.println("lastTappedPosition=$lastTappedPosition")
-        writer.println("currentUserStyleRepository.userStyle=${userStyleRepository.userStyle}")
-        writer.println("currentUserStyleRepository.schema=${userStyleRepository.schema}")
+        writer.println("userStyleRepository.userStyle=${userStyleRepository.userStyle}")
+        writer.println("userStyleRepository.schema=${userStyleRepository.schema}")
         watchState.dump(writer)
         complicationsManager.dump(writer)
         renderer.dump(writer)

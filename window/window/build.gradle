@@ -35,6 +35,9 @@ plugins {
 }
 
 android {
+    defaultConfig {
+        minSdkVersion 14
+    }
     buildTypes.all {
         consumerProguardFiles "proguard-rules.pro"
     }

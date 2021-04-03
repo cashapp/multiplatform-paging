@@ -17,7 +17,7 @@
 package androidx.work.multiprocess;
 
 
-import static androidx.work.multiprocess.ListenableCallback.ListenableCallbackRunnable.reportFailure;
+import static androidx.work.multiprocess.ListenableCallback.ListenableCallbackRunnable.failureCallback;
 
 import android.content.Context;
 
@@ -81,7 +81,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -107,7 +107,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -127,7 +127,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -149,7 +149,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -171,7 +171,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -191,7 +191,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 
@@ -214,7 +214,7 @@ public class RemoteWorkManagerImpl extends IWorkManagerImpl.Stub {
                     };
             listenableCallback.dispatchCallbackSafely();
         } catch (Throwable throwable) {
-            reportFailure(callback, throwable);
+            failureCallback(callback, throwable);
         }
     }
 }

@@ -23,7 +23,6 @@ import android.os.Handler;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.annotation.RestrictTo;
 import androidx.annotation.RestrictTo.Scope;
 import androidx.camera.core.Camera;
@@ -273,7 +272,7 @@ public final class ProcessCameraProvider implements LifecycleCameraProvider {
     @SuppressWarnings({"lambdaLast", "deprecation"})
     @MainThread
     @NonNull
-    @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+    @androidx.annotation.experimental.UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
     public Camera bindToLifecycle(@NonNull LifecycleOwner lifecycleOwner,
             @NonNull CameraSelector cameraSelector,
             @NonNull UseCase... useCases) {
@@ -296,7 +295,7 @@ public final class ProcessCameraProvider implements LifecycleCameraProvider {
     @SuppressWarnings({"lambdaLast", "deprecation"})
     @MainThread
     @NonNull
-    @OptIn(markerClass = ExperimentalUseCaseGroup.class)
+    @androidx.annotation.experimental.UseExperimental(markerClass = ExperimentalUseCaseGroup.class)
     public Camera bindToLifecycle(@NonNull LifecycleOwner lifecycleOwner,
             @NonNull CameraSelector cameraSelector,
             @NonNull UseCaseGroup useCaseGroup) {
@@ -365,7 +364,7 @@ public final class ProcessCameraProvider implements LifecycleCameraProvider {
     @SuppressWarnings({"lambdaLast", "unused", "deprecation"})
     @RestrictTo(Scope.LIBRARY_GROUP)
     @ExperimentalUseCaseGroup
-    @OptIn(markerClass = ExperimentalCameraFilter.class)
+    @androidx.annotation.experimental.UseExperimental(markerClass = ExperimentalCameraFilter.class)
     @NonNull
     public Camera bindToLifecycle(
             @NonNull LifecycleOwner lifecycleOwner,

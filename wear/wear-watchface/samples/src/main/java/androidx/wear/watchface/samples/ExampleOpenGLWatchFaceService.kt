@@ -43,11 +43,9 @@ import androidx.wear.watchface.WatchFaceService
 import androidx.wear.watchface.WatchFaceType
 import androidx.wear.watchface.WatchState
 import androidx.wear.watchface.style.Layer
-import androidx.wear.watchface.style.CurrentUserStyleRepository
+import androidx.wear.watchface.style.UserStyleRepository
 import androidx.wear.watchface.style.UserStyleSchema
-import androidx.wear.watchface.style.UserStyleSetting
 import androidx.wear.watchface.style.UserStyleSetting.ListUserStyleSetting
-import androidx.wear.watchface.style.UserStyleSetting.Option
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -94,25 +92,25 @@ fun createExampleOpenGLWatchFaceBuilder(
 ): WatchFace {
     val watchFaceStyle = WatchFaceColorStyle.create(context, "white_style")
     val colorStyleSetting = ListUserStyleSetting(
-        UserStyleSetting.Id("color_style_setting"),
+        "color_style_setting",
         "Colors",
         "Watchface colorization",
         icon = null,
         options = listOf(
             ListUserStyleSetting.ListOption(
-                Option.Id("red_style"),
+                "red_style",
                 "Red",
                 Icon.createWithResource(context, R.drawable.red_style)
             ),
             ListUserStyleSetting.ListOption(
-                Option.Id("green_style"),
+                "green_style",
                 "Green",
                 Icon.createWithResource(context, R.drawable.green_style)
             )
         ),
-        listOf(Layer.BASE, Layer.COMPLICATIONS_OVERLAY)
+        listOf(Layer.BASE_LAYER, Layer.TOP_LAYER)
     )
-    val userStyleRepository = CurrentUserStyleRepository(UserStyleSchema(listOf(colorStyleSetting)))
+    val userStyleRepository = UserStyleRepository(UserStyleSchema(listOf(colorStyleSetting)))
     val complicationsManager = ComplicationsManager(
         listOf(
             Complication.createRoundRectComplicationBuilder(
@@ -156,11 +154,11 @@ fun createExampleOpenGLWatchFaceBuilder(
 
 class ExampleOpenGLRenderer(
     surfaceHolder: SurfaceHolder,
-    private val currentUserStyleRepository: CurrentUserStyleRepository,
+    private val userStyleRepository: UserStyleRepository,
     watchState: WatchState,
     private val colorStyleSetting: ListUserStyleSetting,
     private val complication: Complication
-) : Renderer.GlesRenderer(surfaceHolder, currentUserStyleRepository, watchState, FRAME_PERIOD_MS) {
+) : Renderer.GlesRenderer(surfaceHolder, userStyleRepository, watchState, FRAME_PERIOD_MS) {
 
     /** Projection transformation matrix. Converts from 3D to 2D.  */
     private val projectionMatrix = FloatArray(16)
@@ -578,7 +576,7 @@ class ExampleOpenGLRenderer(
             GLES20.glClearColor(0f, 0f, 0f, 1f)
             ambientVpMatrix
         } else {
-            when (currentUserStyleRepository.userStyle[colorStyleSetting]!!.id.value) {
+            when (userStyleRepository.userStyle[colorStyleSetting]!!.id) {
                 "red_style" -> GLES20.glClearColor(0.5f, 0.2f, 0.2f, 1f)
                 "green_style" -> GLES20.glClearColor(0.2f, 0.5f, 0.2f, 1f)
             }
@@ -614,7 +612,7 @@ class ExampleOpenGLRenderer(
         val hoursIndex = (hours / 12f * 360f).toInt()
 
         // Render hands.
-        if (renderParameters.layerParameters[Layer.COMPLICATIONS_OVERLAY] != LayerMode.HIDE) {
+        if (renderParameters.layerParameters[Layer.TOP_LAYER] != LayerMode.HIDE) {
             Matrix.multiplyMM(
                 mvpMatrix,
                 0,
@@ -645,12 +643,13 @@ class ExampleOpenGLRenderer(
                     0
                 )
                 secondHandTriangleMap[
-                    currentUserStyleRepository.userStyle[colorStyleSetting]!!.id.value
-                ]?.draw(mvpMatrix)
+                    userStyleRepository.userStyle[colorStyleSetting]!!.id
+                ]
+                    ?.draw(mvpMatrix)
             }
         }
 
-        if (renderParameters.layerParameters[Layer.BASE] != LayerMode.HIDE) {
+        if (renderParameters.layerParameters[Layer.BASE_LAYER] != LayerMode.HIDE) {
             majorTickTriangles.draw(vpMatrix)
             minorTickTriangles.draw(vpMatrix)
             coloredTriangleProgram.unbindAttribs()

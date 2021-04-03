@@ -154,7 +154,7 @@ internal class AndroidComposeViewAccessibilityDelegateCompat(val view: AndroidCo
     }
 
     /** Virtual view id for the currently hovered logical item. */
-    internal var hoveredVirtualViewId = InvalidId
+    private var hoveredVirtualViewId = InvalidId
     private val accessibilityManager: AccessibilityManager =
         view.context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
     internal var accessibilityForceEnabledForTesting = false
@@ -296,12 +296,7 @@ internal class AndroidComposeViewAccessibilityDelegateCompat(val view: AndroidCo
 
         semanticsNode.children.fastForEach { child ->
             if (currentSemanticsNodes.contains(child.id)) {
-                val holder = view.androidViewsHandler.layoutNodeToHolder[child.layoutNode]
-                if (holder != null) {
-                    info.addChild(holder)
-                } else {
-                    info.addChild(view, child.id)
-                }
+                info.addChild(view, child.id)
             }
         }
 
@@ -1208,36 +1203,16 @@ internal class AndroidComposeViewAccessibilityDelegateCompat(val view: AndroidCo
 
         when (event.action) {
             MotionEvent.ACTION_HOVER_MOVE, MotionEvent.ACTION_HOVER_ENTER -> {
-                val rootNode = view.semanticsOwner.rootSemanticsNode
-                val node = findSemanticsNodeAt(event.x, event.y, rootNode)
-                var virtualViewId = InvalidId
-                if (node != null) {
-                    val hoveredView =
-                        view.androidViewsHandler.layoutNodeToHolder[node.layoutNode]
-                    if (hoveredView == null) {
-                        virtualViewId = semanticsNodeIdToAccessibilityVirtualNodeId(node.id)
-                    }
-                }
-                // The android views could be view groups, so the event must be dispatched to the
-                // views. Android ViewGroup.java will take care of synthesizing hover enter/exit
-                // actions from hover moves.
-                // Note that this should be before calling "updateHoveredVirtualView" so that in
-                // the corner case of overlapped nodes, the final hover enter event is sent from
-                // the node/view that we want to focus.
-                val handled = view.androidViewsHandler.dispatchGenericMotionEvent(event)
+                val virtualViewId: Int = getVirtualViewAt(event.getX(), event.getY())
                 updateHoveredVirtualView(virtualViewId)
-                return if (virtualViewId == InvalidId) handled else true
+                return (virtualViewId != InvalidId)
             }
             MotionEvent.ACTION_HOVER_EXIT -> {
-                return when {
-                    hoveredVirtualViewId != InvalidId -> {
-                        updateHoveredVirtualView(InvalidId)
-                        true
-                    }
-                    else -> {
-                        view.androidViewsHandler.dispatchGenericMotionEvent(event)
-                    }
+                if (hoveredVirtualViewId != InvalidId) {
+                    updateHoveredVirtualView(InvalidId)
+                    return true
                 }
+                return false
             }
             else -> {
                 return false
@@ -1245,27 +1220,36 @@ internal class AndroidComposeViewAccessibilityDelegateCompat(val view: AndroidCo
         }
     }
 
-    // TODO(b/151729467): compose accessibility findSemanticsNodeAt needs to be more efficient
-    /**
-     * Find the semantics node at the specified location. The location is relative to the root.
-     */
     @VisibleForTesting
-    internal fun findSemanticsNodeAt(x: Float, y: Float, node: SemanticsNode): SemanticsNode? {
+    internal fun getVirtualViewAt(x: Float, y: Float): Int {
+        val node = view.semanticsOwner.rootSemanticsNode
+        val id = findVirtualViewAt(
+            x + node.boundsInWindow.left,
+            y + node.boundsInWindow.top, node
+        )
+        if (id == node.id) {
+            return AccessibilityNodeProviderCompat.HOST_VIEW_ID
+        }
+        return id
+    }
+
+    // TODO(b/151729467): compose accessibility getVirtualViewAt needs to be more efficient
+    private fun findVirtualViewAt(x: Float, y: Float, node: SemanticsNode): Int {
         val children = node.children
         for (i in children.size - 1 downTo 0) {
-            val target = findSemanticsNodeAt(x, y, children[i])
-            if (target != null) {
-                return target
+            val id = findVirtualViewAt(x, y, children[i])
+            if (id != InvalidId) {
+                return id
             }
         }
 
-        if (node.boundsInRoot.left < x && node.boundsInRoot.right > x &&
-            node.boundsInRoot.top < y && node.boundsInRoot.bottom > y
+        if (node.boundsInWindow.left < x && node.boundsInWindow.right > x && node
+            .boundsInWindow.top < y && node.boundsInWindow.bottom > y
         ) {
-            return node
+            return node.id
         }
 
-        return null
+        return InvalidId
     }
 
     /**
@@ -1403,10 +1387,6 @@ internal class AndroidComposeViewAccessibilityDelegateCompat(val view: AndroidCo
         // The node may be no longer available while we were waiting so check
         // again.
         if (!layoutNode.isAttached) {
-            return
-        }
-        // Android Views will send proper events themselves.
-        if (view.androidViewsHandler.layoutNodeToHolder.contains(layoutNode)) {
             return
         }
         // When we finally send the event, make sure it is an accessibility-focusable node.

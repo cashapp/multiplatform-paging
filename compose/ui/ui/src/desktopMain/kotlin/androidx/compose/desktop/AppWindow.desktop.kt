@@ -116,14 +116,12 @@ class AppWindow : AppFrame {
             defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
             addWindowListener(object : WindowAdapter() {
                 override fun windowClosing(event: WindowEvent) {
-                    if (!isClosed) {
+                    if (defaultCloseOperation != WindowConstants.DO_NOTHING_ON_CLOSE) {
+                        onDispose?.invoke()
+                        onDismiss?.invoke()
+                        events.invokeOnClose()
+                        AppManager.removeWindow(parent)
                         isClosed = true
-                        if (defaultCloseOperation != WindowConstants.DO_NOTHING_ON_CLOSE) {
-                            onDispose?.invoke()
-                            onDismiss?.invoke()
-                            events.invokeOnClose()
-                            AppManager.removeWindow(parent)
-                        }
                     }
                 }
                 override fun windowIconified(event: WindowEvent) {

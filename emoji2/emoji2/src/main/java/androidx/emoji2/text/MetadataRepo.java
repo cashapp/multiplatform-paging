@@ -79,15 +79,12 @@ public final class MetadataRepo {
     }
 
     /**
-     * Construct MetadataRepo with empty metadata.
-     *
-     * This should only be used from tests.
-     * @hide
+     * Construct MetadataRepo from a preloaded MetadatList.
      */
     @NonNull
-    @RestrictTo(RestrictTo.Scope.TESTS)
-    public static MetadataRepo create(@NonNull final Typeface typeface) {
-        return new MetadataRepo(typeface, new MetadataList());
+    static MetadataRepo create(@NonNull final Typeface typeface,
+            @NonNull final MetadataList metadataList) {
+        return new MetadataRepo(typeface, metadataList);
     }
 
     /**

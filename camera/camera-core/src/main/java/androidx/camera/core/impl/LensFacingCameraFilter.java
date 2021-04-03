@@ -17,7 +17,7 @@
 package androidx.camera.core.impl;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.OptIn;
+import androidx.annotation.experimental.UseExperimental;
 import androidx.camera.core.CameraFilter;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * A filter that filters camera based on lens facing.
  */
-@OptIn(markerClass = ExperimentalCameraFilter.class)
+@UseExperimental(markerClass = ExperimentalCameraFilter.class)
 public class LensFacingCameraFilter implements CameraFilter {
     @CameraSelector.LensFacing
     private int mLensFacing;

@@ -1728,9 +1728,6 @@ public abstract class FragmentManager implements FragmentResultOwner {
     }
 
     FragmentStateManager addFragment(@NonNull Fragment fragment) {
-        if (fragment.mRemoved) {
-            FragmentStrictMode.onFragmentReuse(fragment);
-        }
         if (isLoggingEnabled(Log.VERBOSE)) Log.v(TAG, "add: " + fragment);
         FragmentStateManager fragmentStateManager = createOrGetFragmentStateManager(fragment);
         fragment.mFragmentManager = this;
@@ -2604,7 +2601,7 @@ public abstract class FragmentManager implements FragmentResultOwner {
 
     boolean saveBackStackState(@NonNull ArrayList<BackStackRecord> records,
             @NonNull ArrayList<Boolean> isRecordPop, @NonNull String name) {
-        final int index = findBackStackIndex(name, -1, true);
+        int index = findBackStackIndex(name, -1, true);
         if (index < 0) {
             return false;
         }
@@ -2680,37 +2677,11 @@ public abstract class FragmentManager implements FragmentResultOwner {
         }
 
         // Now actually record each save
-        final ArrayList<String> fragments = new ArrayList<>();
-        for (Fragment f : allFragments) {
-            fragments.add(f.mWho);
-        }
-        final ArrayList<BackStackRecordState> backStackRecordStates =
-                new ArrayList<>(mBackStack.size() - index);
-        // Add placeholders for each BackStackRecordState
-        for (int i = index; i < mBackStack.size(); i++) {
-            backStackRecordStates.add(null);
-        }
-        final BackStackState backStackState = new BackStackState(
-                fragments, backStackRecordStates);
         for (int i = mBackStack.size() - 1; i >= index; i--) {
-            final BackStackRecord record = mBackStack.remove(i);
-            record.mBeingSaved = true;
-            // Get a callback when the BackStackRecord is actually finished
-            final int currentIndex = i;
-            record.addOnCommitRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    // First collapse the record to remove expanded ops and get it ready to save
-                    record.collapseOps();
-                    // Then save the state
-                    BackStackRecordState state = new BackStackRecordState(record);
-                    backStackRecordStates.set(currentIndex - index, state);
-                }
-            });
-            records.add(record);
+            // TODO: Pre-process each BackStackRecord so that they actually save state
+            records.add(mBackStack.remove(i));
             isRecordPop.add(true);
         }
-        mBackStackStates.put(name, backStackState);
         return true;
     }
 
@@ -2818,13 +2789,10 @@ public abstract class FragmentManager implements FragmentResultOwner {
         mStateSaved = true;
         mNonConfig.setIsStateSaved(true);
 
-        // First save all active fragments.
-        ArrayList<String> active = mFragmentStore.saveActiveFragments();
+        // First collect all active fragments.
+        ArrayList<FragmentState> active = mFragmentStore.saveActiveFragments();
 
-        // And grab all FragmentState objects
-        ArrayList<FragmentState> savedState = mFragmentStore.getAllSavedState();
-
-        if (savedState.isEmpty()) {
+        if (active.isEmpty()) {
             if (isLoggingEnabled(Log.VERBOSE)) Log.v(TAG, "saveAllState: no fragments!");
             return null;
         }
@@ -2849,7 +2817,6 @@ public abstract class FragmentManager implements FragmentResultOwner {
         }
 
         FragmentManagerState fms = new FragmentManagerState();
-        fms.mSavedState = savedState;
         fms.mActive = active;
         fms.mAdded = added;
         fms.mBackStack = backStack;
@@ -2879,17 +2846,12 @@ public abstract class FragmentManager implements FragmentResultOwner {
         // If there is no saved state at all, then there's nothing else to do
         if (state == null) return;
         FragmentManagerState fms = (FragmentManagerState) state;
-        if (fms.mSavedState == null) return;
-
-        // Restore the saved state of all fragments
-        mFragmentStore.restoreSaveState(fms.mSavedState);
+        if (fms.mActive == null) return;
 
         // Build the full list of active fragments, instantiating them from
         // their saved state.
         mFragmentStore.resetActiveFragments();
-        for (String who : fms.mActive) {
-            // Retrieve any saved state, clearing it out for future calls
-            FragmentState fs = mFragmentStore.setSavedState(who, null);
+        for (FragmentState fs : fms.mActive) {
             if (fs != null) {
                 FragmentStateManager fragmentStateManager;
                 Fragment retainedFragment = mNonConfig.findRetainedFragmentByWho(fs.mWho);

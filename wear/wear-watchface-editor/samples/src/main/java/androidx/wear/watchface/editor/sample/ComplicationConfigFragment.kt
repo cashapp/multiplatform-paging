@@ -213,9 +213,9 @@ internal class ConfigView(
             RenderParameters(
                 DrawMode.INTERACTIVE,
                 mapOf(
-                    Layer.BASE to LayerMode.DRAW,
+                    Layer.BASE_LAYER to LayerMode.DRAW,
                     Layer.COMPLICATIONS to LayerMode.DRAW_OUTLINED,
-                    Layer.COMPLICATIONS_OVERLAY to LayerMode.DRAW
+                    Layer.TOP_LAYER to LayerMode.DRAW
                 ),
                 selectedComplicationId,
                 Color.RED

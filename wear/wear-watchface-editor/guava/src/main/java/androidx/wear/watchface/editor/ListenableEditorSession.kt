@@ -69,9 +69,10 @@ public class ListenableEditorSession(
             coroutineScope.launch {
                 try {
                     result.set(
-                        createOnWatchEditingSession(activity, editIntent)?.let {
-                            ListenableEditorSession(it)
-                        }
+                        EditorSession.createOnWatchEditingSessionAsync(
+                            activity,
+                            editIntent
+                        ).await()?.let { ListenableEditorSession(it) }
                     )
                 } catch (e: Exception) {
                     result.setException(e)
@@ -159,15 +160,15 @@ public class ListenableEditorSession(
         idToComplicationData
     )
 
-    /** [ListenableFuture] wrapper around [EditorSession.openComplicationProviderChooser]. */
-    public fun listenableOpenComplicationProviderChooser(
+    /** [ListenableFuture] wrapper around [EditorSession.launchComplicationProviderChooser]. */
+    public fun listenableLaunchComplicationProviderChooser(
         complicationId: Int
     ): ListenableFuture<Boolean> {
         val future = ResolvableFuture.create<Boolean>()
         getCoroutineScope().launch {
             try {
                 future.set(
-                    wrappedEditorSession.openComplicationProviderChooser(complicationId)
+                    wrappedEditorSession.launchComplicationProviderChooser(complicationId)
                 )
             } catch (e: Exception) {
                 future.setException(e)
@@ -176,8 +177,8 @@ public class ListenableEditorSession(
         return future
     }
 
-    override suspend fun openComplicationProviderChooser(complicationId: Int): Boolean =
-        wrappedEditorSession.openComplicationProviderChooser(complicationId)
+    override suspend fun launchComplicationProviderChooser(complicationId: Int): Boolean =
+        wrappedEditorSession.launchComplicationProviderChooser(complicationId)
 
     override fun close() {
         wrappedEditorSession.close()

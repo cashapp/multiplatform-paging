@@ -46,7 +46,7 @@ public class EmojiSpanTest {
 
     @Before
     public void setup() {
-        EmojiCompat.reset(NoFontTestEmojiConfig.emptyConfig());
+        EmojiCompat.reset(TestConfigBuilder.config());
     }
 
     @Test
@@ -97,14 +97,14 @@ public class EmojiSpanTest {
         final int bottom = 30;
 
         // verify the case where indicators are disabled
-        EmojiCompat.reset(NoFontTestEmojiConfig.emptyConfig().setEmojiSpanIndicatorEnabled(false));
+        EmojiCompat.reset(TestConfigBuilder.config().setEmojiSpanIndicatorEnabled(false));
         span.draw(canvas, "a", 0 /*start*/, 1 /*end*/, x, top, y, bottom, mock(Paint.class));
 
         verify(canvas, times(0)).drawRect(eq(x), eq((float) top), eq(x + spanWidth),
                 eq((float) bottom), any(Paint.class));
 
         // verify the case where indicators are enabled
-        EmojiCompat.reset(NoFontTestEmojiConfig.emptyConfig().setEmojiSpanIndicatorEnabled(true));
+        EmojiCompat.reset(TestConfigBuilder.config().setEmojiSpanIndicatorEnabled(true));
         reset(canvas);
         span.draw(canvas, "a", 0 /*start*/, 1 /*end*/, x, top, y, bottom, mock(Paint.class));
 

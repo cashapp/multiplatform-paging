@@ -18,7 +18,6 @@ package androidx.camera.view;
 
 import static java.lang.annotation.RetentionPolicy.CLASS;
 
-import androidx.annotation.RequiresOptIn;
 import androidx.annotation.RestrictTo;
 
 import java.lang.annotation.Retention;
@@ -35,6 +34,6 @@ import java.lang.annotation.Retention;
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 @Retention(CLASS)
-@RequiresOptIn
+@androidx.annotation.experimental.Experimental
 public @interface TransformExperimental {
 }

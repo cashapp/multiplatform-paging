@@ -20,7 +20,7 @@ android {
     compileSdkVersion 29
 
     defaultConfig {
-        applicationId "androidx.car.app.sample.showcase"
+        applicationId "androidx.car.app.samples.showcase"
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
@@ -38,6 +38,5 @@ android {
 dependencies {
     implementation "androidx.core:core:1.5.0-alpha01"
 
-    implementation "androidx.car.app:app:1.0.0-rc01"
-    implementation "androidx.annotation:annotation-experimental:1.0.0"
+    implementation "androidx.car.app:app:1.0.0-beta01"
 }

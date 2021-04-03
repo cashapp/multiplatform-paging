@@ -1,8 +1,7 @@
 import androidx.build.LibraryGroups
 import androidx.build.LibraryVersions
 import androidx.build.Publish
-
-import static androidx.build.dependencies.DependenciesKt.*
+import androidx.build.RunApiTasks
 
 plugins {
     id("AndroidXPlugin")
@@ -15,34 +14,12 @@ ext {
 
 android {
     sourceSets {
-        main {
-            assets.srcDirs new File(fontDir, "font").getAbsolutePath()
-            resources {
-                srcDirs += [fontDir.getAbsolutePath()]
-                includes += ["LICENSE_UNICODE", "LICENSE_OFL"]
-            }
-        }
-
-        androidTest {
-            assets {
-                srcDirs = [new File(fontDir, "supported-emojis").getAbsolutePath()]
-            }
-        }
+        main.assets.srcDirs new File(fontDir, "font").getAbsolutePath()
     }
-
 }
 
 dependencies {
     api(project(":emoji2:emoji2"))
-
-    androidTestImplementation(ANDROIDX_TEST_EXT_JUNIT)
-    androidTestImplementation(ANDROIDX_TEST_CORE)
-    androidTestImplementation(ANDROIDX_TEST_RUNNER)
-    androidTestImplementation(ANDROIDX_TEST_RULES)
-    androidTestImplementation(ESPRESSO_CORE, libs.exclude_for_espresso)
-    androidTestImplementation(MOCKITO_CORE, libs.exclude_bytebuddy) // DexMaker has it"s own MockMaker
-    androidTestImplementation(DEXMAKER_MOCKITO, libs.exclude_bytebuddy) // DexMaker has it"s own MockMaker
-    androidTestImplementation project(':internal-testutils-runtime')
 }
 
 androidx {

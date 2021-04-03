@@ -27,6 +27,7 @@ import androidx.compose.ui.input.pointer.PointerInputEventData
 import androidx.compose.ui.input.pointer.PointerType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import org.jetbrains.skija.Canvas
 import java.awt.event.InputMethodEvent
@@ -38,6 +39,7 @@ internal val DesktopOwnersAmbient = staticCompositionLocalOf<DesktopOwners> {
     error("CompositionLocal DesktopOwnersAmbient not provided")
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class DesktopOwners(
     coroutineScope: CoroutineScope,
     component: DesktopComponent = DummyDesktopComponent,
@@ -79,6 +81,8 @@ internal class DesktopOwners(
     internal val platformInputService: DesktopPlatformInput = DesktopPlatformInput(component)
 
     init {
+        // TODO(demin): Experimental API (CoroutineStart.UNDISPATCHED).
+        //  Decide what to do before release (copy paste or use different approach).
         coroutineScope.launch(coroutineContext, start = CoroutineStart.UNDISPATCHED) {
             recomposer.runRecomposeAndApplyChanges()
         }
@@ -147,15 +151,6 @@ internal class DesktopOwners(
     fun onMouseMoved(x: Int, y: Int) {
         val position = Offset(x.toFloat(), y.toFloat())
         lastOwner?.onPointerMove(position)
-    }
-
-    fun onMouseEntered(x: Int, y: Int) {
-        val position = Offset(x.toFloat(), y.toFloat())
-        lastOwner?.onPointerEnter(position)
-    }
-
-    fun onMouseExited() {
-        lastOwner?.onPointerExit()
     }
 
     private fun consumeKeyEvent(event: KeyEvent) {

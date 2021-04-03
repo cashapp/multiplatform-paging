@@ -17,7 +17,6 @@
 package androidx.work.multiprocess
 
 import android.content.Context
-import android.os.Build
 import androidx.arch.core.executor.ArchTaskExecutor
 import androidx.arch.core.executor.TaskExecutor
 import androidx.test.core.app.ApplicationProvider
@@ -51,11 +50,6 @@ public class ParcelableWorkContinuationImplTest {
 
     @Before
     public fun setUp() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         context = ApplicationProvider.getApplicationContext<Context>()
         val taskExecutor = object : TaskExecutor() {
             override fun executeOnDiskIO(runnable: Runnable) {
@@ -111,11 +105,6 @@ public class ParcelableWorkContinuationImplTest {
     @Test
     @MediumTest
     public fun basicContinuationTest() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val first = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val second = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val continuation = workManager.beginWith(listOf(first)).then(second)
@@ -126,11 +115,6 @@ public class ParcelableWorkContinuationImplTest {
     @Test
     @MediumTest
     public fun continuationTests2() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val first = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val second = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val third = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
@@ -142,11 +126,6 @@ public class ParcelableWorkContinuationImplTest {
     @Test
     @MediumTest
     public fun continuationTest3() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val first = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val second = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val continuation = workManager.beginUniqueWork(
@@ -159,11 +138,6 @@ public class ParcelableWorkContinuationImplTest {
     @Test
     @MediumTest
     public fun continuationTest4() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val first = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val second = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val continuation = workManager.beginUniqueWork(
@@ -180,11 +154,6 @@ public class ParcelableWorkContinuationImplTest {
     @Test
     @MediumTest
     public fun combineContinuationTests() {
-        if (Build.VERSION.SDK_INT <= 27) {
-            // Exclude <= API 27, from tests because it causes a SIGSEGV.
-            return
-        }
-
         val first = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val second = OneTimeWorkRequest.Builder(TestWorker::class.java).build()
         val third = OneTimeWorkRequest.Builder(TestWorker::class.java).build()

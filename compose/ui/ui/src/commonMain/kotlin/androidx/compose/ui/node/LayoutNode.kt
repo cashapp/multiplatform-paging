@@ -1150,17 +1150,8 @@ internal class LayoutNode : Measurable, Remeasurement, OwnerScope, LayoutInfo, C
         }
 
         modifier.foldIn(Unit) { _, mod ->
-            var wrapper = wrapperCache.lastOrNull {
-                it.modifier === mod && !it.toBeReusedForSameModifier
-            }
-            // we want to walk up the chain up all LayoutNodeWrappers for the same modifier
-            while (wrapper != null) {
-                wrapper.toBeReusedForSameModifier = true
-                wrapper = if (wrapper.isChained)
-                    wrapper.wrappedBy as? DelegatingLayoutNodeWrapper<*>
-                else
-                    null
-            }
+            val wrapper = wrapperCache.firstOrNull { it.modifier === mod }
+            wrapper?.toBeReusedForSameModifier = true
         }
     }
 

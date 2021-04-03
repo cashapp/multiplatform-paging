@@ -31,6 +31,7 @@ import androidx.compose.ui.text.benchmark.TextBenchmarkTestRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.filters.SmallTest
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -76,6 +77,7 @@ class TextFieldToggleTextBenchmark(
      * given input. This is the time taken to call the [BasicTextField] composable function.
      */
     @Test
+    @Ignore("b/170960653")
     fun first_compose() {
         benchmarkRule.benchmarkFirstComposeFast(caseFactory)
     }
@@ -86,6 +88,7 @@ class TextFieldToggleTextBenchmark(
      * [BasicTextField] composable.
      */
     @Test
+    @Ignore("b/170960653")
     fun first_measure() {
         benchmarkRule.benchmarkFirstMeasureFast(caseFactory)
     }
@@ -95,6 +98,7 @@ class TextFieldToggleTextBenchmark(
      * given input.
      */
     @Test
+    @Ignore("b/170960653")
     fun first_layout() {
         benchmarkRule.benchmarkFirstLayoutFast(caseFactory)
     }
@@ -104,6 +108,7 @@ class TextFieldToggleTextBenchmark(
      * input.
      */
     @Test
+    @Ignore("b/170960653")
     fun first_draw() {
         benchmarkRule.benchmarkFirstDrawFast(caseFactory)
     }
@@ -113,6 +118,7 @@ class TextFieldToggleTextBenchmark(
      * constrains changed. This is mainly the time used to re-measure and re-layout the composable.
      */
     @Test
+    @Ignore("b/170960653")
     fun layout() {
         benchmarkRule.benchmarkLayoutPerf(caseFactory)
     }
@@ -121,6 +127,7 @@ class TextFieldToggleTextBenchmark(
      * Measure the time taken by redrawing the [BasicTextField] composable.
      */
     @Test
+    @Ignore("b/170960653")
     fun draw() {
         benchmarkRule.benchmarkDrawPerf(caseFactory)
     }

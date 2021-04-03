@@ -65,10 +65,19 @@ public class ExtensionFoldingFeature implements ExtensionDisplayFeature {
      */
     public static final int STATE_HALF_OPENED = 2;
 
+    /**
+     * The foldable device's hinge is flipped with the flexible screen parts or physical screens
+     * facing opposite directions. See the
+     * <a href="https://developer.android.com/guide/topics/ui/foldables#postures">Posture</a>
+     * section in the official documentation for visual samples and references.
+     */
+    public static final int STATE_FLIPPED = 3;
+
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
             STATE_HALF_OPENED,
-            STATE_FLAT
+            STATE_FLAT,
+            STATE_FLIPPED
     })
     @interface State {}
 
@@ -147,6 +156,8 @@ public class ExtensionFoldingFeature implements ExtensionDisplayFeature {
         switch (state) {
             case STATE_FLAT:
                 return "FLAT";
+            case STATE_FLIPPED:
+                return "FLIPPED";
             case STATE_HALF_OPENED:
                 return "HALF_OPENED";
             default:

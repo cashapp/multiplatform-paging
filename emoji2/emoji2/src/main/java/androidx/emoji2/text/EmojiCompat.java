@@ -509,20 +509,20 @@ public class EmojiCompat {
     }
 
     /**
-     * @return whether a background should be drawn for the emoji for debugging
+     * @return whether a background should be drawn for the emoji.
      * @hide
      */
-    @RestrictTo(LIBRARY_GROUP)
-    public boolean isEmojiSpanIndicatorEnabled() {
+    @RestrictTo(LIBRARY)
+    boolean isEmojiSpanIndicatorEnabled() {
         return mEmojiSpanIndicatorEnabled;
     }
 
     /**
-     * @return color of background drawn if {@link EmojiCompat#isEmojiSpanIndicatorEnabled} is true
+     * @return whether a background should be drawn for the emoji.
      * @hide
      */
-    @RestrictTo(LIBRARY_GROUP)
-    public @ColorInt int getEmojiSpanIndicatorColor() {
+    @RestrictTo(LIBRARY)
+    @ColorInt int getEmojiSpanIndicatorColor() {
         return mEmojiSpanIndicatorColor;
     }
 
