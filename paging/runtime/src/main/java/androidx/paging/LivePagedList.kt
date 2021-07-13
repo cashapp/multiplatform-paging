@@ -41,7 +41,6 @@ internal class LivePagedList<Key : Any, Value : Any>(
     private val fetchDispatcher: CoroutineDispatcher
 ) : LiveData<PagedList<Value>>(
     InitialPagedList(
-        pagingSource = InitialPagingSource(),
         coroutineScope = coroutineScope,
         notifyDispatcher = notifyDispatcher,
         backgroundDispatcher = fetchDispatcher,
