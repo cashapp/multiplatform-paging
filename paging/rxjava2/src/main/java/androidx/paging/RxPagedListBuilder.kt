@@ -356,7 +356,6 @@ class RxPagedListBuilder<Key : Any, Value : Any> {
 
         init {
             currentData = InitialPagedList(
-                pagingSource = InitialPagingSource(),
                 coroutineScope = GlobalScope,
                 notifyDispatcher = notifyDispatcher,
                 backgroundDispatcher = fetchDispatcher,
