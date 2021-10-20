@@ -19,7 +19,10 @@ package androidx.compose.ui.focus
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.FocusState.Inactive
+import androidx.compose.ui.focus.FocusStateImpl.Inactive
+import androidx.compose.ui.modifier.ModifierLocalConsumer
+import androidx.compose.ui.modifier.ModifierLocalProvider
+import androidx.compose.ui.modifier.ModifierLocalReadScope
 import androidx.compose.ui.node.ModifiedFocusNode
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.InspectorValueInfo
@@ -31,23 +34,66 @@ import androidx.compose.ui.platform.debugInspectorInfo
  * different instance of [FocusModifier] for each focusable component.
  */
 internal class FocusModifier(
-    initialFocus: FocusState,
+    initialFocus: FocusStateImpl,
     // TODO(b/172265016): Make this a required parameter and remove the default value.
     //  Set this value in AndroidComposeView, and other places where we create a focus modifier
     //  using this internal constructor.
     inspectorInfo: InspectorInfo.() -> Unit = NoInspectorInfo
-) : Modifier.Element, InspectorValueInfo(inspectorInfo) {
+) : ModifierLocalConsumer,
+    ModifierLocalProvider<FocusProperties>,
+    InspectorValueInfo(inspectorInfo) {
 
-    var focusState: FocusState = initialFocus
+    // TODO(b/188684110): Move focusState and focusedChild to ModifiedFocusNode and make this
+    //  modifier stateless.
+    var focusState: FocusStateImpl = initialFocus
 
     var focusedChild: ModifiedFocusNode? = null
 
     lateinit var focusNode: ModifiedFocusNode
+
+    lateinit var modifierLocalReadScope: ModifierLocalReadScope
+
+    // Reading the FocusProperties ModifierLocal.
+    override fun onModifierLocalsUpdated(scope: ModifierLocalReadScope) {
+        modifierLocalReadScope = scope
+
+        // Update the focus node with the current focus properties.
+        with(scope) {
+            focusNode.setUpdatedProperties(ModifierLocalFocusProperties.current)
+        }
+    }
+
+    override val key = ModifierLocalFocusProperties
+
+    // Writing the FocusProperties ModifierLocal so that any child focus modifiers don't read
+    // properties that were meant for this focus modifier.
+    override val value = defaultFocusProperties
+}
+
+/**
+ * Add this modifier to a component to make it focusable.
+ *
+ * Focus state is stored within this modifier. The bounds of this modifier reflect the bounds of
+ * the focus box.
+ *
+ * Note: This is a low level modifier. Before using this consider using
+ * [Modifier.focusable()][androidx.compose.foundation.focusable]. It uses a [focusTarget] in
+ * its implementation. [Modifier.focusable()][androidx.compose.foundation.focusable] adds semantics
+ * that are needed for accessibility.
+ *
+ * @sample androidx.compose.ui.samples.FocusableSampleUsingLowerLevelFocusTarget
+ */
+fun Modifier.focusTarget(): Modifier = composed(debugInspectorInfo { name = "focusTarget" }) {
+    remember { FocusModifier(Inactive) }
 }
 
 /**
  * Add this modifier to a component to make it focusable.
  */
+@Deprecated(
+    "Replaced by focusTarget",
+    ReplaceWith("focusTarget()", "androidx.compose.ui.focus.focusTarget")
+)
 fun Modifier.focusModifier(): Modifier = composed(debugInspectorInfo { name = "focusModifier" }) {
     remember { FocusModifier(Inactive) }
 }

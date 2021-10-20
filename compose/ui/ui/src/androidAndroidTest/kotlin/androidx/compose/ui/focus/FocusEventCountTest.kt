@@ -17,12 +17,13 @@
 package androidx.compose.ui.focus
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusState.Inactive
-import androidx.compose.ui.focus.FocusState.Active
+import androidx.compose.ui.focus.FocusStateImpl.Inactive
+import androidx.compose.ui.focus.FocusStateImpl.Active
+import androidx.compose.ui.focus.FocusStateImpl.Deactivated
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -42,13 +43,13 @@ class FocusEventCountTest {
     fun initially_onFocusEventIsCalledThrice() {
         // Arrange.
         val focusStates = mutableListOf<FocusState>()
-        val focusReferece = FocusRequester()
+        val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
-                    .focusRequester(focusReferece)
-                    .focusModifier()
+                    .focusRequester(focusRequester)
+                    .focusTarget()
             )
         }
 
@@ -56,14 +57,13 @@ class FocusEventCountTest {
         rule.runOnIdle {
             assertThat(focusStates).containsExactly(
                 Inactive, // triggered by onFocusEvent node's onModifierChanged().
-                Inactive, // triggered by focus node's onModifierChanged().
                 Inactive, // triggered by focus node's attach().
             )
         }
     }
 
     @Test
-    fun initiallyNoFocusModifier_onFocusEventIsCalledOnce() {
+    fun initiallyNoFocusTarget_onFocusEventIsCalledOnce() {
         // Arrange.
         val focusStates = mutableListOf<FocusState>()
         rule.setFocusableContent {
@@ -84,7 +84,7 @@ class FocusEventCountTest {
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
                     .focusRequester(focusRequester)
-                    .focusModifier()
+                    .focusTarget()
             )
         }
         rule.runOnIdle { focusStates.clear() }
@@ -106,7 +106,7 @@ class FocusEventCountTest {
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
                     .focusRequester(focusRequester)
-                    .focusModifier()
+                    .focusTarget()
             )
         }
         rule.runOnIdle {
@@ -133,7 +133,7 @@ class FocusEventCountTest {
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
                     .focusRequester(focusRequester)
-                    .focusModifier()
+                    .focusTarget()
             )
         }
         rule.runOnIdle {
@@ -153,14 +153,13 @@ class FocusEventCountTest {
         // Arrange.
         val focusStates = mutableListOf<FocusState>()
         val focusRequester = FocusRequester()
-        lateinit var addFocusModifier: MutableState<Boolean>
+        var addFocusTarget by mutableStateOf(true)
         rule.setFocusableContent {
-            addFocusModifier = remember { mutableStateOf(true) }
             Box(
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
                     .focusRequester(focusRequester)
-                    .then(if (addFocusModifier.value) Modifier.focusModifier() else Modifier)
+                    .then(if (addFocusTarget) Modifier.focusTarget() else Modifier)
             )
         }
         rule.runOnIdle {
@@ -169,7 +168,7 @@ class FocusEventCountTest {
         }
 
         // Act.
-        rule.runOnIdle { addFocusModifier.value = false }
+        rule.runOnIdle { addFocusTarget = false }
 
         // Assert.
         rule.runOnIdle {
@@ -184,41 +183,39 @@ class FocusEventCountTest {
     fun removingInactiveFocusNode_onFocusEventIsCalledOnce() {
         // Arrange.
         val focusStates = mutableListOf<FocusState>()
-        lateinit var addFocusModifier: MutableState<Boolean>
+        var addFocusTarget by mutableStateOf(true)
         rule.setFocusableContent {
-            addFocusModifier = remember { mutableStateOf(true) }
             Box(
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
-                    .then(if (addFocusModifier.value) Modifier.focusModifier() else Modifier)
+                    .then(if (addFocusTarget) Modifier.focusTarget() else Modifier)
             )
         }
         rule.runOnIdle { focusStates.clear() }
 
         // Act.
-        rule.runOnIdle { addFocusModifier.value = false }
+        rule.runOnIdle { addFocusTarget = false }
 
         // Assert.
         rule.runOnIdle { assertThat(focusStates).containsExactly(Inactive) }
     }
 
     @Test
-    fun addingFocusModifier_onFocusEventIsCalledThrice() {
+    fun addingFocusTarget_onFocusEventIsCalledThrice() {
         // Arrange.
         val focusStates = mutableListOf<FocusState>()
-        lateinit var addFocusModifier: MutableState<Boolean>
+        var addFocusTarget by mutableStateOf(false)
         rule.setFocusableContent {
-            addFocusModifier = remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
                     .onFocusEvent { focusStates.add(it) }
-                    .then(if (addFocusModifier.value) Modifier.focusModifier() else Modifier)
+                    .then(if (addFocusTarget) Modifier.focusTarget() else Modifier)
             )
         }
         rule.runOnIdle { focusStates.clear() }
 
         // Act.
-        rule.runOnIdle { addFocusModifier.value = true }
+        rule.runOnIdle { addFocusTarget = true }
 
         // Assert.
         rule.runOnIdle {
@@ -228,5 +225,76 @@ class FocusEventCountTest {
                 Inactive, // triggered by focus node's onModifierChanged().
             )
         }
+    }
+
+    @Test
+    fun addingEmptyFocusProperties_onFocusEventIsCalledTwice() {
+        // Arrange.
+        val focusStates = mutableListOf<FocusState>()
+        var addFocusProperties by mutableStateOf(false)
+        rule.setFocusableContent {
+            Box(
+                modifier = Modifier
+                    .onFocusEvent { focusStates.add(it) }
+                    .then(if (addFocusProperties) Modifier.focusProperties {} else Modifier)
+                    .focusTarget()
+            )
+        }
+        rule.runOnIdle { focusStates.clear() }
+
+        // Act.
+        rule.runOnIdle { addFocusProperties = true }
+
+        // Assert.
+        rule.runOnIdle {
+            assertThat(focusStates).containsExactly(
+                Inactive, // triggered by onFocusEvent node's onModifierChanged().
+                Inactive, // triggered by focus node's onModifierChanged().
+            )
+        }
+    }
+
+    @Test
+    fun deactivatingFocusNode_onFocusEventIsCalledOnce() {
+        // Arrange.
+        val focusStates = mutableListOf<FocusState>()
+        var deactiated by mutableStateOf(false)
+        rule.setFocusableContent {
+            Box(
+                modifier = Modifier
+                    .onFocusEvent { focusStates.add(it) }
+                    .focusProperties { canFocus = !deactiated }
+                    .focusTarget()
+            )
+        }
+        rule.runOnIdle { focusStates.clear() }
+
+        // Act.
+        rule.runOnIdle { deactiated = true }
+
+        // Assert.
+        rule.runOnIdle { assertThat(focusStates).containsExactly(Deactivated) }
+    }
+
+    @Test
+    fun activatingFocusNode_onFocusEventIsCalledOnce() {
+        // Arrange.
+        val focusStates = mutableListOf<FocusState>()
+        var deactiated by mutableStateOf(true)
+        rule.setFocusableContent {
+            Box(
+                modifier = Modifier
+                    .onFocusEvent { focusStates.add(it) }
+                    .focusProperties { canFocus = !deactiated }
+                    .focusTarget()
+            )
+        }
+        rule.runOnIdle { focusStates.clear() }
+
+        // Act.
+        rule.runOnIdle { deactiated = false }
+
+        // Assert.
+        rule.runOnIdle { assertThat(focusStates).containsExactly(Inactive) }
     }
 }

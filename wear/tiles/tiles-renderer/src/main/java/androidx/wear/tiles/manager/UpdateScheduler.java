@@ -25,8 +25,6 @@ import android.util.Log;
 import androidx.annotation.MainThread;
 import androidx.annotation.VisibleForTesting;
 
-import java.lang.ref.WeakReference;
-
 class UpdateScheduler implements AlarmManager.OnAlarmListener {
     private static final String TAG = "UpdateScheduler";
 
@@ -35,15 +33,14 @@ class UpdateScheduler implements AlarmManager.OnAlarmListener {
 
     private final AlarmManager mAlarmManager;
     private final Clock mClock;
-    private WeakReference<UpdateReceiver> mUpdateReceiver;
+    private UpdateReceiver mUpdateReceiver;
 
     private boolean mUpdatesEnabled = false;
     private long mScheduledUpdateTimeMillis = NO_SCHEDULED_UPDATE;
 
     // Last time at which we updated the tile, measured by the device uptime. This needs to be
-    // device
-    // uptime to prevent issues when time changes (e.g. time jumps caused by syncs with NTP or
-    // similar).
+    // device uptime to prevent issues when time changes (e.g. time jumps caused by syncs with NTP
+    // or similar).
     private long mLastUpdateRealtimeMillis = 0;
 
     UpdateScheduler(AlarmManager alarmManager, Clock clock) {
@@ -54,7 +51,7 @@ class UpdateScheduler implements AlarmManager.OnAlarmListener {
     /** Sets the receiver for update notifications. */
     @MainThread
     public void setUpdateReceiver(UpdateReceiver receiver) {
-        this.mUpdateReceiver = new WeakReference<>(receiver);
+        this.mUpdateReceiver = receiver;
     }
 
     /**
@@ -99,8 +96,7 @@ class UpdateScheduler implements AlarmManager.OnAlarmListener {
                 fireUpdate();
             } else {
                 // "Schedule" an update. This is just so enableUpdates will definitely trigger the
-                // update
-                // when called.
+                // update when called.
                 mScheduledUpdateTimeMillis = nowMillis;
             }
         }
@@ -125,8 +121,7 @@ class UpdateScheduler implements AlarmManager.OnAlarmListener {
 
         if (mScheduledUpdateTimeMillis != Long.MAX_VALUE) {
             // If the schedule update is in the past, then fire now, otherwise schedule for the
-            // given
-            // time.
+            // given time.
             long now = mClock.getElapsedTimeMillis();
 
             if (now >= mScheduledUpdateTimeMillis) {
@@ -163,7 +158,7 @@ class UpdateScheduler implements AlarmManager.OnAlarmListener {
     private void fireUpdate() {
         mLastUpdateRealtimeMillis = mClock.getElapsedTimeMillis();
 
-        UpdateReceiver receiver = mUpdateReceiver.get();
+        UpdateReceiver receiver = mUpdateReceiver;
 
         // Reset state now, as acceptUpdate may re-schedule an alarm.
         mScheduledUpdateTimeMillis = Long.MAX_VALUE;

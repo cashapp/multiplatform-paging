@@ -72,33 +72,53 @@ internal interface SelectionRegistrar {
      *
      * @param layoutCoordinates [LayoutCoordinates] of the [Selectable].
      * @param startPosition coordinates of where the selection is initiated.
+     * @param adjustment selection should be adjusted according to this param
      *
      * @see notifySelectionUpdate
      * @see notifySelectionUpdateEnd
      */
     fun notifySelectionUpdateStart(
         layoutCoordinates: LayoutCoordinates,
-        startPosition: Offset
+        startPosition: Offset,
+        adjustment: SelectionAdjustment
     )
 
     /**
-     * Call this method to notify the [SelectionContainer] that  the selection has been updated.
+     * Call this method to notify the [SelectionContainer] that the selection has been initiated
+     * with selectAll [Selection].
+     *
+     * @param selectableId [selectableId] of the [Selectable]
+     */
+    fun notifySelectionUpdateSelectAll(selectableId: Long)
+
+    /**
+     * Call this method to notify the [SelectionContainer] that one of the selection handle has
+     * moved and selection should be updated.
      * The caller of this method should make sure that [notifySelectionUpdateStart] is always
      * called once before calling this function. And [notifySelectionUpdateEnd] is always called
      * once after the all updates finished.
      *
      * @param layoutCoordinates [LayoutCoordinates] of the [Selectable].
-     * @param startPosition coordinates of where the selection starts.
-     * @param endPosition coordinates of where the selection ends.
+     * @param previousPosition coordinates of where the selection starts.
+     * @param newPosition coordinates of where the selection ends.
+     * @param isStartHandle whether the moving selection handle the start handle.
+     * @param adjustment selection should be adjusted according to this parameter
      *
+     * @return true if the selection handle movement is consumed. This function acts like a
+     * pointer input consumer when a selection handle is dragged. It expects the caller to
+     * accumulate the unconsumed pointer movement:
+     * 1. if it returns true, the caller will zero out the previous movement.
+     * 2. if it returns false, the caller will continue accumulate pointer movement.
      * @see notifySelectionUpdateStart
      * @see notifySelectionUpdateEnd
      */
     fun notifySelectionUpdate(
         layoutCoordinates: LayoutCoordinates,
-        startPosition: Offset,
-        endPosition: Offset,
-    )
+        newPosition: Offset,
+        previousPosition: Offset,
+        isStartHandle: Boolean,
+        adjustment: SelectionAdjustment
+    ): Boolean
 
     /**
      * Call this method to notify the [SelectionContainer] that the selection update has stopped.

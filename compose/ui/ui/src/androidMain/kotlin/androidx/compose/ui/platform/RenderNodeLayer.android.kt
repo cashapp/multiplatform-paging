@@ -17,17 +17,21 @@
 package androidx.compose.ui.platform
 
 import android.os.Build
+import android.view.View
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.geometry.MutableRect
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.CanvasHolder
-import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.setFrom
 import androidx.compose.ui.node.OwnedLayer
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -38,17 +42,33 @@ import androidx.compose.ui.unit.LayoutDirection
 @RequiresApi(Build.VERSION_CODES.M)
 internal class RenderNodeLayer(
     val ownerView: AndroidComposeView,
-    val drawBlock: (Canvas) -> Unit,
-    val invalidateParentLayer: () -> Unit
+    drawBlock: (Canvas) -> Unit,
+    invalidateParentLayer: () -> Unit
 ) : OwnedLayer {
+    private var drawBlock: ((Canvas) -> Unit)? = drawBlock
+    private var invalidateParentLayer: (() -> Unit)? = invalidateParentLayer
+
     /**
      * True when the RenderNodeLayer has been invalidated and not yet drawn.
      */
     private var isDirty = false
+        set(value) {
+            if (value != field) {
+                field = value
+                ownerView.notifyLayerIsDirty(this, value)
+            }
+        }
     private val outlineResolver = OutlineResolver(ownerView.density)
     private var isDestroyed = false
-    private var androidMatrixCache: android.graphics.Matrix? = null
     private var drawnWithZ = false
+
+    /**
+     * Optional paint used when the RenderNode is rendered on a software backed
+     * canvas and is somewhat transparent (i.e. alpha less than 1.0f)
+     */
+    private var softwareLayerPaint: Paint? = null
+
+    private val matrixCache = LayerMatrixCache(getMatrix)
 
     private val canvasHolder = CanvasHolder()
 
@@ -68,6 +88,22 @@ internal class RenderNodeLayer(
     override val layerId: Long
         get() = renderNode.uniqueId
 
+    override val ownerViewId: Long
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            UniqueDrawingIdApi29.getUniqueDrawingId(ownerView)
+        } else {
+            -1
+        }
+
+    @RequiresApi(29)
+    private class UniqueDrawingIdApi29 {
+        @RequiresApi(29)
+        companion object {
+            @JvmStatic
+            fun getUniqueDrawingId(view: View) = view.uniqueDrawingId
+        }
+    }
+
     override fun updateLayerProperties(
         scaleX: Float,
         scaleY: Float,
@@ -82,7 +118,9 @@ internal class RenderNodeLayer(
         transformOrigin: TransformOrigin,
         shape: Shape,
         clip: Boolean,
-        layoutDirection: LayoutDirection
+        renderEffect: RenderEffect?,
+        layoutDirection: LayoutDirection,
+        density: Density
     ) {
         this.transformOrigin = transformOrigin
         val wasClippingManually = renderNode.clipToOutline && outlineResolver.clipPath != null
@@ -100,12 +138,14 @@ internal class RenderNodeLayer(
         renderNode.pivotY = transformOrigin.pivotFractionY * renderNode.height
         renderNode.clipToOutline = clip && shape !== RectangleShape
         renderNode.clipToBounds = clip && shape === RectangleShape
+        renderNode.renderEffect = renderEffect
         val shapeChanged = outlineResolver.update(
             shape,
             renderNode.alpha,
             renderNode.clipToOutline,
             renderNode.elevation,
-            layoutDirection
+            layoutDirection,
+            density
         )
         renderNode.setOutline(outlineResolver.outline)
         val isClippingManually = renderNode.clipToOutline && outlineResolver.clipPath != null
@@ -115,8 +155,23 @@ internal class RenderNodeLayer(
             triggerRepaint()
         }
         if (!drawnWithZ && renderNode.elevation > 0f) {
-            invalidateParentLayer()
+            invalidateParentLayer?.invoke()
         }
+        matrixCache.invalidate()
+    }
+
+    override fun isInLayer(position: Offset): Boolean {
+        val x = position.x
+        val y = position.y
+        if (renderNode.clipToBounds) {
+            return 0f <= x && x < renderNode.width && 0f <= y && y < renderNode.height
+        }
+
+        if (renderNode.clipToOutline) {
+            return outlineResolver.isInOutline(position)
+        }
+
+        return true
     }
 
     override fun resize(size: IntSize) {
@@ -134,6 +189,7 @@ internal class RenderNodeLayer(
             outlineResolver.update(Size(width.toFloat(), height.toFloat()))
             renderNode.setOutline(outlineResolver.outline)
             invalidate()
+            matrixCache.invalidate()
         }
     }
 
@@ -146,13 +202,13 @@ internal class RenderNodeLayer(
             renderNode.offsetLeftAndRight(newLeft - oldLeft)
             renderNode.offsetTopAndBottom(newTop - oldTop)
             triggerRepaint()
+            matrixCache.invalidate()
         }
     }
 
     override fun invalidate() {
         if (!isDirty && !isDestroyed) {
             ownerView.invalidate()
-            ownerView.dirtyLayers += this
             isDirty = true
         }
     }
@@ -184,33 +240,89 @@ internal class RenderNodeLayer(
                 canvas.disableZ()
             }
         } else {
-            drawBlock(canvas)
-        }
-        isDirty = false
-    }
-
-    override fun updateDisplayList() {
-        if (isDirty || !renderNode.hasDisplayList) {
-            val clipPath = if (renderNode.clipToOutline) outlineResolver.clipPath else null
-
-            renderNode.record(canvasHolder, clipPath, drawBlock)
-
+            val left = renderNode.left.toFloat()
+            val top = renderNode.top.toFloat()
+            val right = renderNode.right.toFloat()
+            val bottom = renderNode.bottom.toFloat()
+            // If there is alpha applied, we must render into an offscreen buffer to
+            // properly blend the contents of this layer against the background content
+            if (renderNode.alpha < 1.0f) {
+                val paint = (softwareLayerPaint ?: Paint().also { softwareLayerPaint = it })
+                    .apply { alpha = renderNode.alpha }
+                androidCanvas.saveLayer(
+                    left,
+                    top,
+                    right,
+                    bottom,
+                    paint.asFrameworkPaint()
+                )
+            } else {
+                canvas.save()
+            }
+            // If we are software rendered we must translate the canvas based on the offset provided
+            // in the move call which operates directly on the RenderNode
+            canvas.translate(left, top)
+            canvas.concat(matrixCache.calculateMatrix(renderNode))
+            drawBlock?.invoke(canvas)
+            canvas.restore()
             isDirty = false
         }
     }
 
-    override fun destroy() {
-        isDestroyed = true
-        ownerView.dirtyLayers -= this
-        ownerView.requestClearInvalidObservations()
+    override fun updateDisplayList() {
+        if (isDirty || !renderNode.hasDisplayList) {
+            isDirty = false
+            val clipPath = if (renderNode.clipToOutline) outlineResolver.clipPath else null
+            renderNode.record(canvasHolder, clipPath, drawBlock!!)
+        }
     }
 
-    override fun getMatrix(matrix: Matrix) {
-        val androidMatrix = androidMatrixCache ?: android.graphics.Matrix().also {
-            androidMatrixCache = it
+    override fun destroy() {
+        if (renderNode.hasDisplayList) {
+            renderNode.discardDisplayList()
         }
-        renderNode.getMatrix(androidMatrix)
-        matrix.setFrom(androidMatrix)
+        drawBlock = null
+        invalidateParentLayer = null
+        isDestroyed = true
+        isDirty = false
+        ownerView.requestClearInvalidObservations()
+        ownerView.recycle(this)
+    }
+
+    override fun mapOffset(point: Offset, inverse: Boolean): Offset {
+        return if (inverse) {
+            matrixCache.calculateInverseMatrix(renderNode)?.map(point) ?: Offset.Infinite
+        } else {
+            matrixCache.calculateMatrix(renderNode).map(point)
+        }
+    }
+
+    override fun mapBounds(rect: MutableRect, inverse: Boolean) {
+        if (inverse) {
+            val matrix = matrixCache.calculateInverseMatrix(renderNode)
+            if (matrix == null) {
+                rect.set(0f, 0f, 0f, 0f)
+            } else {
+                matrix.map(rect)
+            }
+        } else {
+            matrixCache.calculateMatrix(renderNode).map(rect)
+        }
+    }
+
+    override fun reuseLayer(drawBlock: (Canvas) -> Unit, invalidateParentLayer: () -> Unit) {
+        isDirty = false
+        isDestroyed = false
+        drawnWithZ = false
+        transformOrigin = TransformOrigin.Center
+        this.drawBlock = drawBlock
+        this.invalidateParentLayer = invalidateParentLayer
+    }
+
+    companion object {
+        private val getMatrix: (DeviceRenderNode, android.graphics.Matrix) -> Unit = { rn, matrix ->
+            rn.getMatrix(matrix)
+        }
     }
 }
 

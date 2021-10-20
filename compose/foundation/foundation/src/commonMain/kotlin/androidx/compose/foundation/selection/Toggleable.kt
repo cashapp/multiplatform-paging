@@ -19,30 +19,32 @@ package androidx.compose.foundation.selection
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.PressedInteractionSourceDisposableEffect
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.Strings
+import androidx.compose.foundation.focusableInNonTouchMode
+import androidx.compose.foundation.gestures.ModifierLocalScrollableContainer
 import androidx.compose.foundation.gestures.detectTapAndPress
 import androidx.compose.foundation.handlePressInteraction
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.isComposeRootInScrollableContainer
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.modifier.ModifierLocalConsumer
+import androidx.compose.ui.modifier.ModifierLocalReadScope
 import androidx.compose.ui.platform.debugInspectorInfo
+import androidx.compose.ui.platform.inspectable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.state.ToggleableState.Indeterminate
-import androidx.compose.ui.state.ToggleableState.Off
-import androidx.compose.ui.state.ToggleableState.On
 
 /**
  * Configure component to make it toggleable via input and accessibility events
@@ -105,7 +107,7 @@ fun Modifier.toggleable(
  * current value from [LocalIndication] to show theme default
  * @param enabled whether or not this [toggleable] will handle input events and appear
  * enabled for semantics purposes
- * * @param role the type of user interface element. Accessibility services might use this
+ * @param role the type of user interface element. Accessibility services might use this
  * to describe the element or do customizations
  * @param onValueChange callback to be invoked when toggleable is clicked,
  * therefore the change of the state in requested.
@@ -117,14 +119,14 @@ fun Modifier.toggleable(
     enabled: Boolean = true,
     role: Role? = null,
     onValueChange: (Boolean) -> Unit
-) = composed(
+) = inspectable(
     inspectorInfo = debugInspectorInfo {
         name = "toggleable"
         properties["value"] = value
-        properties["enabled"] = enabled
-        properties["role"] = role
         properties["interactionSource"] = interactionSource
         properties["indication"] = indication
+        properties["enabled"] = enabled
+        properties["role"] = role
         properties["onValueChange"] = onValueChange
     },
     factory = {
@@ -218,7 +220,7 @@ fun Modifier.triStateToggleable(
     enabled: Boolean = true,
     role: Role? = null,
     onClick: () -> Unit
-) = composed(
+) = inspectable(
     inspectorInfo = debugInspectorInfo {
         name = "triStateToggleable"
         properties["state"] = state
@@ -248,34 +250,53 @@ private fun Modifier.toggleableImpl(
         if (role != null) {
             this.role = role
         }
-        this.stateDescription = when (state) {
-            On -> if (role == Role.Switch) Strings.On else Strings.Checked
-            Off -> if (role == Role.Switch) Strings.Off else Strings.Unchecked
-            Indeterminate -> Strings.Indeterminate
-        }
         this.toggleableState = state
 
-        onClick(action = { onClick(); return@onClick true }, label = Strings.Toggle)
+        onClick(action = { onClick(); true })
         if (!enabled) {
             disabled()
         }
     }
     val onClickState = rememberUpdatedState(onClick)
-    val gestures = if (enabled) {
+    if (enabled) {
         PressedInteractionSourceDisposableEffect(interactionSource, pressedInteraction)
-        Modifier.pointerInput(interactionSource) {
-            detectTapAndPress(
-                onPress = { offset ->
-                    handlePressInteraction(offset, interactionSource, pressedInteraction)
-                },
-                onTap = { onClickState.value.invoke() }
-            )
-        }
-    } else {
-        Modifier
+    }
+    val isRootInScrollableContainer = isComposeRootInScrollableContainer()
+    val isToggleableInScrollableContainer = remember { mutableStateOf(true) }
+    val delayPressInteraction = rememberUpdatedState {
+        isToggleableInScrollableContainer.value || isRootInScrollableContainer()
+    }
+    val gestures = Modifier.pointerInput(interactionSource, enabled) {
+        detectTapAndPress(
+            onPress = { offset ->
+                if (enabled) {
+                    handlePressInteraction(
+                        offset,
+                        interactionSource,
+                        pressedInteraction,
+                        delayPressInteraction
+                    )
+                }
+            },
+            onTap = { if (enabled) onClickState.value.invoke() }
+        )
     }
     this
+        .then(
+            remember {
+                object : ModifierLocalConsumer {
+                    override fun onModifierLocalsUpdated(scope: ModifierLocalReadScope) {
+                        with(scope) {
+                            isToggleableInScrollableContainer.value =
+                                ModifierLocalScrollableContainer.current
+                        }
+                    }
+                }
+            }
+        )
         .then(semantics)
         .indication(interactionSource, indication)
+        .hoverable(enabled = enabled, interactionSource = interactionSource)
+        .focusableInNonTouchMode(enabled = enabled, interactionSource = interactionSource)
         .then(gestures)
 }

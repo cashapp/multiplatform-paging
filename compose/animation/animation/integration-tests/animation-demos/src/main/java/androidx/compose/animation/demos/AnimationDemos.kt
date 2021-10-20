@@ -36,15 +36,20 @@ val AnimationDemos = DemoCategory(
             "Layout Animation Demos",
             listOf(
                 ComposableDemo("Animate Content Size") { AnimateContentSizeDemo() },
+                ComposableDemo("Animate Increment/Decrement") { AnimateIncrementDecrementDemo() },
                 ComposableDemo("Animate Visibility Demo") { AnimatedVisibilityDemo() },
                 ComposableDemo("Animate Visibility Lazy Column Demo") {
                     AnimatedVisibilityLazyColumnDemo()
                 },
-                ComposableDemo("Animate Visibility Content Size Change Demo") {
-                    AnimatedVisibilityContentSizeChangeDemo()
-                },
                 ComposableDemo("Cross Fade") { CrossfadeDemo() },
-                ComposableDemo("Enter/Exit Transition Demo") { EnterExitTransitionDemo() },
+                ComposableDemo("Modifier.animateEnterExit Demo") { AnimateEnterExitDemo() },
+                ComposableDemo("Nested Menu") { NestedMenuDemo() },
+                ComposableDemo("Save/Restore in AnimatedContent") {
+                    AnimatedContentWithContentKeyDemo()
+                },
+                ComposableDemo("Scaled Enter/Exit") { ScaleEnterExitDemo() },
+                ComposableDemo("Shrine Cart") { ShrineCartDemo() },
+                ComposableDemo("Screen Transition") { ScreenTransitionDemo() },
             )
         ),
         DemoCategory(
@@ -59,10 +64,39 @@ val AnimationDemos = DemoCategory(
             )
         ),
         DemoCategory(
-            "Fun Demos",
+            "Graphics Animation Demos",
+            listOf(
+                ComposableDemo("Animated Vector Graphics") { AnimatedVectorGraphicsDemo() },
+            )
+        ),
+
+        DemoCategory(
+            "⛔ DO NOT ENTER ⛔",
+            listOf(
+                ComposableDemo("AnimatedContent alignment/slideInto") {
+                    InspectionSlideInContentVariedSizes()
+                },
+                ComposableDemo("Enter/ExitTransition Combo") { InspectionEnterExitCombination() },
+                ComposableDemo("AnimatedVisibility with Content Size Change") {
+                    InspectionAnimatedVisibilityContentSizeChange()
+                },
+            )
+        ),
+
+        DemoCategory(
+            "Visual Aid \uD83D\uDC40 \uD83D\uDC40",
+            listOf(
+                ComposableDemo("Column Arrangements Demo") { ColumnConfigurationDemo() },
+                ComposableDemo("Row Arrangements Demo (Landscape)") { RowConfigurationDemo() },
+            )
+        ),
+
+        DemoCategory(
+            "\uD83C\uDF89 Fun Demos",
             listOf(
                 ComposableDemo("Animated clock") { AnimatedClockDemo() },
                 ComposableDemo("Animated dots") { AnimatedDotsDemo() },
+                ComposableDemo("Chat screen") { ChatScreen() },
                 ComposableDemo("Game of fling") { FlingGame() },
                 ComposableDemo("Spring chain") { SpringChainDemo() },
             )

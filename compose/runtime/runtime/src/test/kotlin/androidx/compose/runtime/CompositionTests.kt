@@ -20,6 +20,7 @@ package androidx.compose.runtime
 import androidx.compose.runtime.mock.Contact
 import androidx.compose.runtime.mock.ContactModel
 import androidx.compose.runtime.mock.Edit
+import androidx.compose.runtime.mock.EmptyApplier
 import androidx.compose.runtime.mock.Linear
 import androidx.compose.runtime.mock.MockViewValidator
 import androidx.compose.runtime.mock.Point
@@ -40,13 +41,19 @@ import androidx.compose.runtime.mock.expectNoChanges
 import androidx.compose.runtime.mock.skip
 import androidx.compose.runtime.mock.validate
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.snapshots.SnapshotStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
+import kotlin.concurrent.thread
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -1942,6 +1949,109 @@ class CompositionTests {
     }
 
     @Test
+    fun testRememberObserver_Abandon_Simple() = compositionTest {
+        val abandonedObjects = mutableListOf<RememberObserver>()
+        val observed = object : RememberObserver {
+            override fun onAbandoned() {
+                abandonedObjects.add(this)
+            }
+
+            override fun onForgotten() {
+                error("Unexpected call to onForgotten")
+            }
+
+            override fun onRemembered() {
+                error("Unexpected call to onRemembered")
+            }
+        }
+
+        assertFailsWith(IllegalStateException::class, message = "Throw") {
+            compose {
+                @Suppress("UNUSED_EXPRESSION")
+                remember { observed }
+                error("Throw")
+            }
+        }
+
+        assertArrayEquals(listOf(observed), abandonedObjects)
+    }
+
+    @Test
+    fun testRememberObserver_Abandon_Recompose() {
+        val abandonedObjects = mutableListOf<RememberObserver>()
+        val observed = object : RememberObserver {
+            override fun onAbandoned() {
+                abandonedObjects.add(this)
+            }
+
+            override fun onForgotten() {
+                error("Unexpected call to onForgotten")
+            }
+
+            override fun onRemembered() {
+                error("Unexpected call to onRemembered")
+            }
+        }
+        assertFailsWith(IllegalStateException::class, message = "Throw") {
+            compositionTest {
+                val rememberObject = mutableStateOf(false)
+
+                compose {
+                    if (rememberObject.value) {
+                        @Suppress("UNUSED_EXPRESSION")
+                        remember { observed }
+                        error("Throw")
+                    }
+                }
+
+                assertTrue(abandonedObjects.isEmpty())
+
+                rememberObject.value = true
+
+                advance(ignorePendingWork = true)
+            }
+        }
+
+        assertArrayEquals(listOf(observed), abandonedObjects)
+    }
+
+    @Test
+    fun testRememberedObserver_Controlled_Dispose() = runBlocking {
+        val recomposer = Recomposer(coroutineContext)
+        val root = View()
+        val controlled = ControlledComposition(ViewApplier(root), recomposer)
+
+        val abandonedObjects = mutableListOf<RememberObserver>()
+        val observed = object : RememberObserver {
+            override fun onAbandoned() {
+                abandonedObjects.add(this)
+            }
+
+            override fun onForgotten() {
+                error("Unexpected call to onForgotten")
+            }
+
+            override fun onRemembered() {
+                error("Unexpected call to onRemembered")
+            }
+        }
+
+        controlled.composeContent {
+            @Suppress("UNUSED_EXPRESSION")
+            remember<RememberObserver> {
+                observed
+            }
+        }
+
+        assertTrue(abandonedObjects.isEmpty())
+
+        controlled.dispose()
+
+        assertArrayEquals(listOf(observed), abandonedObjects)
+        recomposer.close()
+    }
+
+    @Test
     fun testCompoundKeyHashStaysTheSameAfterRecompositions() = compositionTest {
         val outerKeys = mutableListOf<Int>()
         val innerKeys = mutableListOf<Int>()
@@ -1951,7 +2061,6 @@ class CompositionTests {
         var innerScope: RecomposeScope? = null
 
         @Composable
-        @OptIn(ComposeCompilerApi::class)
         fun Test() {
             outerScope = currentRecomposeScope
             outerKeys.add(currentComposer.compoundKeyHash)
@@ -2071,7 +2180,7 @@ class CompositionTests {
             }
         }
 
-        fun MockViewValidator.numbers(numbers: List<Int>) {
+        fun MockViewValidator.validateNumbers(numbers: List<Int>) {
             Linear {
                 Linear {
                     for (number in numbers) {
@@ -2081,17 +2190,17 @@ class CompositionTests {
             }
         }
 
-        fun MockViewValidator.item(number: Int, numbers: List<Int>) {
+        fun MockViewValidator.validateItem(number: Int, numbers: List<Int>) {
             Linear {
                 Text("$number")
-                numbers(numbers)
+                validateNumbers(numbers)
             }
         }
 
         fun MockViewValidator.Test() {
             Linear {
                 for ((number, numbers) in items) {
-                    item(number, numbers)
+                    validateItem(number, numbers)
                 }
             }
         }
@@ -2479,7 +2588,89 @@ class CompositionTests {
         expectNoChanges()
     }
 
-    @OptIn(ComposeCompilerApi::class)
+    @Suppress("UnrememberedMutableState")
+    @Composable
+    fun Indirect(iteration: Int, states: MutableList<MutableState<Int>>) {
+        val state = mutableStateOf(Random.nextInt())
+        states.add(state)
+        Text("$iteration state = ${state.value}")
+    }
+
+    @Composable
+    fun ComposeIndirect(iteration: State<Int>, states: MutableList<MutableState<Int>>) {
+        Text("Iteration ${iteration.value}")
+        Indirect(iteration.value, states)
+    }
+
+    @Test // Regression b/182822837
+    fun testObservationScopes_IndirectInvalidate() = compositionTest {
+        val states = mutableListOf<MutableState<Int>>()
+        val iteration = mutableStateOf(0)
+
+        compose {
+            ComposeIndirect(iteration, states)
+        }
+
+        fun nextIteration() = iteration.value++
+        fun invalidateLast() = states.last().value++
+        fun invalidateFirst() = states.first().value++
+
+        repeat(10) {
+            nextIteration()
+            expectChanges()
+        }
+
+        invalidateFirst()
+        expectNoChanges()
+    }
+
+    @Composable
+    fun <T> calculateValue(state: State<T>): T {
+        return remember { state.value }
+    }
+
+    var observationScopeTestCalls = 0
+    var observationScopeTestForwardWrite = false
+
+    @Composable
+    fun <T> ObservationScopesTest(state: State<T>, forwardWrite: Boolean) {
+        observationScopeTestCalls++
+        calculateValue(state)
+        observationScopeTestForwardWrite = forwardWrite
+    }
+
+    @Composable
+    fun ForwardWrite(state: MutableState<String>) {
+        state.value += ", forward write"
+    }
+
+    @Test // Regression test for b/186787946
+    fun testObservationScopes_ReadInRemember() = compositionTest {
+        val state = mutableStateOf("state")
+        var mainState by mutableStateOf("main state")
+        var doForwardWrite by mutableStateOf(false)
+        compose {
+            Text(mainState)
+            ObservationScopesTest(state, doForwardWrite)
+            if (doForwardWrite)
+                ForwardWrite(state)
+        }
+
+        // Set up the case by skipping ObservationScopeTest
+        mainState += ", changed"
+        advance()
+
+        // Do the forward write after skipping ObserveScopesTest.
+        // This triggers a backward write in ForwardWrite because of the remember.
+        // This backwards write is transitory as future writes will just be forward writes.
+        doForwardWrite = true
+        advance(ignorePendingWork = true)
+
+        // Assert we saw true. In the bug this is false because a stale value was used for
+        // `doForwardWrite` because the scope callback lambda was not updated correctly.
+        assertTrue(observationScopeTestForwardWrite)
+    }
+
     @Test
     fun testApplierBeginEndCallbacks() = compositionTest {
         val checks = mutableListOf<String>()
@@ -2817,6 +3008,206 @@ class CompositionTests {
             assertTrue(composition.isDisposed)
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testSubcomposeSingleComposition() = compositionTest {
+        var flag by mutableStateOf(true)
+        var flagCopy by mutableStateOf(true)
+        var copyValue = true
+        var rememberedValue = true
+        compose {
+            Text("Parent $flag")
+            flagCopy = flag
+            TestSubcomposition {
+                copyValue = flagCopy
+                rememberedValue = remember(flagCopy) { copyValue }
+            }
+        }
+
+        flag = false
+        val count = advanceCount()
+        assertFalse(copyValue)
+        assertFalse(rememberedValue)
+        assertEquals(1, count)
+    }
+
+    @Test
+    fun enumCompositeKeyShouldBeStable() = compositionTest {
+        var parentHash: Int = 0
+        var compositeHash: Int = 0
+        compose {
+            parentHash = currentCompositeKeyHash
+            key(MyEnum.First) {
+                compositeHash = currentCompositeKeyHash
+            }
+        }
+
+        val effectiveHash = compositeHash xor (parentHash rol 3)
+        assertEquals(0, effectiveHash)
+    }
+
+    @Test
+    fun enumCompositeKeysShouldBeStable() = compositionTest {
+        var parentHash: Int = 0
+        var compositeHash: Int = 0
+        compose {
+            parentHash = currentCompositeKeyHash
+            key(MyEnum.First, MyEnum.Second) {
+                compositeHash = currentCompositeKeyHash
+            }
+        }
+
+        val effectiveHash = compositeHash xor (parentHash rol 3)
+        assertEquals(1, effectiveHash)
+    }
+
+    @Test // regression test for b/188015757
+    fun testRestartOfDefaultFunctions() = compositionTest {
+
+        @Composable
+        fun Test() {
+            Defaults()
+            use(stateB)
+        }
+
+        compose {
+            Test()
+        }
+
+        // Force Defaults to skip
+        stateB++
+        advance()
+
+        // Force Defaults to recompose
+        stateA++
+        advance()
+    }
+
+    enum class MyEnum {
+        First,
+        Second
+    }
+
+    /**
+     * set should set the value every time, update should only set after initial composition.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun composeNodeSetVsUpdate() = runBlockingTest {
+        localRecomposerTest { recomposer ->
+            class SetUpdateNode(property: String) {
+                var changeCount = 0
+                var property: String = property
+                    set(value) {
+                        field = value
+                        changeCount++
+                    }
+            }
+            class SetUpdateNodeApplier : AbstractApplier<SetUpdateNode>(SetUpdateNode("root")) {
+                override fun insertTopDown(index: Int, instance: SetUpdateNode) {}
+                override fun insertBottomUp(index: Int, instance: SetUpdateNode) {}
+                override fun remove(index: Int, count: Int) {}
+                override fun move(from: Int, to: Int, count: Int) {}
+                override fun onClear() {}
+            }
+            val composition = Composition(SetUpdateNodeApplier(), recomposer)
+            val nodes = mutableListOf<SetUpdateNode>()
+            fun makeNode(property: String) = SetUpdateNode(property).also { nodes += it }
+
+            var value by mutableStateOf("initial")
+
+            composition.setContent {
+                ComposeNode<SetUpdateNode, SetUpdateNodeApplier>(
+                    factory = { makeNode(value) },
+                    update = {
+                        set(value) { property = value }
+                    }
+                )
+                ComposeNode<SetUpdateNode, SetUpdateNodeApplier>(
+                    factory = { makeNode(value) },
+                    update = {
+                        update(value) { property = value }
+                    }
+                )
+            }
+
+            assertEquals("initial", nodes[0].property, "node 0 initial composition value")
+            assertEquals("initial", nodes[1].property, "node 1 initial composition value")
+            assertEquals(1, nodes[0].changeCount, "node 0 initial composition changeCount")
+            assertEquals(0, nodes[1].changeCount, "node 1 initial composition changeCount")
+
+            value = "changed"
+            Snapshot.sendApplyNotifications()
+            advanceUntilIdle()
+
+            assertEquals("changed", nodes[0].property, "node 0 recomposition value")
+            assertEquals("changed", nodes[1].property, "node 1 recomposition value")
+            assertEquals(2, nodes[0].changeCount, "node 0 recomposition changeCount")
+            assertEquals(1, nodes[1].changeCount, "node 1 recomposition changeCount")
+        }
+    }
+
+    @Test
+    fun internalErrorsAreReportedAsInternal() = compositionTest {
+        expectError("internal") {
+            compose {
+                currentComposer.createNode { null }
+            }
+        }
+    }
+
+    // Regression test for b/202967533
+    // Test taken from the bug report; reformatted to conform to lint rules.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun avoidsDeadlockInRecomposerComposerDispose() {
+        val thread = thread {
+            while (!Thread.interrupted()) {
+                // -> synchronized(stateLock) -> recordComposerModificationsLocked
+                // -> composition.recordModificationsOf -> synchronized(lock)
+                Snapshot.sendApplyNotifications()
+            }
+        }
+
+        for (i in 1..5000) {
+            runBlocking(TestCoroutineDispatcher()) {
+                localRecomposerTest {
+                    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+                    var value by mutableStateOf(0)
+                    val snapshotObserver = SnapshotStateObserver {}
+                    snapshotObserver.start()
+                    @Suppress("UNUSED_VALUE")
+                    value = 4
+                    val composition = Composition(EmptyApplier(), it)
+                    composition.setContent {}
+
+                    // -> synchronized(lock) -> parent.unregisterComposition(this)
+                    // -> synchronized(stateLock)
+                    composition.dispose()
+                    snapshotObserver.stop()
+                }
+            }
+        }
+
+        thread.interrupt()
+    }
+}
+
+var stateA by mutableStateOf(1000)
+var stateB by mutableStateOf(2000)
+
+fun use(@Suppress("UNUSED_PARAMETER") v: Int) {}
+
+fun calculateSomething() = 4
+
+@Composable // used in testRestartOfDefaultFunctions
+fun Defaults(a: Int = 1, b: Int = 2, c: Int = 3, d: Int = calculateSomething()) {
+    assertEquals(1, a)
+    assertEquals(2, b)
+    assertEquals(3, c)
+    assertEquals(4, d)
+    use(stateA)
 }
 
 @OptIn(InternalComposeApi::class)
@@ -2934,23 +3325,4 @@ private interface Ordered {
 
 private interface Named {
     val name: String
-}
-
-private class EmptyApplier : Applier<Unit> {
-    override val current: Unit = Unit
-    override fun down(node: Unit) {}
-    override fun up() {}
-    override fun insertTopDown(index: Int, instance: Unit) {
-        error("Unexpected")
-    }
-    override fun insertBottomUp(index: Int, instance: Unit) {
-        error("Unexpected")
-    }
-    override fun remove(index: Int, count: Int) {
-        error("Unexpected")
-    }
-    override fun move(from: Int, to: Int, count: Int) {
-        error("Unexpected")
-    }
-    override fun clear() {}
 }

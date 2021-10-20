@@ -29,24 +29,21 @@ import java.util.regex.Pattern
  */
 public class NavDeepLink internal constructor(
     /**
-     * Get the uri pattern from the NavDeepLink.
+     * The uri pattern from the NavDeepLink.
      *
-     * @return the uri pattern for the deep link.
-     * @see NavDeepLinkRequest.getUri
+     * @see NavDeepLinkRequest.uri
      */
     public val uriPattern: String?,
     /**
-     * Get the action from the NavDeepLink.
+     * The action from the NavDeepLink.
      *
-     * @return the action for the deep link.
-     * @see NavDeepLinkRequest.getAction
+     * @see NavDeepLinkRequest.action
      */
     public val action: String?,
     /**
-     * Get the mimeType from the NavDeepLink.
+     * The mimeType from the NavDeepLink.
      *
-     * @return the mimeType of the deep link.
-     * @see NavDeepLinkRequest.getMimeType
+     * @see NavDeepLinkRequest.mimeType
      */
     public val mimeType: String?
 ) {
@@ -57,11 +54,17 @@ public class NavDeepLink internal constructor(
 
     private var mimeTypePattern: Pattern? = null
 
+    /** Arguments present in the deep link, including both path and query arguments. */
+    internal val argumentsNames: List<String>
+        get() = arguments + paramArgMap.values.flatMap { it.arguments }
+
     public var isExactDeepLink: Boolean = false
+        /** @suppress */
         @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
         get
         internal set
 
+    /** @suppress */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public constructor(uri: String) : this(uri, null, null)
 
@@ -79,7 +82,7 @@ public class NavDeepLink internal constructor(
             arguments.add(argName)
             // Use Pattern.quote() to treat the input string as a literal
             uriRegex.append(Pattern.quote(uri.substring(appendPos, matcher.start())))
-            uriRegex.append("(.+?)")
+            uriRegex.append("([^/]+?)")
             appendPos = matcher.end()
             exactDeepLink = false
         }
@@ -133,6 +136,7 @@ public class NavDeepLink internal constructor(
         // If both are null return true, otherwise see if they match
     }
 
+    /** @suppress */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public fun getMimeTypeMatchRating(mimeType: String): Int {
         return if (this.mimeType == null || !mimeTypePattern!!.matcher(mimeType).matches()) {
@@ -142,13 +146,15 @@ public class NavDeepLink internal constructor(
     }
 
     @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS", "NullableCollection")
-    // Pattern.compile has no nullability for the regex parameter
+    /** Pattern.compile has no nullability for the regex parameter
+     * @suppress
+     */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public fun getMatchingArguments(
         deepLink: Uri,
         arguments: Map<String, NavArgument?>
     ): Bundle? {
-        val matcher = pattern!!.matcher(deepLink.toString())
+        val matcher = pattern?.matcher(deepLink.toString()) ?: return null
         if (!matcher.matches()) {
             return null
         }
@@ -190,6 +196,14 @@ public class NavDeepLink internal constructor(
                 }
             }
         }
+
+        // Check that all required arguments are present in bundle
+        for ((argName, argument) in arguments.entries) {
+            val argumentIsRequired = argument != null && !argument.isNullable &&
+                !argument.isDefaultValuePresent
+            if (argumentIsRequired && !bundle.containsKey(argName)) return null
+        }
+
         return bundle
     }
 
@@ -220,7 +234,7 @@ public class NavDeepLink internal constructor(
      */
     private class ParamQuery {
         var paramRegex: String? = null
-        private val arguments = mutableListOf<String>()
+        val arguments = mutableListOf<String>()
 
         fun addArgumentName(name: String) {
             arguments.add(name)
@@ -260,10 +274,30 @@ public class NavDeepLink internal constructor(
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is NavDeepLink) return false
+        return uriPattern == other.uriPattern &&
+            action == other.action &&
+            mimeType == other.mimeType
+    }
+
+    override fun hashCode(): Int {
+        var result = 0
+        result = 31 * result + uriPattern.hashCode()
+        result = 31 * result + action.hashCode()
+        result = 31 * result + mimeType.hashCode()
+        return result
+    }
+
     /**
      * A builder for constructing [NavDeepLink] instances.
      */
-    public class Builder @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP) public constructor() {
+    public class Builder {
+
+        /** @suppress */
+        @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+        public constructor()
+
         private var uriPattern: String? = null
         private var action: String? = null
         private var mimeType: String? = null
@@ -380,13 +414,12 @@ public class NavDeepLink internal constructor(
             if (isParameterizedQuery) {
                 var matcher = Pattern.compile("(\\?)").matcher(uriPattern)
                 if (matcher.find()) {
-                    buildPathRegex(
+                    isExactDeepLink = buildPathRegex(
                         uriPattern.substring(0, matcher.start()),
                         uriRegex,
                         fillInPattern
                     )
                 }
-                isExactDeepLink = false
                 for (paramName in parameterizedUri.queryParameterNames) {
                     val argRegex = StringBuilder()
                     val queryParam = parameterizedUri.getQueryParameter(paramName) as String
@@ -422,7 +455,7 @@ public class NavDeepLink internal constructor(
             // specifically escape any .* instances to ensure
             // they are still treated as wildcards in our final regex
             val finalRegex = uriRegex.toString().replace(".*", "\\E.*\\Q")
-            pattern = Pattern.compile(finalRegex)
+            pattern = Pattern.compile(finalRegex, Pattern.CASE_INSENSITIVE)
         }
         if (mimeType != null) {
             val mimeTypePattern = Pattern.compile("^[\\s\\S]+/[\\s\\S]+$")

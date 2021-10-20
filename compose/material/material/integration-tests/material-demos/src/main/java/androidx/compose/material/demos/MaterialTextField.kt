@@ -16,13 +16,13 @@
 
 package androidx.compose.material.demos
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredHeightIn
@@ -30,9 +30,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Checkbox
 import androidx.compose.material.ContentAlpha
@@ -47,6 +50,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.samples.PasswordTextField
 import androidx.compose.material.samples.SimpleOutlinedTextFieldSample
+import androidx.compose.material.samples.TextArea
 import androidx.compose.material.samples.TextFieldSample
 import androidx.compose.material.samples.TextFieldWithErrorState
 import androidx.compose.material.samples.TextFieldWithHelperMessage
@@ -67,7 +71,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TextFieldsDemo() {
     LazyColumn(
-        modifier = Modifier.fillMaxHeight()
+        modifier = Modifier.wrapContentSize(Alignment.Center).width(280.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         item {
             Text("Password text field")
@@ -90,7 +96,7 @@ fun TextFieldsDemo() {
             TextFieldWithErrorState()
         }
         item {
-            Text("Text field with helper/error message")
+            Text("Text field with helper message")
             TextFieldWithHelperMessage()
         }
         item {
@@ -100,6 +106,14 @@ fun TextFieldsDemo() {
         item {
             Text("TextFieldValue overload")
             TextFieldSample()
+        }
+        item {
+            Text("Outlined text field with custom shape")
+            CustomShapeOutlinedTextFieldSample()
+        }
+        item {
+            Text("Text area")
+            TextArea()
         }
     }
 }
@@ -132,7 +146,7 @@ fun VerticalAlignmentsInTextField() {
         TextField(
             value = text.value,
             onValueChange = { text.value = it },
-            label = { if (label.value) Text("Label") },
+            label = if (label.value) { @Composable { Text("Label") } } else null,
             singleLine = singleLine.value,
             modifier = textFieldModifier
         )
@@ -140,7 +154,7 @@ fun VerticalAlignmentsInTextField() {
         OutlinedTextField(
             value = text.value,
             onValueChange = { text.value = it },
-            label = { if (label.value) Text("Label") },
+            label = if (label.value) { @Composable { Text("Label") } } else null,
             singleLine = singleLine.value,
             modifier = textFieldModifier
         )
@@ -174,11 +188,15 @@ fun MaterialTextFieldDemo() {
                                 "Label" + if (selectedOption == Option.Error) "*" else ""
                             Text(text = label)
                         },
-                        leadingIcon = {
-                            if (leadingChecked) Icon(Icons.Filled.Favorite, "Favorite")
+                        leadingIcon = if (leadingChecked) {
+                            @Composable { Icon(Icons.Filled.Favorite, "Favorite") }
+                        } else {
+                            null
                         },
-                        trailingIcon = {
-                            if (trailingChecked) Icon(Icons.Filled.Info, "Info")
+                        trailingIcon = if (trailingChecked) {
+                            @Composable { Icon(Icons.Filled.Info, "Info") }
+                        } else {
+                            null
                         },
                         isError = selectedOption == Option.Error,
                         modifier = Modifier.requiredWidth(300.dp)
@@ -195,11 +213,15 @@ fun MaterialTextFieldDemo() {
                                 "Label" + if (selectedOption == Option.Error) "*" else ""
                             Text(text = label)
                         },
-                        leadingIcon = {
-                            if (leadingChecked) Icon(Icons.Filled.Favorite, "Favorite")
+                        leadingIcon = if (leadingChecked) {
+                            @Composable { Icon(Icons.Filled.Favorite, "Favorite") }
+                        } else {
+                            null
                         },
-                        trailingIcon = {
-                            if (trailingChecked) Icon(Icons.Filled.Info, "Info")
+                        trailingIcon = if (trailingChecked) {
+                            @Composable { Icon(Icons.Filled.Info, "Info") }
+                        } else {
+                            null
                         },
                         isError = selectedOption == Option.Error,
                         modifier = Modifier.requiredWidth(300.dp)
@@ -231,7 +253,7 @@ fun MaterialTextFieldDemo() {
                 ) {
                     RadioButton(
                         selected = (textType == selectedTextField.name),
-                        onClick = { selectedTextField = TextFieldType.valueOf(textType) }
+                        onClick = null
                     )
                     Text(
                         text = textType,
@@ -279,7 +301,7 @@ fun MaterialTextFieldDemo() {
                 ) {
                     RadioButton(
                         selected = (text == selectedOption.name),
-                        onClick = { selectedOption = Option.valueOf(text) }
+                        onClick = null
                     )
                     Text(
                         text = text,
@@ -302,6 +324,18 @@ fun MaterialTextFieldDemo() {
             )
         }
     }
+}
+
+@Composable
+fun CustomShapeOutlinedTextFieldSample() {
+    var text by rememberSaveable { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { text = it },
+        label = { Text("Label") },
+        shape = CutCornerShape(5.dp)
+    )
 }
 
 /**
@@ -349,8 +383,15 @@ private fun OptionRow(
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean = true
 ) {
-    Row(Modifier.padding(start = 10.dp, top = 10.dp)) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+    Row(
+        Modifier
+            .padding(start = 10.dp, top = 10.dp)
+            .fillMaxWidth()
+            .toggleable(
+                value = checked, onValueChange = onCheckedChange, enabled = enabled
+            )
+    ) {
+        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
         Spacer(Modifier.width(20.dp))
         Text(text = title, style = MaterialTheme.typography.body1)
     }

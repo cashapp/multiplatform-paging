@@ -17,19 +17,15 @@
 package androidx.compose.foundation.text
 
 import androidx.compose.foundation.text.selection.BaseTextPreparedSelection
-import androidx.compose.foundation.text.selection.TextFieldPreparedSelection
 import androidx.compose.foundation.text.selection.TextPreparedSelection
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.test.R
-import androidx.compose.ui.text.font.toFontFamily
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.google.common.truth.Truth
@@ -60,6 +56,33 @@ class TextPreparedSelectionTest {
     }
 
     @Test
+    fun textSelection_leftRightMovements_rtl() {
+        selectionTest("\u0671\u0679\u0683", rtl = true) {
+            expectedSelection(cursorAt('\u0671'))
+            it.moveCursorLeft()
+            expectedSelection(cursorAt('\u0679'))
+            it.moveCursorLeft()
+            expectedSelection(cursorAt('\u0683'))
+            it.moveCursorRight()
+            expectedSelection(cursorAt('\u0679'))
+        }
+    }
+
+    @Test
+    fun textSelection_leftRightMovements_bidi() {
+        selectionTest("ab \u0671\u0679\u0683 cd") {
+            it.moveCursorRight()
+            expectedSelection(TextRange(1))
+            it.moveCursorRight()
+            expectedSelection(TextRange(2))
+            it.moveCursorRight()
+            expectedSelection(TextRange(3))
+            it.moveCursorRight()
+            expectedSelection(TextRange(4))
+        }
+    }
+
+    @Test
     fun textSelection_byWordMovements() {
         selectionTest("abc def\n\ngi") {
             it.moveCursorRightByWord()
@@ -72,6 +95,26 @@ class TextPreparedSelectionTest {
             expectedSelection(cursorAfter('f'))
             it.moveCursorRightByWord()
             expectedSelection(cursorAfter('i'))
+        }
+    }
+
+    @Test
+    fun textSelection_byWordMovements_empty() {
+        selectionTest("") {
+            it.moveCursorRightByWord()
+            expectedSelection(TextRange(0))
+            it.moveCursorLeftByWord()
+            expectedSelection(TextRange(0))
+        }
+    }
+
+    @Test
+    fun textSelection_byParagraphMovements_empty() {
+        selectionTest("") {
+            it.moveCursorNextByParagraph()
+            expectedSelection(TextRange(0))
+            it.moveCursorPrevByParagraph()
+            expectedSelection(TextRange(0))
         }
     }
 
@@ -124,55 +167,29 @@ class TextPreparedSelectionTest {
     private fun selectionTest(
         initText: String = "",
         initSelection: TextRange = TextRange(0),
+        rtl: Boolean = false,
         test: SelectionScope<TextPreparedSelection>.(TextPreparedSelection) -> Unit
     ) {
         var textLayout: TextLayoutResult? = null
+        val direction = if (rtl) {
+            LayoutDirection.Rtl
+        } else {
+            LayoutDirection.Ltr
+        }
         rule.setContent {
-            BasicText(
-                text = initText,
-                style = TextStyle(
-                    fontFamily = Font(
-                        R.font.sample_font,
-                        FontWeight.Normal,
-                        FontStyle.Normal
-                    ).toFontFamily()
-                ),
-                onTextLayout = { textLayout = it }
-            )
+            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                BasicText(
+                    text = initText,
+                    style = TextStyle(fontFamily = TEST_FONT_FAMILY),
+                    onTextLayout = { textLayout = it }
+                )
+            }
         }
 
         val prepared = TextPreparedSelection(
             originalText = AnnotatedString(initText),
             originalSelection = initSelection,
             layoutResult = textLayout!!
-        )
-
-        test(SelectionScope(prepared), prepared)
-    }
-
-    private fun textFieldSelectionTest(
-        initText: String = "",
-        initSelection: TextRange = TextRange(0),
-        test: SelectionScope<TextFieldPreparedSelection>.(TextFieldPreparedSelection) -> Unit
-    ) {
-        var textLayout: TextLayoutResult? = null
-        rule.setContent {
-            BasicText(
-                text = initText,
-                style = TextStyle(
-                    fontFamily = Font(
-                        R.font.sample_font,
-                        FontWeight.Normal,
-                        FontStyle.Normal
-                    ).toFontFamily()
-                ),
-                onTextLayout = { textLayout = it }
-            )
-        }
-
-        val prepared = TextFieldPreparedSelection(
-            currentValue = TextFieldValue(initText, initSelection),
-            layoutResultProxy = TextLayoutResultProxy(textLayout!!)
         )
 
         test(SelectionScope(prepared), prepared)

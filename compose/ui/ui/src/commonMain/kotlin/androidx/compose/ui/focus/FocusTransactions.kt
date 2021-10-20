@@ -16,11 +16,12 @@
 
 package androidx.compose.ui.focus
 
-import androidx.compose.ui.focus.FocusState.Active
-import androidx.compose.ui.focus.FocusState.ActiveParent
-import androidx.compose.ui.focus.FocusState.Captured
-import androidx.compose.ui.focus.FocusState.Disabled
-import androidx.compose.ui.focus.FocusState.Inactive
+import androidx.compose.ui.focus.FocusStateImpl.Active
+import androidx.compose.ui.focus.FocusStateImpl.ActiveParent
+import androidx.compose.ui.focus.FocusStateImpl.Captured
+import androidx.compose.ui.focus.FocusStateImpl.Deactivated
+import androidx.compose.ui.focus.FocusStateImpl.DeactivatedParent
+import androidx.compose.ui.focus.FocusStateImpl.Inactive
 import androidx.compose.ui.node.ModifiedFocusNode
 
 /**
@@ -34,14 +35,14 @@ import androidx.compose.ui.node.ModifiedFocusNode
  */
 internal fun ModifiedFocusNode.requestFocus(propagateFocus: Boolean = true) {
     when (focusState) {
-        Active, Captured, Disabled -> {
+        Active, Captured, Deactivated, DeactivatedParent -> {
             // There is no change in focus state, but we send a focus event to notify the user
             // that the focus request is completed.
             sendOnFocusEvent(focusState)
         }
         ActiveParent -> {
-            val currentfocusedChild = focusedChild
-            requireNotNull(currentfocusedChild)
+            val currentFocusedChild = focusedChild
+            requireNotNull(currentFocusedChild)
 
             // We don't need to do anything if [propagateFocus] is true,
             // since this subtree already has focus.
@@ -50,7 +51,7 @@ internal fun ModifiedFocusNode.requestFocus(propagateFocus: Boolean = true) {
                 return
             }
 
-            if (currentfocusedChild.clearFocus()) {
+            if (currentFocusedChild.clearFocus()) {
                 grantFocus(propagateFocus)
                 focusedChild = null
             }
@@ -69,6 +70,37 @@ internal fun ModifiedFocusNode.requestFocus(propagateFocus: Boolean = true) {
 }
 
 /**
+ * Activate this node so that it can be focused.
+ *
+ * Deactivated nodes are excluded from focus search, and reject requests to gain focus.
+ * Calling this function activates a deactivated node.
+ */
+internal fun ModifiedFocusNode.activateNode() {
+    when (focusState) {
+        ActiveParent, Active, Captured, Inactive -> { }
+        Deactivated -> focusState = Inactive
+        DeactivatedParent -> focusState = ActiveParent
+    }
+}
+
+/**
+ * Deactivate this node so that it can't be focused.
+ *
+ * Deactivated nodes are excluded from focus search.
+ */
+internal fun ModifiedFocusNode.deactivateNode() {
+    when (focusState) {
+        ActiveParent -> focusState = DeactivatedParent
+        Active, Captured -> {
+            layoutNode.owner?.focusManager?.clearFocus(force = true)
+            focusState = Deactivated
+        }
+        Inactive -> focusState = Deactivated
+        Deactivated, DeactivatedParent -> { }
+    }
+}
+
+/**
  * Deny requests to clear focus.
  *
  * This is used when a component wants to hold onto focus (eg. A phone number field with an
@@ -82,7 +114,7 @@ internal fun ModifiedFocusNode.captureFocus() = when (focusState) {
         true
     }
     Captured -> true
-    else -> false
+    ActiveParent, Deactivated, DeactivatedParent, Inactive -> false
 }
 
 /**
@@ -98,7 +130,7 @@ internal fun ModifiedFocusNode.freeFocus() = when (focusState) {
         true
     }
     Active -> true
-    else -> false
+    ActiveParent, Deactivated, DeactivatedParent, Inactive -> false
 }
 
 /**
@@ -116,14 +148,28 @@ internal fun ModifiedFocusNode.clearFocus(forcedClear: Boolean = false): Boolean
         }
         /**
          * If the node is [ActiveParent], we need to clear focus from the [Active] descendant
-         * first, before clearing focus of this node.
+         * first, before clearing focus from this node.
          */
         ActiveParent -> {
-            val currentfocusedChild = focusedChild
-            requireNotNull(currentfocusedChild)
-            currentfocusedChild.clearFocus(forcedClear).also { success ->
+            val currentFocusedChild = focusedChild
+            requireNotNull(currentFocusedChild)
+            currentFocusedChild.clearFocus(forcedClear).also { success ->
                 if (success) {
                     focusState = Inactive
+                    focusedChild = null
+                }
+            }
+        }
+        /**
+         * If the node is [DeactivatedParent], we need to clear focus from the [Active] descendant
+         * first, before clearing focus from this node.
+         */
+        DeactivatedParent -> {
+            val currentFocusedChild = focusedChild
+            requireNotNull(currentFocusedChild)
+            currentFocusedChild.clearFocus(forcedClear).also { success ->
+                if (success) {
+                    focusState = Deactivated
                     focusedChild = null
                 }
             }
@@ -140,7 +186,7 @@ internal fun ModifiedFocusNode.clearFocus(forcedClear: Boolean = false): Boolean
         /**
          * Nothing to do if the node is not focused.
          */
-        Inactive, Disabled -> true
+        Inactive, Deactivated -> true
     }
 }
 
@@ -154,18 +200,26 @@ internal fun ModifiedFocusNode.clearFocus(forcedClear: Boolean = false): Boolean
  */
 private fun ModifiedFocusNode.grantFocus(propagateFocus: Boolean) {
 
-    // TODO (b/144126570) use ChildFocusablility.
+    // TODO (b/144126570) use ChildFocusability.
     //  For now we assume children get focus before parent).
 
     // TODO (b/144126759): Design a system to decide which child gets focus.
     //  for now we grant focus to the first child.
-    val focusedCandidate = focusableChildren().firstOrNull()
+    val focusedCandidate = focusableChildren(excludeDeactivated = false).firstOrNull()
 
     if (focusedCandidate == null || !propagateFocus) {
         // No Focused Children, or we don't want to propagate focus to children.
-        focusState = Active
+        focusState = when (focusState) {
+            Inactive, Active, ActiveParent -> Active
+            Captured -> Captured
+            Deactivated, DeactivatedParent -> error("Granting focus to a deactivated node.")
+        }
     } else {
-        focusState = ActiveParent
+        focusState = when (focusState) {
+            Inactive, Active, ActiveParent -> ActiveParent
+            Captured -> { Captured; return }
+            Deactivated, DeactivatedParent -> DeactivatedParent
+        }
         focusedChild = focusedCandidate
         focusedCandidate.grantFocus(propagateFocus)
     }
@@ -185,7 +239,7 @@ private fun ModifiedFocusNode.requestFocusForChild(
 ): Boolean {
 
     // Only this node's children can ask for focus.
-    if (!focusableChildren().contains(childNode)) {
+    if (!focusableChildren(excludeDeactivated = false).contains(childNode)) {
         error("Non child node cannot request focus.")
     }
 
@@ -207,6 +261,23 @@ private fun ModifiedFocusNode.requestFocusForChild(
             val previouslyFocusedNode = focusedChild
             requireNotNull(previouslyFocusedNode)
             if (previouslyFocusedNode.clearFocus()) {
+                focusedChild = childNode
+                childNode.grantFocus(propagateFocus)
+                true
+            } else {
+                // Currently focused component does not want to give up focus.
+                false
+            }
+        }
+        DeactivatedParent -> {
+            val previouslyFocusedNode = focusedChild
+            if (previouslyFocusedNode == null) {
+                // we use DeactivatedParent and focusedchild == null to indicate an intermediate
+                // state where a parent requested focus so that it can transfer it to a child.
+                focusedChild = childNode
+                childNode.grantFocus(propagateFocus)
+                true
+            } else if (previouslyFocusedNode.clearFocus()) {
                 focusedChild = childNode
                 childNode.grantFocus(propagateFocus)
                 true
@@ -241,9 +312,15 @@ private fun ModifiedFocusNode.requestFocusForChild(
          */
         Captured -> false
         /**
-         * Children of a [Disabled] parent should also be [Disabled].
+         * If this node is [Deactivated], send a requestFocusForChild to its parent to attempt to
+         * change its state to [DeactivatedParent] before granting focus to the child.
          */
-        Disabled -> error("non root FocusNode needs a focusable parent")
+        Deactivated -> {
+            activateNode()
+            val childGrantedFocus = requestFocusForChild(childNode, propagateFocus)
+            deactivateNode()
+            childGrantedFocus
+        }
     }
 }
 

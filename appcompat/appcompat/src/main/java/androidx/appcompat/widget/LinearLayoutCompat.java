@@ -30,6 +30,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 
+import androidx.annotation.GravityInt;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -235,7 +236,6 @@ public class LinearLayoutCompat extends ViewGroup {
      * @see #setDividerDrawable(Drawable)
      */
     @Attribute("androidx.appcompat:divider")
-    @Nullable
     public Drawable getDividerDrawable() {
         return mDivider;
     }
@@ -498,7 +498,6 @@ public class LinearLayoutCompat extends ViewGroup {
      *   part of a larger layout that is baseline aligned, or -1 if none has
      *   been set.
      */
-
     @Attribute("android:baselineAlignedChildIndex")
     public int getBaselineAlignedChildIndex() {
         return mBaselineAlignedChildIndex;
@@ -1704,7 +1703,7 @@ public class LinearLayoutCompat extends ViewGroup {
      *
      * @param gravity See {@link android.view.Gravity}
      */
-    public void setGravity(int gravity) {
+    public void setGravity(@GravityInt int gravity) {
         if (mGravity != gravity) {
             if ((gravity & GravityCompat.RELATIVE_HORIZONTAL_GRAVITY_MASK) == 0) {
                 gravity |= GravityCompat.START;
@@ -1725,7 +1724,8 @@ public class LinearLayoutCompat extends ViewGroup {
      * @return the current gravity.
      * @see #setGravity
      */
-    @Attribute("android:gravity") // TODO(b/180040871) Mark as gravity attribute
+    @Attribute("android:gravity")
+    @GravityInt
     public int getGravity() {
         return mGravity;
     }

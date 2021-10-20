@@ -16,15 +16,13 @@
 
 package androidx.wear.tiles;
 
-import android.app.Service;
-
 import androidx.annotation.NonNull;
 
 /**
- * Interface used for a Tile Provider to notify a Tile Renderer that it should fetch a new Timeline
+ * Interface used for a Tile Service to notify a Tile Renderer that it should fetch a new Timeline
  * from it.
  */
 public interface TileUpdateRequester {
-    /** Notify the Tile Renderer that it should fetch a new Timeline from this Tile Provider. */
-    void requestUpdate(@NonNull Class<? extends Service> tileProvider);
+    /** Notify the Tile Renderer that it should fetch a new Timeline from this Tile Service. */
+    void requestUpdate(@NonNull Class<? extends TileService> tileService);
 }

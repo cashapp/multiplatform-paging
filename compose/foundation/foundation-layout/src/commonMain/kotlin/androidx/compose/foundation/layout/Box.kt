@@ -45,7 +45,11 @@ import kotlin.math.max
  * the [Box] according to the [contentAlignment]. For individually specifying the alignments
  * of the children layouts, use the [BoxScope.align] modifier.
  * By default, the content will be measured without the [Box]'s incoming min constraints,
- * unless [propagateMinConstraints] is `true`.
+ * unless [propagateMinConstraints] is `true`. As an example, setting [propagateMinConstraints] to
+ * `true` can be useful when the [Box] has content on which modifiers cannot be specified
+ * directly and setting a min size on the content of the [Box] is needed. If
+ * [propagateMinConstraints] is set to `true`, the min size set on the [Box] will also be
+ * applied to the content, whereas otherwise the min size will only apply to the [Box].
  * When the content has more than one layout child the layout children will be stacked one
  * on top of the other (positioned as explained above) in the composition order.
  *
@@ -253,11 +257,9 @@ internal object BoxScopeInstance : BoxScope {
     )
 }
 
-@get:Suppress("ModifierFactoryReturnType", "ModifierFactoryExtensionFunction")
 private val Measurable.boxChildData: BoxChildData? get() = parentData as? BoxChildData
 private val Measurable.matchesParentSize: Boolean get() = boxChildData?.matchParentSize ?: false
 
-@Suppress("ModifierFactoryReturnType", "ModifierFactoryExtensionFunction")
 private class BoxChildData(
     var alignment: Alignment,
     var matchParentSize: Boolean = false,

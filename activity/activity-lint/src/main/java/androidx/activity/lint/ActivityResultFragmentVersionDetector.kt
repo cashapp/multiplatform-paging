@@ -123,6 +123,7 @@ class ActivityResultFragmentVersionDetector : Detector(), UastScanner, GradleSca
         (all as ArrayList<*>).forEach { lmLibrary ->
             lmLibrary::class.memberProperties.forEach { libraryMembers ->
                 if (libraryMembers.name == "resolvedCoordinates") {
+                    libraryMembers.isAccessible = true
                     reportIssue(libraryMembers.call(lmLibrary).toString(), context, false)
                 }
             }
@@ -164,6 +165,7 @@ class ActivityResultFragmentVersionDetector : Detector(), UastScanner, GradleSca
     private fun getMemberWithReflection(caller: Any, memberName: String): Any {
         caller::class.memberProperties.forEach { member ->
             if (member.name == memberName) {
+                member.getter.isAccessible = true
                 return member.getter.call(caller)!!
             }
         }
@@ -195,7 +197,8 @@ class ActivityResultFragmentVersionDetector : Detector(), UastScanner, GradleSca
 
         if (library.isNotEmpty()) {
             val currentVersion = library.substringAfter("androidx.fragment:fragment:")
-            if (library != currentVersion && FRAGMENT_VERSION.compareVersions(currentVersion)) {
+                .substringBeforeLast("-")
+            if (library != currentVersion && currentVersion < FRAGMENT_VERSION) {
                 locations.forEach { location ->
                     context.report(
                         ISSUE, expression, location,
@@ -220,13 +223,5 @@ class ActivityResultFragmentVersionDetector : Detector(), UastScanner, GradleSca
             return value.substring(1, value.length - 1)
         }
         return ""
-    }
-
-    private fun String.compareVersions(other: String): Boolean {
-        return when {
-            length < other.length -> true
-            length > other.length -> false
-            else -> this > other
-        }
     }
 }

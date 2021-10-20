@@ -30,8 +30,8 @@ import androidx.core.content.ContextCompat;
 import androidx.test.filters.LargeTest;
 import androidx.test.screenshot.AndroidXScreenshotTestRule;
 import androidx.test.screenshot.matchers.MSSIMMatcher;
-import androidx.wear.tiles.builders.LayoutElementBuilders;
-import androidx.wear.tiles.builders.ResourceBuilders;
+import androidx.wear.tiles.LayoutElementBuilders;
+import androidx.wear.tiles.ResourceBuilders;
 import androidx.wear.tiles.proto.LayoutElementProto.Layout;
 import androidx.wear.tiles.proto.LayoutElementProto.LayoutElement;
 import androidx.wear.tiles.proto.ResourceProto.AndroidImageResourceByResId;
@@ -40,7 +40,6 @@ import androidx.wear.tiles.proto.ResourceProto.ImageResource;
 import androidx.wear.tiles.proto.ResourceProto.InlineImageResource;
 import androidx.wear.tiles.proto.ResourceProto.Resources;
 import androidx.wear.tiles.protobuf.ByteString;
-import androidx.wear.tiles.renderer.StandardResourceAccessors;
 import androidx.wear.tiles.renderer.TileRenderer;
 
 import com.google.protobuf.TextFormat;
@@ -94,6 +93,7 @@ public class TileRendererGoldenTest {
                     {"line_in_arc"},
                     {"line_multi_height"},
                     {"long_text"},
+                    {"mixed_language_text"},
                     {"multi_line_text_alignment"},
                     {"row_column_space_test"},
                     {"row_with_alignment"},
@@ -121,8 +121,8 @@ public class TileRendererGoldenTest {
     public AndroidXScreenshotTestRule screenshotRule =
             new AndroidXScreenshotTestRule("wear/wear-tiles-renderer");
 
-    // This isn't totally ideal right now.
-    // The screenshot tests run on a phone, so emulate some watch dimensions here.
+    // This isn't totally ideal right now. The screenshot tests run on a phone, so emulate some
+    // watch dimensions here.
     private static final int SCREEN_WIDTH = 390;
     private static final int SCREEN_HEIGHT = 390;
 
@@ -150,9 +150,9 @@ public class TileRendererGoldenTest {
         byte[] inlineImagePayload =
                 new byte[INLINE_IMAGE_WIDTH * INLINE_IMAGE_HEIGHT * INLINE_IMAGE_PIXEL_STRIDE];
 
-        // Generate a square image, with a white square in the center.
-        // This replaces an inline payload as a byte array. We could hardcode it, but the
-        // autoformatter will ruin the formatting.
+        // Generate a square image, with a white square in the center. This replaces an inline
+        // payload as a byte array. We could hardcode it, but the autoformatter will ruin the
+        // formatting.
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
                 int index = ((y * INLINE_IMAGE_WIDTH) + x) * INLINE_IMAGE_PIXEL_STRIDE;
@@ -171,14 +171,14 @@ public class TileRendererGoldenTest {
                 .putIdToImage(
                         "android",
                         ImageResource.newBuilder()
-                                .setAndroidResourceByResid(
+                                .setAndroidResourceByResId(
                                         AndroidImageResourceByResId.newBuilder()
                                                 .setResourceId(R.drawable.android_24dp))
                                 .build())
                 .putIdToImage(
                         "android_withbg_120dp",
                         ImageResource.newBuilder()
-                                .setAndroidResourceByResid(
+                                .setAndroidResourceByResId(
                                         AndroidImageResourceByResId.newBuilder()
                                                 .setResourceId(R.mipmap.android_withbg_120dp))
                                 .build())
@@ -195,14 +195,14 @@ public class TileRendererGoldenTest {
                 .putIdToImage(
                         "broken_image",
                         ImageResource.newBuilder()
-                                .setAndroidResourceByResid(
+                                .setAndroidResourceByResId(
                                         AndroidImageResourceByResId.newBuilder()
                                                 .setResourceId(R.drawable.broken_drawable))
                                 .build())
                 .putIdToImage(
                         "missing_image",
                         ImageResource.newBuilder()
-                                .setAndroidResourceByResid(
+                                .setAndroidResourceByResId(
                                         AndroidImageResourceByResId.newBuilder().setResourceId(-1))
                                 .build())
                 .build();
@@ -238,10 +238,7 @@ public class TileRendererGoldenTest {
                         appContext,
                         LayoutElementBuilders.Layout.fromProto(
                                 Layout.newBuilder().setRoot(rootElement).build()),
-                        StandardResourceAccessors.forLocalApp(
-                                        appContext,
-                                        ResourceBuilders.Resources.fromProto(generateResources()))
-                                .build(),
+                        ResourceBuilders.Resources.fromProto(generateResources()),
                         ContextCompat.getMainExecutor(getApplicationContext()),
                         i -> {});
 

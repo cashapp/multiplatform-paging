@@ -41,6 +41,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -61,9 +63,13 @@ import androidx.annotation.LayoutRes;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuHostHelper;
+import androidx.core.view.MenuProvider;
 import androidx.lifecycle.HasDefaultViewModelProviderFactory;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleEventObserver;
@@ -99,14 +105,18 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         SavedStateRegistryOwner,
         OnBackPressedDispatcherOwner,
         ActivityResultRegistryOwner,
-        ActivityResultCaller {
+        ActivityResultCaller,
+        MenuHost {
 
     static final class NonConfigurationInstances {
         Object custom;
         ViewModelStore viewModelStore;
     }
 
+    private static final String ACTIVITY_RESULT_TAG = "android:support:activity-result";
+
     final ContextAwareHelper mContextAwareHelper = new ContextAwareHelper();
+    private final MenuHostHelper mMenuHostHelper = new MenuHostHelper(this::invalidateMenu);
     private final LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
     @SuppressWarnings("WeakerAccess") /* synthetic access */
     final SavedStateRegistryController mSavedStateRegistryController =
@@ -233,7 +243,7 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
                         Window window = getWindow();
                         final View decor = window != null ? window.peekDecorView() : null;
                         if (decor != null) {
-                            decor.cancelPendingInputEvents();
+                            Api19Impl.cancelPendingInputEvents(decor);
                         }
                     }
                 }
@@ -265,6 +275,19 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         if (19 <= SDK_INT && SDK_INT <= 23) {
             getLifecycle().addObserver(new ImmLeaksCleaner(this));
         }
+        getSavedStateRegistry().registerSavedStateProvider(ACTIVITY_RESULT_TAG,
+                () -> {
+                    Bundle outState = new Bundle();
+                    mActivityResultRegistry.onSaveInstanceState(outState);
+                    return outState;
+                });
+        addOnContextAvailableListener(context -> {
+            Bundle savedInstanceState = getSavedStateRegistry()
+                    .consumeRestoredStateForKey(ACTIVITY_RESULT_TAG);
+            if (savedInstanceState != null) {
+                mActivityResultRegistry.onRestoreInstanceState(savedInstanceState);
+            }
+        });
     }
 
     /**
@@ -296,7 +319,6 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         mSavedStateRegistryController.performRestore(savedInstanceState);
         mContextAwareHelper.dispatchOnContextAvailable(this);
         super.onCreate(savedInstanceState);
-        mActivityResultRegistry.onRestoreInstanceState(savedInstanceState);
         ReportFragment.injectIfNeededIn(this);
         if (mContentLayoutId != 0) {
             setContentView(mContentLayoutId);
@@ -312,7 +334,6 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         }
         super.onSaveInstanceState(outState);
         mSavedStateRegistryController.performSave(outState);
-        mActivityResultRegistry.onSaveInstanceState(outState);
     }
 
     /**
@@ -437,6 +458,48 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         mContextAwareHelper.removeOnContextAvailableListener(listener);
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        mMenuHostHelper.onCreateMenu(menu, getMenuInflater());
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (super.onOptionsItemSelected(item)) {
+            return true;
+        }
+        return mMenuHostHelper.onMenuItemSelected(item);
+    }
+
+    @Override
+    public void addMenuProvider(@NonNull MenuProvider provider) {
+        mMenuHostHelper.addMenuProvider(provider);
+    }
+
+    @Override
+    public void addMenuProvider(@NonNull MenuProvider provider, @NonNull LifecycleOwner owner) {
+        mMenuHostHelper.addMenuProvider(provider, owner);
+    }
+
+    @Override
+    @SuppressLint("LambdaLast")
+    public void addMenuProvider(@NonNull MenuProvider provider, @NonNull LifecycleOwner owner,
+            @NonNull Lifecycle.State state) {
+        mMenuHostHelper.addMenuProvider(provider, owner, state);
+    }
+
+    @Override
+    public void removeMenuProvider(@NonNull MenuProvider provider) {
+        mMenuHostHelper.removeMenuProvider(provider);
+    }
+
+    @Override
+    public void invalidateMenu() {
+        invalidateOptionsMenu();
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -549,7 +612,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
      * passing in a {@link StartActivityForResult} object for the {@link ActivityResultContract}.
      */
@@ -563,7 +631,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
      * passing in a {@link StartActivityForResult} object for the {@link ActivityResultContract}.
      */
@@ -577,7 +650,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
      * passing in a {@link StartIntentSenderForResult} object for the
      * {@link ActivityResultContract}.
@@ -595,7 +673,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
      * passing in a {@link StartIntentSenderForResult} object for the
      * {@link ActivityResultContract}.
@@ -612,7 +695,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
      * with the appropriate {@link ActivityResultContract} and handling the result in the
      * {@link ActivityResultCallback#onActivityResult(Object) callback}.
@@ -629,7 +717,12 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     /**
      * {@inheritDoc}
      *
-     * @deprecated use
+     * @deprecated This method has been deprecated in favor of using the Activity Result API
+     * which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+     * contracts for common intents available in
+     * {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+     * testing, and allow receiving results in separate, testable classes independent from your
+     * activity. Use
      * {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)} passing
      * in a {@link RequestMultiplePermissions} object for the {@link ActivityResultContract} and
      * handling the result in the {@link ActivityResultCallback#onActivityResult(Object) callback}.
@@ -702,5 +795,15 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
         } finally {
             Trace.endSection();
         }
+    }
+
+    @RequiresApi(19)
+    static class Api19Impl {
+        private Api19Impl() { }
+
+        static void cancelPendingInputEvents(View view) {
+            view.cancelPendingInputEvents();
+        }
+
     }
 }

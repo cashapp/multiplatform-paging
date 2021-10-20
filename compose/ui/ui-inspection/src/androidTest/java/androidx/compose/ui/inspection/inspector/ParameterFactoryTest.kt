@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -49,6 +50,8 @@ import androidx.compose.ui.graphics.colorspace.ColorModel
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.debugInspectorInfo
+import androidx.compose.ui.platform.inspectable
 import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -69,6 +72,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.packFloats
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.google.common.truth.Truth.assertThat
@@ -76,7 +80,6 @@ import com.google.common.truth.Truth.assertWithMessage
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -94,11 +97,6 @@ private fun topLevelFunction() {
 @RunWith(AndroidJUnit4::class)
 class ParameterFactoryTest {
     private val factory = ParameterFactory(InlineClassConverter())
-    private val node = MutableInspectorNode().apply {
-        width = 1000
-        height = 500
-        id = NODE_ID
-    }.build()
 
     @Before
     fun before() {
@@ -224,12 +222,21 @@ class ParameterFactoryTest {
                     parameter("x", ParameterType.DimensionDp, 2.5f)
                     parameter("y", ParameterType.DimensionDp, 5.0f)
                 }
+                parameter("intrinsicSize", ParameterType.String, Size::class.java.simpleName) {
+                    val width = 5.0f
+                    val height = 9.5f
+                    parameter("height", ParameterType.Float, height)
+                    parameter("maxDimension", ParameterType.Float, height)
+                    parameter("minDimension", ParameterType.Float, width)
+                    parameter("packedValue", ParameterType.Int64, packFloats(width, height))
+                    parameter("width", ParameterType.Float, width)
+                }
                 parameter("start", ParameterType.String, Offset::class.java.simpleName) {
                     parameter("x", ParameterType.DimensionDp, 0.0f)
                     parameter("y", ParameterType.DimensionDp, 0.25f)
                 }
-                parameter("tileMode", ParameterType.String, "Clamp", index = 4)
-                parameter("createdSize", ParameterType.String, "Unspecified", index = 5)
+                parameter("tileMode", ParameterType.String, "Clamp", index = 5)
+                parameter("createdSize", ParameterType.String, "Unspecified", index = 6)
             }
         }
         // TODO: add tests for RadialGradient & ShaderBrush
@@ -258,7 +265,6 @@ class ParameterFactoryTest {
         )
     }
 
-    @Ignore
     @Test
     fun testCornerBasedShape() {
         validate(create("corner", RoundedCornerShape(2.0.dp, 0.5.dp, 2.5.dp, 0.7.dp))) {
@@ -271,18 +277,18 @@ class ParameterFactoryTest {
         }
         validate(create("corner", CutCornerShape(2))) {
             parameter("corner", ParameterType.String, CutCornerShape::class.java.simpleName) {
-                parameter("bottomEnd", ParameterType.DimensionDp, 5.0f)
-                parameter("bottomStart", ParameterType.DimensionDp, 5.0f)
-                parameter("topEnd", ParameterType.DimensionDp, 5.0f)
-                parameter("topStart", ParameterType.DimensionDp, 5.0f)
+                parameter("bottomEnd", ParameterType.String, "2.0%")
+                parameter("bottomStart", ParameterType.String, "2.0%")
+                parameter("topEnd", ParameterType.String, "2.0%")
+                parameter("topStart", ParameterType.String, "2.0%")
             }
         }
         validate(create("corner", RoundedCornerShape(1.0f, 10.0f, 2.0f, 3.5f))) {
             parameter("corner", ParameterType.String, RoundedCornerShape::class.java.simpleName) {
-                parameter("bottomEnd", ParameterType.DimensionDp, 1.0f)
-                parameter("bottomStart", ParameterType.DimensionDp, 1.75f)
-                parameter("topEnd", ParameterType.DimensionDp, 5.0f)
-                parameter("topStart", ParameterType.DimensionDp, 0.5f)
+                parameter("bottomEnd", ParameterType.String, "2.0px")
+                parameter("bottomStart", ParameterType.String, "3.5px")
+                parameter("topEnd", ParameterType.String, "10.0px")
+                parameter("topStart", ParameterType.String, "1.0px")
             }
         }
     }
@@ -428,6 +434,66 @@ class ParameterFactoryTest {
     @Test
     fun testLong() {
         assertThat(lookup(12345L)).isEqualTo(ParameterType.Int64 to 12345L)
+    }
+
+    @Test
+    fun testMap() {
+        val map = mapOf(1 to "one", 2 to "two")
+        validate(create("map", map)) {
+            parameter("map", ParameterType.Iterable, "Map[2]") {
+                parameter("[1]", ParameterType.String, "one") {
+                    parameter("key", ParameterType.Int32, 1)
+                    parameter("value", ParameterType.String, "one")
+                }
+                parameter("[2]", ParameterType.String, "two") {
+                    parameter("key", ParameterType.Int32, 2)
+                    parameter("value", ParameterType.String, "two")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testMapEntry() {
+        val entry = object : Map.Entry<String, String> {
+            override val key = "Hello"
+            override val value = "World"
+        }
+        validate(create("myEntry", entry)) {
+            parameter("myEntry", ParameterType.String, "World") {
+                parameter("key", ParameterType.String, "Hello")
+                parameter("value", ParameterType.String, "World")
+            }
+        }
+    }
+
+    @Test
+    fun testMapWithComplexTypes() {
+        val k1 = MyClass("k1")
+        val k2 = MyClass("k2")
+        val v1 = MyClass("v1")
+        val v2 = MyClass("v2")
+        val map = mapOf(k1 to v1, k2 to v2)
+        validate(create("map", map, maxRecursions = 3)) {
+            parameter("map", ParameterType.Iterable, "Map[2]") {
+                parameter("[MyClass]", ParameterType.String, "MyClass") {
+                    parameter("key", ParameterType.String, "MyClass") {
+                        parameter("name", ParameterType.String, "k1")
+                    }
+                    parameter("value", ParameterType.String, "MyClass") {
+                        parameter("name", ParameterType.String, "v1")
+                    }
+                }
+                parameter("[MyClass]", ParameterType.String, "MyClass") {
+                    parameter("key", ParameterType.String, "MyClass") {
+                        parameter("name", ParameterType.String, "k2")
+                    }
+                    parameter("value", ParameterType.String, "MyClass") {
+                        parameter("name", ParameterType.String, "v2")
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -598,6 +664,25 @@ class ParameterFactoryTest {
         validate(create("modifier", Modifier.padding(2.0.dp))) {
             parameter("modifier", ParameterType.String, "") {
                 parameter("padding", ParameterType.DimensionDp, 2.0f)
+            }
+        }
+    }
+
+    @Test
+    fun testWrappedModifier() {
+        fun Modifier.frame(color: Color) = inspectable(
+            debugInspectorInfo {
+                name = "frame"
+                value = color
+            }
+        ) {
+            background(color).border(width = 5.dp, color = color)
+        }
+        validate(create("modifier", Modifier.width(40.dp).frame(Color.Green).height(50.dp))) {
+            parameter("modifier", ParameterType.String, "") {
+                parameter("width", ParameterType.DimensionDp, 40.0f)
+                parameter("frame", ParameterType.Color, Color.Green.toArgb())
+                parameter("height", ParameterType.DimensionDp, 50.0f)
             }
         }
     }
@@ -836,9 +921,10 @@ class ParameterFactoryTest {
     ): NodeParameter {
         val parameter = factory.create(
             ROOT_ID,
-            node,
+            NODE_ID,
             name,
             value,
+            ParameterKind.Normal,
             PARAM_INDEX,
             maxRecursions,
             maxInitialIterableSize
@@ -869,7 +955,7 @@ class ParameterFactoryTest {
     ): NodeParameter? =
         factory.expand(
             ROOT_ID,
-            node,
+            NODE_ID,
             name,
             value,
             reference,
@@ -886,7 +972,7 @@ class ParameterFactoryTest {
     }
 
     private fun ref(vararg reference: Int): NodeParameterReference =
-        NodeParameterReference(NODE_ID, PARAM_INDEX, reference)
+        NodeParameterReference(NODE_ID, ParameterKind.Normal, PARAM_INDEX, reference)
 
     private fun validate(
         parameter: NodeParameter,
@@ -905,8 +991,8 @@ class ParameterFactoryTest {
         maxRecursions: Int,
         maxInitialIterableSize: Int
     ) {
-        factory.clearCacheFor(ROOT_ID)
-        val reference = NodeParameterReference(NODE_ID, PARAM_INDEX, indices)
+        factory.clearReferenceCache()
+        val reference = NodeParameterReference(NODE_ID, ParameterKind.Normal, PARAM_INDEX, indices)
         val expanded = expand(
             name,
             value,
@@ -980,7 +1066,7 @@ class ParameterValidationReceiver(
         val msg = "$trace${parameter.name}"
         assertWithMessage(msg).that(parameter.type).isEqualTo(type)
         assertWithMessage(msg).that(parameter.index).isEqualTo(expectedIndex)
-        assertWithMessage(msg).that(checkEquals(parameter.reference, ref)).isTrue()
+        assertWithMessage(msg).that(parameter.reference.toString()).isEqualTo(ref.toString())
         if (type != ParameterType.Lambda || value != null) {
             assertWithMessage(msg).that(parameter.value).isEqualTo(value)
         }
@@ -1007,13 +1093,16 @@ class MyClass(private val name: String) {
     var other: MyClass? = null
     var self: MyClass? = null
     var third: MyClass? = null
+
+    override fun hashCode(): Int = name.hashCode()
+    override fun equals(other: Any?): Boolean = name == (other as? MyClass)?.name
 }
 
 private fun NodeParameter.checkEquals(other: NodeParameter): Boolean {
     assertThat(other.name).isEqualTo(name)
     assertThat(other.type).isEqualTo(type)
     assertThat(other.value).isEqualTo(value)
-    assertThat(checkEquals(reference, other.reference)).isTrue()
+    assertThat(other.reference.toString()).isEqualTo(reference.toString())
     assertThat(other.elements.size).isEqualTo(elements.size)
     var hasReferences = reference != null
     elements.forEachIndexed { i, element ->
@@ -1021,9 +1110,3 @@ private fun NodeParameter.checkEquals(other: NodeParameter): Boolean {
     }
     return hasReferences
 }
-
-private fun checkEquals(ref1: NodeParameterReference?, ref2: NodeParameterReference?): Boolean =
-    ref1 === ref2 ||
-        ref1?.nodeId == ref2?.nodeId &&
-        ref1?.parameterIndex == ref2?.parameterIndex &&
-        ref1?.indices.contentEquals(ref2?.indices)

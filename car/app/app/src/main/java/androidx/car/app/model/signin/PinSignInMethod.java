@@ -18,13 +18,11 @@ package androidx.car.app.model.signin;
 
 import static java.util.Objects.requireNonNull;
 
-import android.text.TextUtils;
-
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.annotations.RequiresCarApi;
+import androidx.car.app.model.CarText;
 
 import java.util.Objects;
 
@@ -32,21 +30,47 @@ import java.util.Objects;
  * A {@link SignInTemplate.SignInMethod} that presents a PIN or activation code that the user can
  * use to sign-in.
  */
-@ExperimentalCarApi
 @RequiresCarApi(2)
 public final class PinSignInMethod implements SignInTemplate.SignInMethod {
+    /** Maximum length, in characters, for a PIN. */
+    private static final int MAX_PIN_LENGTH = 12;
+
     @Keep
     @Nullable
-    private final String mPin;
+    private final CarText mPinCode;
 
     /**
-     * Returns the PIN or activation code to present to the user or {@code null} if not set.
+     * Returns a {@link PinSignInMethod} instance.
      *
-     * @see Builder#Builder(String)
+     * <h4>Requirements</h4>
+     *
+     * <p>The provided pin must be no more than 12 characters long. To facilitate typing this
+     * code, it is recommended restricting the string to a limited set (for example, numbers,
+     * upper-case letters, hexadecimal, etc.).
+     *
+     * <p>Spans are not supported in the pin and will be ignored.
+     *
+     * @param pinCode the PIN to display is empty.
+     * @throws IllegalArgumentException if {@code pin} is empty or longer than 12 characters.
+     * @throws NullPointerException     if {@code pin} is {@code null}
      */
+    // TODO(b/183750545): check that no spans are present in the input pin.
+    public PinSignInMethod(@NonNull CharSequence pinCode) {
+        int pinLength = requireNonNull(pinCode).length();
+        if (pinLength == 0) {
+            throw new IllegalArgumentException("PIN must not be empty");
+        }
+        if (pinLength > MAX_PIN_LENGTH) {
+            throw new IllegalArgumentException(
+                    "PIN must not be longer than " + MAX_PIN_LENGTH + " characters");
+        }
+        mPinCode = CarText.create(pinCode);
+    }
+
+    /** Returns the PIN or activation code to present to the user. */
     @NonNull
-    public String getPin() {
-        return requireNonNull(mPin);
+    public CarText getPinCode() {
+        return requireNonNull(mPinCode);
     }
 
     @Override
@@ -60,51 +84,16 @@ public final class PinSignInMethod implements SignInTemplate.SignInMethod {
         }
 
         PinSignInMethod that = (PinSignInMethod) other;
-        return Objects.equals(mPin, that.mPin);
+        return Objects.equals(mPinCode, that.mPinCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mPin);
-    }
-
-    PinSignInMethod(Builder builder) {
-        mPin = builder.mPin;
+        return Objects.hash(mPinCode);
     }
 
     /** Constructs an empty instance, used by serialization code. */
     private PinSignInMethod() {
-        mPin = null;
-    }
-
-    /** A builder of {@link PinSignInMethod}. */
-    public static final class Builder {
-        final String mPin;
-
-        /**
-         * Returns a {@link PinSignInMethod} instance.
-         */
-        @NonNull
-        public PinSignInMethod build() {
-            return new PinSignInMethod(this);
-        }
-
-        /**
-         * Returns a {@link PinSignInMethod.Builder} instance.
-         *
-         * <p>The provided pin must be no more than 20 characters long. To facilitate typing this
-         * code, it is recommended restricting the string to a limited set (for example, numbers,
-         * upper-case letters, hexadecimal, etc.).
-         *
-         * @param pin the PIN to display
-         * @throws IllegalArgumentException if {@code pin} is {@code null} or empty
-         */
-        // TODO(b/182309112): follow up on how to enforce the 20-character limit.
-        public Builder(@NonNull String pin) {
-            if (TextUtils.isEmpty(pin)) {
-                throw new IllegalArgumentException("PIN must not be empty");
-            }
-            mPin = pin;
-        }
+        mPinCode = null;
     }
 }

@@ -16,7 +16,10 @@
 
 package androidx.compose.ui.viewinterop
 
+import android.content.Context
 import android.os.Build
+import android.os.Bundle
+import android.os.Parcelable
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -27,17 +30,19 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.testutils.assertPixels
 import androidx.compose.ui.Modifier
@@ -46,10 +51,13 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.platform.findViewTreeCompositionContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.R
+import androidx.compose.ui.test.TestActivity
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -58,6 +66,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import androidx.test.espresso.Espresso
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
@@ -70,6 +84,7 @@ import com.google.common.truth.Truth.assertThat
 import org.hamcrest.CoreMatchers.endsWith
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.instanceOf
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,7 +94,7 @@ import kotlin.math.roundToInt
 @RunWith(AndroidJUnit4::class)
 class AndroidViewTest {
     @get:Rule
-    val rule = createAndroidComposeRule<ComponentActivity>()
+    val rule = createAndroidComposeRule<TestActivity>()
 
     @Test
     fun androidViewWithConstructor() {
@@ -371,7 +386,7 @@ class AndroidViewTest {
     }
 
     @Test
-    fun androidView_propagatesAmbientsToComposeViewChildren() {
+    fun androidView_propagatesLocalsToComposeViewChildren() {
         val ambient = compositionLocalOf { "unset" }
         var childComposedAmbientValue = "uncomposed"
         rule.setContent {
@@ -431,6 +446,83 @@ class AndroidViewTest {
     }
 
     @Test
+    fun androidView_propagatesLocalLifecycleOwnerAsViewTreeOwner() {
+        lateinit var parentLifecycleOwner: LifecycleOwner
+        // We don't actually need to ever get the actual lifecycle.
+        val compositionLifecycleOwner = LifecycleOwner { throw UnsupportedOperationException() }
+        var childViewTreeLifecycleOwner: LifecycleOwner? = null
+
+        rule.setContent {
+            LocalLifecycleOwner.current.also {
+                SideEffect {
+                    parentLifecycleOwner = it
+                }
+            }
+
+            CompositionLocalProvider(LocalLifecycleOwner provides compositionLifecycleOwner) {
+                AndroidView(
+                    factory = {
+                        object : FrameLayout(it) {
+                            override fun onAttachedToWindow() {
+                                super.onAttachedToWindow()
+                                childViewTreeLifecycleOwner = ViewTreeLifecycleOwner.get(this)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        rule.runOnIdle {
+            assertThat(childViewTreeLifecycleOwner).isSameInstanceAs(compositionLifecycleOwner)
+            assertThat(childViewTreeLifecycleOwner).isNotSameInstanceAs(parentLifecycleOwner)
+        }
+    }
+
+    @Test
+    fun androidView_propagatesLocalSavedStateRegistryOwnerAsViewTreeOwner() {
+        lateinit var parentSavedStateRegistryOwner: SavedStateRegistryOwner
+        val compositionSavedStateRegistryOwner = object : SavedStateRegistryOwner {
+            // We don't actually need to ever get actual instances.
+            override fun getLifecycle(): Lifecycle = throw UnsupportedOperationException()
+            override fun getSavedStateRegistry(): SavedStateRegistry =
+                throw UnsupportedOperationException()
+        }
+        var childViewTreeSavedStateRegistryOwner: SavedStateRegistryOwner? = null
+
+        rule.setContent {
+            LocalSavedStateRegistryOwner.current.also {
+                SideEffect {
+                    parentSavedStateRegistryOwner = it
+                }
+            }
+
+            CompositionLocalProvider(
+                LocalSavedStateRegistryOwner provides compositionSavedStateRegistryOwner
+            ) {
+                AndroidView(
+                    factory = {
+                        object : FrameLayout(it) {
+                            override fun onAttachedToWindow() {
+                                super.onAttachedToWindow()
+                                childViewTreeSavedStateRegistryOwner =
+                                    ViewTreeSavedStateRegistryOwner.get(this)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        rule.runOnIdle {
+            assertThat(childViewTreeSavedStateRegistryOwner)
+                .isSameInstanceAs(compositionSavedStateRegistryOwner)
+            assertThat(childViewTreeSavedStateRegistryOwner)
+                .isNotSameInstanceAs(parentSavedStateRegistryOwner)
+        }
+    }
+
+    @Test
     fun androidView_runsFactoryExactlyOnce_afterFirstComposition() {
         var factoryRunCount = 0
         rule.setContent {
@@ -465,7 +557,9 @@ class AndroidViewTest {
         }
     }
 
+    @Ignore
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
     fun androidView_clipsToBounds() {
         val size = 20
         val sizeDp = with(rule.density) { size.toDp() }
@@ -478,6 +572,73 @@ class AndroidViewTest {
 
         rule.onNodeWithTag("box").captureToImage().assertPixels(IntSize(size, size)) {
             Color.Blue
+        }
+    }
+
+    @Test
+    fun androidView_restoresState() {
+        var result = ""
+
+        @Composable
+        fun <T : Any> Navigation(
+            currentScreen: T,
+            modifier: Modifier = Modifier,
+            content: @Composable (T) -> Unit
+        ) {
+            val saveableStateHolder = rememberSaveableStateHolder()
+            Box(modifier) {
+                saveableStateHolder.SaveableStateProvider(currentScreen) {
+                    content(currentScreen)
+                }
+            }
+        }
+
+        var screen by mutableStateOf("screen1")
+        rule.setContent {
+            Navigation(screen) { currentScreen ->
+                if (currentScreen == "screen1") {
+                    AndroidView({
+                        StateSavingView(
+                            "testKey",
+                            "testValue",
+                            { restoredValue -> result = restoredValue },
+                            it
+                        )
+                    })
+                } else {
+                    Box(Modifier)
+                }
+            }
+        }
+
+        rule.runOnIdle { screen = "screen2" }
+        rule.runOnIdle { screen = "screen1" }
+        rule.runOnIdle {
+            assertThat(result).isEqualTo("testValue")
+        }
+    }
+
+    private class StateSavingView(
+        private val key: String,
+        private val value: String,
+        private val onRestoredValue: (String) -> Unit,
+        context: Context
+    ) : View(context) {
+        init {
+            id = 73
+        }
+
+        override fun onSaveInstanceState(): Parcelable {
+            val superState = super.onSaveInstanceState()
+            val bundle = Bundle()
+            bundle.putParcelable("superState", superState)
+            bundle.putString(key, value)
+            return bundle
+        }
+
+        override fun onRestoreInstanceState(state: Parcelable?) {
+            super.onRestoreInstanceState((state as Bundle).getParcelable("superState"))
+            onRestoredValue(state.getString(key)!!)
         }
     }
 

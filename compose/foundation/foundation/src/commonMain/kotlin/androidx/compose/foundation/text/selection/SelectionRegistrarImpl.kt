@@ -64,12 +64,24 @@ internal class SelectionRegistrarImpl : SelectionRegistrar {
     /**
      * The callback to be invoked when the selection is initiated.
      */
-    internal var onSelectionUpdateStartCallback: ((LayoutCoordinates, Offset) -> Unit)? = null
+    internal var onSelectionUpdateStartCallback: (
+        (LayoutCoordinates, Offset, SelectionAdjustment) -> Unit
+    )? = null
+
+    /**
+     * The callback to be invoked when the selection is initiated with selectAll [Selection].
+     */
+    internal var onSelectionUpdateSelectAll: (
+        (Long) -> Unit
+    )? = null
 
     /**
      * The callback to be invoked when the selection is updated.
+     * If the first offset is null it means that the start of selection is unknown for the caller.
      */
-    internal var onSelectionUpdateCallback: ((LayoutCoordinates, Offset, Offset) -> Unit)? = null
+    internal var onSelectionUpdateCallback: (
+        (LayoutCoordinates, Offset, Offset, Boolean, SelectionAdjustment) -> Boolean
+    )? = null
 
     /**
      * The callback to be invoked when selection update finished.
@@ -159,17 +171,30 @@ internal class SelectionRegistrarImpl : SelectionRegistrar {
 
     override fun notifySelectionUpdateStart(
         layoutCoordinates: LayoutCoordinates,
-        startPosition: Offset
+        startPosition: Offset,
+        adjustment: SelectionAdjustment
     ) {
-        onSelectionUpdateStartCallback?.invoke(layoutCoordinates, startPosition)
+        onSelectionUpdateStartCallback?.invoke(layoutCoordinates, startPosition, adjustment)
+    }
+
+    override fun notifySelectionUpdateSelectAll(selectableId: Long) {
+        onSelectionUpdateSelectAll?.invoke(selectableId)
     }
 
     override fun notifySelectionUpdate(
         layoutCoordinates: LayoutCoordinates,
-        startPosition: Offset,
-        endPosition: Offset
-    ) {
-        onSelectionUpdateCallback?.invoke(layoutCoordinates, startPosition, endPosition)
+        newPosition: Offset,
+        previousPosition: Offset,
+        isStartHandle: Boolean,
+        adjustment: SelectionAdjustment
+    ): Boolean {
+        return onSelectionUpdateCallback?.invoke(
+            layoutCoordinates,
+            newPosition,
+            previousPosition,
+            isStartHandle,
+            adjustment
+        ) ?: true
     }
 
     override fun notifySelectionUpdateEnd() {

@@ -24,7 +24,7 @@ import androidx.compose.runtime.snapshots.fastForEach
 import androidx.compose.runtime.snapshots.fastMap
 import androidx.compose.runtime.snapshots.fastMapNotNull
 import androidx.compose.runtime.tooling.CompositionData
-import kotlinx.collections.immutable.persistentSetOf
+import androidx.compose.runtime.external.kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +47,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
+import kotlin.native.concurrent.ThreadLocal
 
 // TODO: Can we use rootKey for this since all compositions will have an eventual Recomposer parent?
 private const val RecomposerCompoundHashKey = 1000
@@ -77,6 +78,8 @@ interface RecomposerInfo {
     /**
      * The current [State] of the [Recomposer]. See each [State] value for its meaning.
      */
+    // TODO: Mirror the currentState/StateFlow API change here once we can safely add
+    // default interface methods. https://youtrack.jetbrains.com/issue/KT-47000
     val state: Flow<Recomposer.State>
 
     /**
@@ -287,14 +290,21 @@ class Recomposer(
     /**
      * The current [State] of this [Recomposer]. See each [State] value for its meaning.
      */
+    @Deprecated("Replaced by currentState as a StateFlow", ReplaceWith("currentState"))
     public val state: Flow<State>
+        get() = currentState
+
+    /**
+     * The current [State] of this [Recomposer], available synchronously.
+     */
+    public val currentState: StateFlow<State>
         get() = _state
 
     // A separate private object to avoid the temptation of casting a RecomposerInfo
     // to a Recomposer if Recomposer itself were to implement RecomposerInfo.
     private inner class RecomposerInfoImpl : RecomposerInfo {
         override val state: Flow<State>
-            get() = this@Recomposer.state
+            get() = this@Recomposer.currentState
         override val hasPendingWork: Boolean
             get() = this@Recomposer.hasPendingWork
         override val changeCount: Long
@@ -438,24 +448,48 @@ class Recomposer(
 
                     // Perform recomposition for any invalidated composers
                     val modifiedValues = IdentityArraySet<Any>()
-                    try {
-                        toRecompose.fastForEach { composer ->
-                            performRecompose(composer, modifiedValues)?.let {
-                                toApply += it
+                    val alreadyComposed = IdentityArraySet<ControlledComposition>()
+                    while (toRecompose.isNotEmpty()) {
+                        try {
+                            toRecompose.fastForEach { composition ->
+                                alreadyComposed.add(composition)
+                                performRecompose(composition, modifiedValues)?.let {
+                                    toApply += it
+                                }
+                            }
+                        } finally {
+                            toRecompose.clear()
+                        }
+
+                        // Find any trailing recompositions that need to be composed because
+                        // of a value change by a composition. This can happen, for example, if
+                        // a CompositionLocal changes in a parent and was read in a child
+                        // composition that was otherwise valid.
+                        if (modifiedValues.isNotEmpty()) {
+                            synchronized(stateLock) {
+                                knownCompositions.fastForEach { value ->
+                                    if (
+                                        value !in alreadyComposed &&
+                                        value.observesAnyOf(modifiedValues)
+                                    ) {
+                                        toRecompose += value
+                                    }
+                                }
                             }
                         }
-                        if (toApply.isNotEmpty()) changeCount++
-                    } finally {
-                        toRecompose.clear()
                     }
 
-                    // Perform apply changes
-                    try {
-                        toApply.fastForEach { composition ->
-                            composition.applyChanges()
+                    if (toApply.isNotEmpty()) {
+                        changeCount++
+
+                        // Perform apply changes
+                        try {
+                            toApply.fastForEach { composition ->
+                                composition.applyChanges()
+                            }
+                        } finally {
+                            toApply.clear()
                         }
-                    } finally {
-                        toApply.clear()
                     }
 
                     synchronized(stateLock) {
@@ -661,14 +695,26 @@ class Recomposer(
     }
 
     /**
-     * Permanently shut down this [Recomposer] for future use. All ongoing recompositions will stop,
-     * new composer invalidations with this [Recomposer] at the root will no longer occur,
-     * and any [LaunchedEffect]s currently running in compositions managed by this [Recomposer]
-     * will be cancelled. Any [rememberCoroutineScope] scopes from compositions managed by this
-     * [Recomposer] will also be cancelled. See [join] to await the completion of all of these
-     * outstanding tasks.
+     * Permanently shut down this [Recomposer] for future use. [currentState] will immediately
+     * reflect [State.ShuttingDown] (or a lower state) before this call returns.
+     * All ongoing recompositions will stop, new composer invalidations with this [Recomposer] at
+     * the root will no longer occur, and any [LaunchedEffect]s currently running in compositions
+     * managed by this [Recomposer] will be cancelled. Any [rememberCoroutineScope] scopes from
+     * compositions managed by this [Recomposer] will also be cancelled. See [join] to await the
+     * completion of all of these outstanding tasks.
      */
     fun cancel() {
+        // Move to State.ShuttingDown immediately rather than waiting for effectJob to join
+        // if we're cancelling to shut down the Recomposer. This permits other client code
+        // to use `state.first { it < State.Idle }` or similar to reliably and immediately detect
+        // that the recomposer can no longer be used.
+        // It looks like a CAS loop would be more appropriate here, but other occurrences
+        // of taking stateLock assume that the state cannot change without holding it.
+        synchronized(stateLock) {
+            if (_state.value >= State.Idle) {
+                _state.value = State.ShuttingDown
+            }
+        }
         effectJob.cancel()
     }
 
@@ -690,7 +736,7 @@ class Recomposer(
      * Await the completion of a [cancel] operation.
      */
     suspend fun join() {
-        state.first { it == State.ShutDown }
+        currentState.first { it == State.ShutDown }
     }
 
     internal override fun composeInitial(
@@ -705,7 +751,6 @@ class Recomposer(
         if (!composerWasComposing) {
             Snapshot.notifyObjectsInitialized()
         }
-        composition.applyChanges()
 
         synchronized(stateLock) {
             if (_state.value > State.ShuttingDown) {
@@ -714,6 +759,8 @@ class Recomposer(
                 }
             }
         }
+
+        composition.applyChanges()
 
         if (!composerWasComposing) {
             // Ensure that any state objects created during applyChanges are seen as changed
@@ -729,7 +776,13 @@ class Recomposer(
         if (composition.isComposing || composition.isDisposed) return null
         return if (
             composing(composition, modifiedValues) {
-                modifiedValues?.forEach { composition.recordWriteOf(it) }
+                if (modifiedValues?.isNotEmpty() == true) {
+                    // Record write performed by a previous composition as if they happened during
+                    // composition.
+                    composition.prepareCompose {
+                        modifiedValues.forEach { composition.recordWriteOf(it) }
+                    }
+                }
                 composition.recompose()
             }
         ) composition else null
@@ -765,13 +818,17 @@ class Recomposer(
     }
 
     private fun applyAndCheck(snapshot: MutableSnapshot) {
-        val applyResult = snapshot.apply()
-        if (applyResult is SnapshotApplyResult.Failure) {
-            error(
-                "Unsupported concurrent change during composition. A state object was " +
-                    "modified by composition as well as being modified outside composition."
-            )
-            // TODO(chuckj): Consider lifting this restriction by forcing a recompose
+        try {
+            val applyResult = snapshot.apply()
+            if (applyResult is SnapshotApplyResult.Failure) {
+                error(
+                    "Unsupported concurrent change during composition. A state object was " +
+                        "modified by composition as well as being modified outside composition."
+                )
+                // TODO(chuckj): Consider lifting this restriction by forcing a recompose
+            }
+        } finally {
+            snapshot.dispose()
         }
     }
 
@@ -803,7 +860,7 @@ class Recomposer(
      * and this method will not suspend.
      */
     suspend fun awaitIdle() {
-        state.takeWhile { it > State.Idle }.collect()
+        currentState.takeWhile { it > State.Idle }.collect()
     }
 
     // Recomposer always starts with a constant compound hash
@@ -838,6 +895,21 @@ class Recomposer(
         }?.resume(Unit)
     }
 
+    internal override fun invalidateScope(scope: RecomposeScopeImpl) {
+        synchronized(stateLock) {
+            snapshotInvalidations += setOf(scope)
+            deriveStateLocked()
+        }?.resume(Unit)
+    }
+
+    /**
+     * hack: the companion object is thread local in Kotlin/Native to avoid freezing
+     * [_runningRecomposers] with the current memory model. As a side effect,
+     * recomposers are now forced to be single threaded in Kotlin/Native targets.
+     *
+     * This annotation WILL BE REMOVED with the new memory model of Kotlin/Native.
+     */
+    @ThreadLocal
     companion object {
 
         private val _runningRecomposers = MutableStateFlow(persistentSetOf<RecomposerInfoImpl>())

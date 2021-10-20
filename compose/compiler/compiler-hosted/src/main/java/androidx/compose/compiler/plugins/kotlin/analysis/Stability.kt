@@ -17,7 +17,9 @@
 package androidx.compose.compiler.plugins.kotlin.analysis
 
 import androidx.compose.compiler.plugins.kotlin.ComposeFqNames
+import androidx.compose.compiler.plugins.kotlin.lower.annotationClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.jvm.ir.isInlineClassType
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
@@ -26,12 +28,15 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrComposite
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.symbols.IrScriptSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrDynamicType
 import org.jetbrains.kotlin.ir.types.IrErrorType
@@ -50,13 +55,13 @@ import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
-import org.jetbrains.kotlin.ir.util.getInlinedClass
+import org.jetbrains.kotlin.ir.util.getInlineClassUnderlyingType
 import org.jetbrains.kotlin.ir.util.isEnumClass
 import org.jetbrains.kotlin.ir.util.isEnumEntry
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
-import org.jetbrains.kotlin.ir.util.isInlined
 import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.isTypeParameter
 
@@ -198,7 +203,7 @@ class StabilityInferencer(val context: IrPluginContext) {
     private val stable = context.referenceClass(ComposeFqNames.Stable)
 
     fun IrAnnotationContainer.hasStableAnnotation(): Boolean {
-        return annotations.any { it.type.classOrNull == stable }
+        return annotations.any { it.annotationClass == stable }
     }
 
     fun IrAnnotationContainer.hasStableMarker(): Boolean {
@@ -206,9 +211,9 @@ class StabilityInferencer(val context: IrPluginContext) {
     }
 
     fun IrConstructorCall.isStableMarker(): Boolean {
-        val symbol = type.classOrNull ?: return false
+        val symbol = annotationClass ?: return false
         val owner = if (symbol.isBound) symbol.owner else return false
-        return owner.annotations.any { it.type.classOrNull == stableMarker }
+        return owner.annotations.any { it.annotationClass == stableMarker }
     }
 
     fun IrClass.hasStableMarkedDescendant(): Boolean {
@@ -254,6 +259,7 @@ class StabilityInferencer(val context: IrPluginContext) {
         if (currentlyAnalyzing.contains(symbol)) return Stability.Unstable
         if (declaration.hasStableMarkedDescendant()) return Stability.Stable
         if (declaration.isEnumClass || declaration.isEnumEntry) return Stability.Stable
+        if (declaration.defaultType.isPrimitiveType()) return Stability.Stable
 
         val analyzing = currentlyAnalyzing + symbol
 
@@ -368,7 +374,7 @@ class StabilityInferencer(val context: IrPluginContext) {
                 substitutions,
                 currentlyAnalyzing
             )
-            type.isInlined() -> stabilityOf(
+            type.isInlineClassType() -> stabilityOf(
                 type.getInlinedClass()!!,
                 substitutions,
                 currentlyAnalyzing
@@ -426,8 +432,9 @@ class StabilityInferencer(val context: IrPluginContext) {
         val stability = stabilityOf(expr.type)
         if (stability.knownStable()) return stability
         return when (expr) {
+            is IrConst<*> -> Stability.Stable
             is IrGetObjectValue ->
-                if (expr.symbol.owner.superTypes.any { stabilityOf(it).knownStable() })
+                if (stabilityOf(expr.symbol.owner).knownStable())
                     Stability.Stable
                 else
                     Stability.Unstable
@@ -440,7 +447,36 @@ class StabilityInferencer(val context: IrPluginContext) {
                     stability
                 }
             }
+            // some default parameters and consts can be wrapped in composite
+            is IrComposite -> {
+                if (expr.statements.all { it is IrExpression && stabilityOf(it).knownStable() }) {
+                    Stability.Stable
+                } else {
+                    stability
+                }
+            }
             else -> stability
         }
+    }
+}
+
+private fun IrType.getInlinedClass(): IrClass? {
+    val erased = erase(this) ?: return null
+    if (this is IrSimpleType && erased.isInline) {
+        val fieldType = getInlineClassUnderlyingType(erased)
+        return fieldType.getInlinedClass()
+    }
+    return erased
+}
+
+// From Kotin's InlineClasses.kt
+private tailrec fun erase(type: IrType): IrClass? {
+    val classifier = type.classifierOrFail
+
+    return when (classifier) {
+        is IrClassSymbol -> classifier.owner
+        is IrScriptSymbol -> null // TODO: check if correct
+        is IrTypeParameterSymbol -> erase(classifier.owner.superTypes.first())
+        else -> error(classifier)
     }
 }

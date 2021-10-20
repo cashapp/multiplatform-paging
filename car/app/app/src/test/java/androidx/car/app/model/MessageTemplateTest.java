@@ -16,6 +16,7 @@
 
 package androidx.car.app.model;
 
+import static androidx.car.app.model.Action.FLAG_PRIMARY;
 import static androidx.car.app.model.CarIcon.BACK;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -26,6 +27,7 @@ import android.content.ContentResolver;
 import android.net.Uri;
 import android.util.Log;
 
+import androidx.car.app.TestUtils;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class MessageTemplateTest {
     private final String mMessage = "foo";
     private final Action mAction = Action.BACK;
     private final CarIcon mIcon = CarIcon.ALERT;
+    private final ActionStrip mActionStrip = new ActionStrip.Builder().addAction(mAction).build();
 
     @Test
     public void emptyMessage_throws() {
@@ -68,6 +71,13 @@ public class MessageTemplateTest {
     }
 
     @Test
+    public void isLoadingWithIcon_throws() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> new MessageTemplate.Builder("hello").setLoading(true).setIcon(mIcon).build());
+    }
+
+    @Test
     public void noHeaderTitleOrAction_throws() {
         assertThrows(IllegalStateException.class,
                 () -> new MessageTemplate.Builder(mMessage).build());
@@ -78,6 +88,59 @@ public class MessageTemplateTest {
     }
 
     @Test
+    public void header_unsupportedSpans_throws() {
+        CharSequence title = TestUtils.getCharSequenceWithColorSpan("Title");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new MessageTemplate.Builder(mMessage).setTitle(title));
+
+        // DurationSpan and DistanceSpan do not throw
+        CharSequence title2 = TestUtils.getCharSequenceWithDistanceAndDurationSpans("Title");
+        new MessageTemplate.Builder(mMessage).setTitle(title2).build();
+    }
+
+    @Test
+    public void moreThanTwoActions_throws() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new MessageTemplate.Builder(mMessage)
+                        .addAction(mAction)
+                        .addAction(mAction)
+                        .addAction(mAction));
+    }
+
+    @Test
+    public void twoPrimaryActions_throws() {
+        Action primaryAction = new Action.Builder().setTitle("primaryAction")
+                .setOnClickListener(() -> {})
+                .setFlags(FLAG_PRIMARY).build();
+        assertThrows(IllegalArgumentException.class,
+                () -> new MessageTemplate.Builder(mMessage)
+                        .addAction(primaryAction)
+                        .addAction(primaryAction)
+                .build());
+    }
+
+    @Test
+    public void action_unsupportedSpans_throws() {
+        CharSequence title1 = TestUtils.getCharSequenceWithClickableSpan("Title");
+        Action action1 = new Action.Builder().setTitle(title1).build();
+        assertThrows(IllegalArgumentException.class,
+                () -> new MessageTemplate.Builder(mMessage).setTitle("Title").addAction(action1));
+        CarText title2 = TestUtils.getCarTextVariantsWithDistanceAndDurationSpans("Title");
+        Action action2 = new Action.Builder().setTitle(title2).build();
+        assertThrows(IllegalArgumentException.class,
+                () -> new MessageTemplate.Builder(mMessage).setTitle("Title").addAction(action2));
+
+        // DurationSpan and DistanceSpan do not throw
+        CharSequence title3 = TestUtils.getCharSequenceWithColorSpan("Title");
+        Action action3 = new Action.Builder().setTitle(title3).build();
+        new MessageTemplate.Builder(mMessage).setTitle("Title").addAction(action3).build();
+        CarText title4 = TestUtils.getCarTextVariantsWithColorSpan("Title");
+        Action action4 = new Action.Builder().setTitle(title4).build();
+        new MessageTemplate.Builder(mMessage).setTitle("Title").addAction(action4).build();
+    }
+
+    @Test
     public void createDefault_valuesAreNull() {
         MessageTemplate template = new MessageTemplate.Builder(mMessage).setTitle(mTitle).build();
         assertThat(template.getMessage().toString()).isEqualTo(mMessage);
@@ -85,6 +148,7 @@ public class MessageTemplateTest {
         assertThat(template.getIcon()).isNull();
         assertThat(template.getHeaderAction()).isNull();
         assertThat(template.getActions()).isEmpty();
+        assertThat(template.getActionStrip()).isNull();
         assertThat(template.getDebugMessage()).isNull();
     }
 
@@ -115,6 +179,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(exception)
                         .setIcon(icon)
                         .addAction(action)
+                        .setActionStrip(mActionStrip)
                         .build();
 
         assertThat(template.getMessage().toString()).isEqualTo(mMessage);
@@ -124,6 +189,7 @@ public class MessageTemplateTest {
         assertThat(template.getIcon()).isEqualTo(icon);
         assertThat(template.getHeaderAction()).isEqualTo(Action.BACK);
         assertThat(template.getActions()).containsExactly(action);
+        assertThat(template.getActionStrip()).isEqualTo(mActionStrip);
     }
 
     @Test
@@ -154,6 +220,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mCause)
                         .setHeaderAction(Action.BACK)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -163,6 +230,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mCause)
                         .setHeaderAction(Action.BACK)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 
@@ -177,6 +245,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -185,6 +254,7 @@ public class MessageTemplateTest {
                         .setDebugMessage("yo")
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 
@@ -199,6 +269,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -207,6 +278,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(new IllegalStateException("something else bad"))
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 
@@ -221,6 +293,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -229,6 +302,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 
@@ -244,6 +318,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mCause)
                         .setHeaderAction(Action.BACK)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -253,6 +328,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mCause)
                         .setHeaderAction(Action.APP_ICON)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 
@@ -267,6 +343,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -276,6 +353,34 @@ public class MessageTemplateTest {
                         .setDebugMessage(mCause)
                         .addAction(mAction)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
+                        .setIcon(mIcon)
+                        .build();
+
+        assertThat(template1).isNotEqualTo(template2);
+    }
+
+    @Test
+    public void notEquals_differentActionStrip() {
+        MessageTemplate template1 =
+                new MessageTemplate.Builder(mMessage)
+                        .setTitle(mTitle)
+                        .setDebugMessage(mDebugMessage)
+                        .setDebugMessage(mCause)
+                        .addAction(mAction)
+                        .setActionStrip(mActionStrip)
+                        .setIcon(mIcon)
+                        .build();
+        MessageTemplate template2 =
+                new MessageTemplate.Builder(mMessage)
+                        .setTitle(mTitle)
+                        .setDebugMessage(mDebugMessage)
+                        .setDebugMessage(mCause)
+                        .addAction(mAction)
+                        .setActionStrip(new ActionStrip.Builder()
+                                .addAction(Action.BACK)
+                                .addAction(Action.APP_ICON)
+                                .build())
                         .setIcon(mIcon)
                         .build();
 
@@ -290,6 +395,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -298,6 +404,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(CarIcon.ERROR)
                         .build();
 
@@ -312,6 +419,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
         MessageTemplate template2 =
@@ -320,6 +428,7 @@ public class MessageTemplateTest {
                         .setDebugMessage(mDebugMessage)
                         .setDebugMessage(mCause)
                         .addAction(mAction)
+                        .setActionStrip(mActionStrip)
                         .setIcon(mIcon)
                         .build();
 

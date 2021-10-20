@@ -107,7 +107,7 @@ class NavGraphTest {
             id = FIRST_DESTINATION_ID
         }
         try {
-            graph.startDestination = destination.id
+            graph.setStartDestination(destination.id)
         } catch (e: IllegalArgumentException) {
             assertWithMessage("Setting a start destination with same id as its parent should fail")
                 .that(e).hasMessageThat().contains(
@@ -259,5 +259,48 @@ class NavGraphTest {
         assertThat(graph.findNode(FIRST_DESTINATION_ID)).isNull()
         assertThat(secondDestination.parent).isNull()
         assertThat(graph.findNode(SECOND_DESTINATION_ID)).isNull()
+    }
+
+    @Test
+    fun equalsNull() {
+        val destination = createFirstDestination()
+        val graph = createGraphWithDestination(destination)
+
+        assertThat(graph).isNotNull()
+    }
+
+    @Test
+    fun equals() {
+        val destination = createFirstDestination()
+        val secondDestination = createSecondDestination()
+        val graph = createGraphWithDestinations(destination, secondDestination)
+
+        val graph2 = createGraphWithDestinations(
+            createFirstDestination(),
+            createSecondDestination()
+        )
+        assertThat(graph2).isEqualTo(graph)
+    }
+
+    @Test
+    fun equalsDifferentSizes() {
+        val destination = createFirstDestination()
+        val secondDestination = createSecondDestination()
+        val graph = createGraphWithDestinations(destination, secondDestination)
+
+        val graph2 = createGraphWithDestination(createFirstDestination())
+        assertThat(graph2).isNotEqualTo(graph)
+    }
+
+    @Test
+    fun equalsDifferentStartDestination() {
+        val destination = createFirstDestination()
+        val secondDestination = createSecondDestination()
+        val graph = createGraphWithDestinations(destination, secondDestination)
+        graph.setStartDestination(FIRST_DESTINATION_ID)
+
+        val graph2 = createGraphWithDestination(createFirstDestination())
+        graph2.setStartDestination(SECOND_DESTINATION_ID)
+        assertThat(graph2).isNotEqualTo(graph)
     }
 }

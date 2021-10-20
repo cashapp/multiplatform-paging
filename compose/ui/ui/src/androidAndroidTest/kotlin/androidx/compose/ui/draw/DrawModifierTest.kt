@@ -35,9 +35,11 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
@@ -50,7 +52,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.FlakyTest
 import androidx.test.filters.LargeTest
 import androidx.test.filters.SdkSuppress
 import com.google.common.truth.Truth.assertThat
@@ -276,10 +277,8 @@ class DrawModifierTest {
         }
     }
 
-    @FlakyTest(bugId = 182512695)
     @Test
     fun testCacheInvalidatedAfterLayoutDirectionChange() {
-        var cacheBuildCount = 0
         var layoutDirection by mutableStateOf(LayoutDirection.Ltr)
         var realLayoutDirection: LayoutDirection? = null
         rule.setContent {
@@ -288,7 +287,6 @@ class DrawModifierTest {
                     size = 10,
                     modifier = Modifier.drawWithCache {
                         realLayoutDirection = layoutDirection
-                        cacheBuildCount++
                         onDrawBehind {}
                     }
                 ) { }
@@ -296,13 +294,11 @@ class DrawModifierTest {
         }
 
         rule.runOnIdle {
-            assertEquals(1, cacheBuildCount)
             assertEquals(LayoutDirection.Ltr, realLayoutDirection)
             layoutDirection = LayoutDirection.Rtl
         }
 
         rule.runOnIdle {
-            assertEquals(2, cacheBuildCount)
             assertEquals(LayoutDirection.Rtl, realLayoutDirection)
         }
     }
@@ -552,6 +548,84 @@ class DrawModifierTest {
             assertThat(modifier.valueOverride).isNull()
             assertThat(modifier.inspectableElements.map { it.name }.asIterable())
                 .containsExactly("onDraw")
+        }
+    }
+
+    @Test
+    fun recompositionWithTheSameDrawBehindLambdaIsNotTriggeringRedraw() {
+        val recompositionCounter = mutableStateOf(0)
+        var redrawCounter = 0
+        val drawBlock: DrawScope.() -> Unit = {
+            redrawCounter++
+        }
+        rule.setContent {
+            recompositionCounter.value
+            Layout({}, modifier = Modifier.drawBehind(drawBlock)) { _, _ ->
+                layout(100, 100) {}
+            }
+        }
+
+        rule.runOnIdle {
+            assertThat(redrawCounter).isEqualTo(1)
+            recompositionCounter.value = 1
+        }
+
+        rule.runOnIdle {
+            assertThat(redrawCounter).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun recompositionWithTheSameDrawWithContentLambdaIsNotTriggeringRedraw() {
+        val recompositionCounter = mutableStateOf(0)
+        var redrawCounter = 0
+        val drawBlock: ContentDrawScope.() -> Unit = {
+            redrawCounter++
+        }
+        rule.setContent {
+            recompositionCounter.value
+            Layout({}, modifier = Modifier.drawWithContent(drawBlock)) { _, _ ->
+                layout(100, 100) {}
+            }
+        }
+
+        rule.runOnIdle {
+            assertThat(redrawCounter).isEqualTo(1)
+            recompositionCounter.value = 1
+        }
+
+        rule.runOnIdle {
+            assertThat(redrawCounter).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun recompositionWithTheSameDrawWithCacheLambdaIsNotTriggeringRedraw() {
+        val recompositionCounter = mutableStateOf(0)
+        var cacheRebuildCounter = 0
+        var redrawCounter = 0
+        val drawBlock: CacheDrawScope.() -> DrawResult = {
+            cacheRebuildCounter++
+            onDrawBehind {
+                redrawCounter++
+            }
+        }
+        rule.setContent {
+            recompositionCounter.value
+            Layout({}, modifier = Modifier.drawWithCache(drawBlock)) { _, _ ->
+                layout(100, 100) {}
+            }
+        }
+
+        rule.runOnIdle {
+            assertThat(cacheRebuildCounter).isEqualTo(1)
+            assertThat(redrawCounter).isEqualTo(1)
+            recompositionCounter.value = 1
+        }
+
+        rule.runOnIdle {
+            assertThat(cacheRebuildCounter).isEqualTo(1)
+            assertThat(redrawCounter).isEqualTo(1)
         }
     }
 

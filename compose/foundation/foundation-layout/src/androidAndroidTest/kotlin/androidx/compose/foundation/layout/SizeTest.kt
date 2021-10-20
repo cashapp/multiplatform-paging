@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -55,6 +56,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import org.junit.Assert.assertNotEquals
 import java.util.concurrent.CountDownLatch
@@ -1062,6 +1064,33 @@ class SizeTest : LayoutTest() {
     }
 
     @Test
+    fun testFillModifier_correctDpSize() = with(density) {
+        val parentWidth = 100
+        val parentHeight = 80
+        val parentModifier = Modifier.requiredSize(DpSize(parentWidth.toDp(), parentHeight.toDp()))
+        val childWidth = 40
+        val childHeight = 30
+        val childModifier = Modifier.size(DpSize(childWidth.toDp(), childHeight.toDp()))
+
+        assertEquals(
+            IntSize(childWidth, childHeight),
+            calculateSizeFor(parentModifier, childModifier)
+        )
+        assertEquals(
+            IntSize(parentWidth, childHeight),
+            calculateSizeFor(parentModifier, Modifier.fillMaxWidth().then(childModifier))
+        )
+        assertEquals(
+            IntSize(childWidth, parentHeight),
+            calculateSizeFor(parentModifier, Modifier.fillMaxHeight().then(childModifier))
+        )
+        assertEquals(
+            IntSize(parentWidth, parentHeight),
+            calculateSizeFor(parentModifier, Modifier.fillMaxSize().then(childModifier))
+        )
+    }
+
+    @Test
     fun testFractionalFillModifier_correctSize_whenSmallerChild() = with(density) {
         val parentWidth = 100
         val parentHeight = 80
@@ -1807,6 +1836,7 @@ class SizeTest : LayoutTest() {
     }
 
     @Test
+    @FlakyTest(bugId = 183713100)
     fun testModifiers_doNotCauseUnnecessaryRemeasure() {
         var first by mutableStateOf(true)
         var totalMeasures = 0
@@ -1948,6 +1978,27 @@ class SizeTest : LayoutTest() {
             }
         }
         // The test tests that the measure pass should not crash.
+        val root = findComposeView()
+        waitForDraw(root)
+    }
+
+    @Test
+    fun sizeModifiers_doNotCauseCrashesWhenCreatingConstraints() {
+        show {
+            Box(Modifier.sizeIn(minWidth = -1.dp))
+            Box(Modifier.sizeIn(minWidth = 10.dp, maxWidth = 5.dp))
+            Box(Modifier.sizeIn(minHeight = -1.dp))
+            Box(Modifier.sizeIn(minHeight = 10.dp, maxHeight = 5.dp))
+            Box(
+                Modifier.sizeIn(
+                    minWidth = Dp.Infinity,
+                    maxWidth = Dp.Infinity,
+                    minHeight = Dp.Infinity,
+                    maxHeight = Dp.Infinity
+                )
+            )
+            Box(Modifier.defaultMinSize(minWidth = -1.dp, minHeight = -1.dp))
+        }
         val root = findComposeView()
         waitForDraw(root)
     }

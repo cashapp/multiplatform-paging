@@ -20,13 +20,17 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.ExifInterface
 import android.net.Uri
 import android.provider.MediaStore
+import androidx.camera.core.impl.utils.Exif
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.filters.SdkSuppress
 import androidx.test.rule.GrantPermissionRule
 import com.google.common.truth.Truth.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,9 +46,10 @@ private const val HEIGHT = 60
  */
 @LargeTest
 @RunWith(AndroidJUnit4::class)
+@SdkSuppress(minSdkVersion = 21)
 public class FileTransformFactoryDeviceTest {
 
-    private val factory = FileTransformFactory.Builder().build()
+    private lateinit var factory: FileTransformFactory
     private val contentResolver = getApplicationContext<Context>().contentResolver
 
     @get:Rule
@@ -52,9 +57,27 @@ public class FileTransformFactoryDeviceTest {
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
+    @Before
+    public fun setUp() {
+        factory = FileTransformFactory()
+    }
+
+    @Test
+    public fun setUseRotationDegrees_getterReturnsTrue() {
+        factory.isUsingExifOrientation = true
+        assertThat(factory.isUsingExifOrientation).isTrue()
+    }
+
     @Test
     public fun extractFromFile() {
         factory.getOutputTransform(createImageFile()).assertMapping(1f, 1f, WIDTH, HEIGHT)
+    }
+
+    @Test
+    public fun extractFromFileWithExifInfo() {
+        factory.isUsingExifOrientation = true
+        factory.getOutputTransform(createImageFile(ExifInterface.ORIENTATION_ROTATE_90))
+            .assertMapping(1f, 1f, 0, WIDTH)
     }
 
     @Test
@@ -87,11 +110,20 @@ public class FileTransformFactoryDeviceTest {
     }
 
     private fun createImageFile(): File {
-        val tempFile = File.createTempFile("FileTransformFactoryDeviceTest", "tempFile")
+        return createImageFile(ExifInterface.ORIENTATION_NORMAL)
+    }
+
+    private fun createImageFile(exifOrientation: Int): File {
+        // Create bitmap file.
+        val tempFile = File.createTempFile("FileTransformFactoryDeviceTest", "jpeg")
         tempFile.deleteOnExit()
         FileOutputStream(tempFile).use {
             createBitmap().compress(Bitmap.CompressFormat.JPEG, 100, it)
         }
+        // Add exif to the file.
+        val exif = Exif.createFromFile(tempFile)
+        exif.orientation = exifOrientation
+        exif.save()
         return tempFile
     }
 

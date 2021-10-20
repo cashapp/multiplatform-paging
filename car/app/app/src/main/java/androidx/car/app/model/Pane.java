@@ -21,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.car.app.annotations.CarProtocol;
+import androidx.car.app.annotations.ExperimentalCarApi;
+import androidx.car.app.annotations.RequiresCarApi;
 import androidx.car.app.utils.CollectionUtils;
 
 import java.util.ArrayList;
@@ -32,6 +35,7 @@ import java.util.Objects;
  * Represents a list of rows used for displaying informational content and a set of {@link Action}s
  * that users can perform based on such content.
  */
+@CarProtocol
 public final class Pane {
     @Keep
     private final List<Action> mActionList;
@@ -39,6 +43,9 @@ public final class Pane {
     private final List<Row> mRows;
     @Keep
     private final boolean mIsLoading;
+    @Keep
+    @Nullable
+    private final CarIcon mImage;
 
     /**
      * Returns whether the pane is in a loading state.
@@ -65,6 +72,16 @@ public final class Pane {
         return CollectionUtils.emptyIfNull(mRows);
     }
 
+    /**
+     * Returns the optional image to display in this pane.
+     */
+    @RequiresCarApi(4)
+    @ExperimentalCarApi
+    @Nullable
+    public CarIcon getImage() {
+        return mImage;
+    }
+
     @Override
     @NonNull
     public String toString() {
@@ -77,7 +94,7 @@ public final class Pane {
 
     @Override
     public int hashCode() {
-        return Objects.hash(mRows, mActionList, mIsLoading);
+        return Objects.hash(mRows, mActionList, mIsLoading, mImage);
     }
 
     @Override
@@ -92,12 +109,14 @@ public final class Pane {
 
         return mIsLoading == otherPane.mIsLoading
                 && Objects.equals(mActionList, otherPane.mActionList)
-                && Objects.equals(mRows, otherPane.mRows);
+                && Objects.equals(mRows, otherPane.mRows)
+                && Objects.equals(mImage, otherPane.mImage);
     }
 
     Pane(Builder builder) {
         mRows = CollectionUtils.unmodifiableCopy(builder.mRows);
         mActionList = CollectionUtils.unmodifiableCopy(builder.mActionList);
+        mImage = builder.mImage;
         mIsLoading = builder.mIsLoading;
     }
 
@@ -106,6 +125,7 @@ public final class Pane {
         mRows = Collections.emptyList();
         mActionList = Collections.emptyList();
         mIsLoading = false;
+        mImage = null;
     }
 
     /** A builder of {@link Pane}. */
@@ -113,6 +133,8 @@ public final class Pane {
         final List<Row> mRows = new ArrayList<>();
         List<Action> mActionList = new ArrayList<>();
         boolean mIsLoading;
+        @Nullable
+        CarIcon mImage;
 
         /**
          * Sets whether the {@link Pane} is in a loading state.
@@ -147,12 +169,26 @@ public final class Pane {
          *
          * <p>By default, no actions are displayed.
          *
-         * @throws NullPointerException if {@code action} is {@code null}
+         * @throws NullPointerException     if {@code action} is {@code null}
          */
         @NonNull
         public Builder addAction(@NonNull Action action) {
             requireNonNull(action);
             mActionList.add(action);
+            return this;
+        }
+
+        /**
+         * Sets an {@link CarIcon} to display alongside the rows in the pane.
+         *
+         * @throws NullPointerException if {@code image} is {@code null}
+         */
+        // TODO(b/158099280): document recommended size.
+        @RequiresCarApi(4)
+        @ExperimentalCarApi
+        @NonNull
+        public Builder setImage(@NonNull CarIcon image) {
+            mImage = requireNonNull(image);
             return this;
         }
 

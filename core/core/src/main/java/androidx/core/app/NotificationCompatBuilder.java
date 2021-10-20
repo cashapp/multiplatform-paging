@@ -36,6 +36,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 import androidx.collection.ArraySet;
 import androidx.core.graphics.drawable.IconCompat;
+import androidx.core.os.BuildCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -247,6 +248,11 @@ class NotificationCompatBuilder implements NotificationBuilderWithBuilderAccesso
                 mBuilder.setLocusId(b.mLocusId.toLocusId());
             }
         }
+        if (BuildCompat.isAtLeastS()) {
+            if (b.mFgsDeferBehavior != NotificationCompat.FOREGROUND_SERVICE_DEFAULT) {
+                mBuilder.setForegroundServiceBehavior(b.mFgsDeferBehavior);
+            }
+        }
 
         if (b.mSilent) {
             if (mBuilderCompat.mGroupSummary) {
@@ -386,6 +392,10 @@ class NotificationCompatBuilder implements NotificationBuilderWithBuilderAccesso
 
             if (Build.VERSION.SDK_INT >= 29) {
                 actionBuilder.setContextual(action.isContextual());
+            }
+
+            if (Build.VERSION.SDK_INT >= 31) {
+                actionBuilder.setAuthenticationRequired(action.isAuthenticationRequired());
             }
 
             actionExtras.putBoolean(NotificationCompat.Action.EXTRA_SHOWS_USER_INTERFACE,

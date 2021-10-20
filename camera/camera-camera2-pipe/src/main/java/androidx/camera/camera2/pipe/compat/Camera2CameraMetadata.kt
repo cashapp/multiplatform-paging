@@ -16,28 +16,30 @@
 
 package androidx.camera.camera2.pipe.compat
 
-import android.annotation.SuppressLint
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.os.Build
 import android.util.ArrayMap
 import androidx.annotation.GuardedBy
+import androidx.annotation.RequiresApi
 import androidx.camera.camera2.pipe.CameraId
 import androidx.camera.camera2.pipe.CameraMetadata
 import androidx.camera.camera2.pipe.Metadata
 import androidx.camera.camera2.pipe.core.Debug
 
 /**
- * This implementation provides access to CameraCharacteristics and lazy caching of properties
+ * This implementation provides access to [CameraCharacteristics] and lazy caching of properties
  * that are either expensive to create and access, or that only exist on newer versions of the
- * OS.
+ * OS. This allows all fields to be accessed and return reasonable values on all OS versions.
  */
-public class Camera2CameraMetadata constructor(
+@RequiresApi(21) // TODO(b/200306659): Remove and replace with annotation on package-info.java
+internal class Camera2CameraMetadata constructor(
     override val camera: CameraId,
     override val isRedacted: Boolean,
     private val characteristics: CameraCharacteristics,
-    private val metadata: Map<Metadata.Key<*>, Any?>
+    private val metadataProvider: CameraMetadataProvider,
+    private val metadata: Map<Metadata.Key<*>, Any?>,
 ) : CameraMetadata {
     @GuardedBy("values")
     private val values = ArrayMap<CameraCharacteristics.Key<*>, Any?>()
@@ -76,6 +78,7 @@ public class Camera2CameraMetadata constructor(
         }
         return result
     }
+
     override fun <T> getOrDefault(key: CameraCharacteristics.Key<T>, default: T): T =
         get(key) ?: default
 
@@ -88,6 +91,20 @@ public class Camera2CameraMetadata constructor(
     override val physicalCameraIds: Set<CameraId> get() = _physicalCameraIds.value
     override val physicalRequestKeys: Set<CaptureRequest.Key<*>>
         get() = _physicalRequestKeys.value
+
+    override suspend fun getPhysicalMetadata(cameraId: CameraId): CameraMetadata {
+        check(physicalCameraIds.contains(cameraId)) {
+            "$cameraId is not a valid physical camera on $this"
+        }
+        return metadataProvider.getMetadata(cameraId)
+    }
+
+    override fun awaitPhysicalMetadata(cameraId: CameraId): CameraMetadata {
+        check(physicalCameraIds.contains(cameraId)) {
+            "$cameraId is not a valid physical camera on $this"
+        }
+        return metadataProvider.awaitMetadata(cameraId)
+    }
 
     private val _keys: Lazy<Set<CameraCharacteristics.Key<*>>> =
         lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -125,7 +142,6 @@ public class Camera2CameraMetadata constructor(
             }
         }
 
-    @SuppressLint("UnsafeNewApiCall")
     private val _physicalCameraIds: Lazy<Set<CameraId>> =
         lazy(LazyThreadSafetyMode.PUBLICATION) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
@@ -134,7 +150,10 @@ public class Camera2CameraMetadata constructor(
                 try {
                     Debug.trace("Camera-${camera.value}#physicalCameraIds") {
                         @Suppress("UselessCallOnNotNull")
-                        characteristics.physicalCameraIds.orEmpty().map { CameraId(it) }.toSet()
+                        Api28Compat.getPhysicalCameraIds(characteristics)
+                            .orEmpty()
+                            .map { CameraId(it) }
+                            .toSet()
                     }
                 } catch (ignored: AssertionError) {
                     emptySet()

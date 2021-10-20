@@ -28,12 +28,11 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
-import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.annotations.RequiresCarApi;
 import androidx.car.app.model.CarText;
-import androidx.car.app.model.OnInputCompletedDelegate;
-import androidx.car.app.model.OnInputCompletedDelegateImpl;
-import androidx.car.app.model.OnInputCompletedListener;
+import androidx.car.app.model.InputCallback;
+import androidx.car.app.model.InputCallbackDelegate;
+import androidx.car.app.model.InputCallbackDelegateImpl;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -45,7 +44,6 @@ import java.util.Objects;
  *
  * <p>For example, this can be used to request a username, a password or an activation code.
  */
-@ExperimentalCarApi
 @RequiresCarApi(2)
 public final class InputSignInMethod implements SignInTemplate.SignInMethod {
     /**
@@ -127,7 +125,7 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
     private final int mKeyboardType;
     @Keep
     @Nullable
-    private final OnInputCompletedDelegate mOnInputCompletedDelegate;
+    private final InputCallbackDelegate mInputCallbackDelegate;
     @Keep
     private final boolean mShowKeyboardByDefault;
 
@@ -186,13 +184,13 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
     }
 
     /**
-     * Returns the {@link OnInputCompletedDelegate} for input callbacks.
+     * Returns the {@link InputCallbackDelegate} for input callbacks.
      *
-     * @see Builder#Builder(OnInputCompletedListener)
+     * @see Builder#Builder(InputCallback)
      */
     @NonNull
-    public OnInputCompletedDelegate getOnInputCompletedDelegate() {
-        return requireNonNull(mOnInputCompletedDelegate);
+    public InputCallbackDelegate getInputCallbackDelegate() {
+        return requireNonNull(mInputCallbackDelegate);
     }
 
     /**
@@ -241,7 +239,7 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
         mInputType = builder.mInputType;
         mErrorMessage = builder.mErrorMessage;
         mKeyboardType = builder.mKeyboardType;
-        mOnInputCompletedDelegate = builder.mOnInputCompletedDelegate;
+        mInputCallbackDelegate = builder.mInputCallbackDelegate;
         mShowKeyboardByDefault = builder.mShowKeyboardByDefault;
     }
 
@@ -252,13 +250,13 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
         mInputType = INPUT_TYPE_DEFAULT;
         mErrorMessage = null;
         mKeyboardType = KEYBOARD_DEFAULT;
-        mOnInputCompletedDelegate = null;
+        mInputCallbackDelegate = null;
         mShowKeyboardByDefault = false;
     }
 
     /** A builder of {@link InputSignInMethod}. */
     public static final class Builder {
-        final OnInputCompletedDelegate mOnInputCompletedDelegate;
+        @Nullable final InputCallbackDelegate mInputCallbackDelegate;
         @Nullable
         CarText mHint;
         @Nullable
@@ -330,7 +328,7 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
          * Error messages can have only up to 2 lines of text, amd additional texts beyond the
          * second line may be truncated.
          *
-         * <p>Spans are not supported in the input string.
+         * <p>Spans are not supported in the input string and will be ignored.
          *
          * @throws NullPointerException if {@code message} is {@code null}
          */
@@ -382,12 +380,12 @@ public final class InputSignInMethod implements SignInTemplate.SignInMethod {
          * <p>Note that the listener relates to UI events and will be executed on the main thread
          * using {@link Looper#getMainLooper()}.
          *
-         * @param listener the {@link OnInputCompletedListener} to be notified of input events
+         * @param listener the {@link InputCallbackDelegate} to be notified of input events
          * @throws NullPointerException if {@code listener} is {@code null}
          */
         @SuppressLint("ExecutorRegistration")
-        public Builder(@NonNull OnInputCompletedListener listener) {
-            mOnInputCompletedDelegate = OnInputCompletedDelegateImpl.create(
+        public Builder(@NonNull InputCallback listener) {
+            mInputCallbackDelegate = InputCallbackDelegateImpl.create(
                     requireNonNull(listener));
         }
 

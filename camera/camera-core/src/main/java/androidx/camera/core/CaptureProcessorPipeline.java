@@ -22,6 +22,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.camera.core.impl.CaptureProcessor;
 import androidx.camera.core.impl.ImageProxyBundle;
 import androidx.camera.core.impl.ImageReaderProxy;
@@ -38,6 +39,7 @@ import java.util.concurrent.Executor;
 /**
  * A CaptureProcessor which can link two CaptureProcessors.
  */
+@RequiresApi(21) // TODO(b/200306659): Remove and replace with annotation on package-info.java
 class CaptureProcessorPipeline implements CaptureProcessor {
     private final CaptureProcessor mPreCaptureProcessor;
     private final CaptureProcessor mPostCaptureProcessor;
@@ -133,7 +135,7 @@ class CaptureProcessorPipeline implements CaptureProcessor {
         // SettableImageProxyBundle and calls the post-processing CaptureProcessor to process it.
         Preconditions.checkNotNull(mSourceImageInfo);
         String tagBundleKey = mSourceImageInfo.getTagBundle().listKeys().iterator().next();
-        int captureId = mSourceImageInfo.getTagBundle().getTag(tagBundleKey);
+        int captureId = (Integer) mSourceImageInfo.getTagBundle().getTag(tagBundleKey);
         SettableImageProxy settableImageProxy =
                 new SettableImageProxy(imageProxy, resolution, mSourceImageInfo);
         mSourceImageInfo = null;

@@ -5,10 +5,12 @@ import androidx.build.Publish
 plugins {
     id("AndroidXPlugin")
     id("java-library")
+    id("kotlin")
 }
 
-targetCompatibility = JavaVersion.VERSION_1_7
-sourceCompatibility = JavaVersion.VERSION_1_7
+dependencies {
+    api(libs.kotlinStdlib)
+}
 
 jar {
     from sourceSets.main.output

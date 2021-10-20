@@ -16,6 +16,7 @@
 package androidx.emoji2.text;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.TESTS;
 
 import android.annotation.SuppressLint;
 import android.graphics.Canvas;
@@ -28,8 +29,8 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
-import androidx.text.emoji.flatbuffer.MetadataItem;
-import androidx.text.emoji.flatbuffer.MetadataList;
+import androidx.emoji2.text.flatbuffer.MetadataItem;
+import androidx.emoji2.text.flatbuffer.MetadataList;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -187,6 +188,19 @@ public class EmojiMetadata {
     @SuppressLint("KotlinPropertyAccess")
     public int getHasGlyph() {
         return mHasGlyph;
+    }
+
+    /**
+     * Reset any cached values of hasGlyph on this metadata.
+     *
+     * This is only useful for testing EmojiMetadata, and will make the next display of this
+     * emoji slower.
+     *
+     * @hide
+     */
+    @RestrictTo(TESTS)
+    public void resetHasGlyphCache() {
+        mHasGlyph = HAS_GLYPH_UNKNOWN;
     }
 
     /**
