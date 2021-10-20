@@ -43,7 +43,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onParent
-import androidx.compose.ui.test.performGesture
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.dp
@@ -267,12 +267,46 @@ class BackdropScaffoldTest {
         }
 
         rule.onNodeWithTag(frontLayer)
-            .performGesture { swipeDown() }
+            .performTouchInput { swipeDown() }
 
         advanceClock()
 
         rule.runOnIdle {
             assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+    }
+
+    @Test
+    fun backdropScaffold_respectsConfirmStateChange() {
+        lateinit var scaffoldState: BackdropScaffoldState
+        rule.setContent {
+            scaffoldState = rememberBackdropScaffoldState(
+                Concealed,
+                confirmStateChange = {
+                    it != Revealed
+                }
+            )
+            BackdropScaffold(
+                scaffoldState = scaffoldState,
+                peekHeight = peekHeight,
+                headerHeight = headerHeight,
+                appBar = { Box(Modifier.height(peekHeight)) },
+                backLayerContent = { Box(Modifier.height(contentHeight)) },
+                frontLayerContent = { Box(Modifier.fillMaxSize().testTag(frontLayer)) }
+            )
+        }
+
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Concealed)
+        }
+
+        rule.onNodeWithTag(frontLayer)
+            .performTouchInput { swipeDown() }
+
+        advanceClock()
+
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Concealed)
         }
     }
 
@@ -450,7 +484,7 @@ class BackdropScaffoldTest {
         }
 
         rule.onNodeWithTag(frontLayer)
-            .performGesture { click() }
+            .performTouchInput { click() }
 
         advanceClock()
 
@@ -460,7 +494,73 @@ class BackdropScaffoldTest {
     }
 
     @Test
-    fun backdropScaffold_scrimIsDisabledWhenTransparent() {
+    fun backdropScaffold_concealByTapingOnFrontLayer_withUnspecifiedColorScrim() {
+        lateinit var scaffoldState: BackdropScaffoldState
+        rule.setContent {
+            scaffoldState = rememberBackdropScaffoldState(Revealed)
+            BackdropScaffold(
+                scaffoldState = scaffoldState,
+                peekHeight = peekHeight,
+                headerHeight = headerHeight,
+                frontLayerScrimColor = Color.Unspecified,
+                appBar = { Box(Modifier.height(peekHeight)) },
+                backLayerContent = { Box(Modifier.height(contentHeight)) },
+                frontLayerContent = { Box(Modifier.fillMaxSize().testTag(frontLayer)) }
+            )
+        }
+
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+
+        rule.onNodeWithTag(frontLayer)
+            .performTouchInput { click() }
+
+        advanceClock()
+
+        // still revealed if the color is unspecified
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+    }
+
+    @Test
+    fun backdropScaffold_tapOnFrontLayerScrim_respectsVeto() {
+        lateinit var scaffoldState: BackdropScaffoldState
+        rule.setContent {
+            scaffoldState = rememberBackdropScaffoldState(
+                Revealed,
+                confirmStateChange = {
+                    it != Concealed
+                }
+            )
+            BackdropScaffold(
+                scaffoldState = scaffoldState,
+                peekHeight = peekHeight,
+                headerHeight = headerHeight,
+                frontLayerScrimColor = Color.Red,
+                appBar = { Box(Modifier.height(peekHeight)) },
+                backLayerContent = { Box(Modifier.height(contentHeight)) },
+                frontLayerContent = { Box(Modifier.fillMaxSize().testTag(frontLayer)) }
+            )
+        }
+
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+
+        rule.onNodeWithTag(frontLayer)
+            .performTouchInput { click() }
+
+        advanceClock()
+
+        rule.runOnIdle {
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+    }
+
+    @Test
+    fun backdropScaffold_scrimIsDisabledWhenUnspecified() {
         var frontLayerClicks = 0
         lateinit var scaffoldState: BackdropScaffoldState
         rule.setContent {
@@ -469,7 +569,7 @@ class BackdropScaffoldTest {
                 scaffoldState = scaffoldState,
                 peekHeight = peekHeight,
                 headerHeight = headerHeight,
-                frontLayerScrimColor = Color.Transparent,
+                frontLayerScrimColor = Color.Unspecified,
                 appBar = { Box(Modifier.height(peekHeight)) },
                 backLayerContent = { Box(Modifier.height(contentHeight)) },
                 frontLayerContent = {
@@ -488,12 +588,51 @@ class BackdropScaffoldTest {
         }
 
         rule.onNodeWithTag(frontLayer)
-            .performGesture { click() }
+            .performTouchInput { click() }
 
         advanceClock()
 
         rule.runOnIdle {
             assertThat(frontLayerClicks).isEqualTo(1)
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+    }
+
+    @Test
+    fun backdropScaffold_scrimIsDisabledWhenGesturesDisabled() {
+        var frontLayerClicks = 0
+        lateinit var scaffoldState: BackdropScaffoldState
+        rule.setContent {
+            scaffoldState = rememberBackdropScaffoldState(Revealed)
+            BackdropScaffold(
+                scaffoldState = scaffoldState,
+                peekHeight = peekHeight,
+                headerHeight = headerHeight,
+                gesturesEnabled = false,
+                appBar = { Box(Modifier.height(peekHeight)) },
+                backLayerContent = { Box(Modifier.height(contentHeight)) },
+                frontLayerContent = {
+                    Box(
+                        Modifier.fillMaxSize().testTag(frontLayer).clickable {
+                            frontLayerClicks += 1
+                        }
+                    )
+                }
+            )
+        }
+
+        rule.runOnIdle {
+            assertThat(frontLayerClicks).isEqualTo(0)
+            assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
+        }
+
+        rule.onNodeWithTag(frontLayer)
+            .performTouchInput { click() }
+
+        advanceClock()
+
+        rule.runOnIdle {
+            // still revealed
             assertThat(scaffoldState.currentValue).isEqualTo(Revealed)
         }
     }

@@ -17,28 +17,33 @@
 package androidx.compose.ui.res
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.isLinux
+import androidx.compose.ui.isWindows
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.TestComposeWindow
+import androidx.compose.ui.test.InternalTestApi
 import androidx.compose.ui.test.junit4.DesktopScreenshotTestRule
 import androidx.compose.ui.unit.dp
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
-import java.util.Locale
 
+@OptIn(InternalTestApi::class)
 class DesktopSvgResourcesTest {
     @get:Rule
-    val screenshotRule = DesktopScreenshotTestRule("ui/ui-desktop/res")
+    val screenshotRule = DesktopScreenshotTestRule("compose/ui/ui-desktop/res")
 
     @Test
     fun `load SVG with specified size`() {
-        assumeLinuxOrWindows()
+        assumeTrue(isLinux || isWindows)
 
         val window = TestComposeWindow(width = 200, height = 200)
         window.setContent {
             Image(
-                svgResource("androidx/compose/ui/res/star-size-100.svg"),
+                painterResource("androidx/compose/ui/res/star-size-100.svg"),
                 contentDescription = "Star"
             )
         }
@@ -47,12 +52,26 @@ class DesktopSvgResourcesTest {
 
     @Test
     fun `load SVG with unspecified size`() {
-        assumeLinuxOrWindows()
+        assumeTrue(isLinux || isWindows)
 
-        val window = TestComposeWindow(width = 200, height = 300)
+        val window = TestComposeWindow(width = 200, height = 200)
         window.setContent {
             Image(
-                svgResource("androidx/compose/ui/res/star-size-unspecified.svg"),
+                painterResource("androidx/compose/ui/res/star-size-unspecified.svg"),
+                contentDescription = "Star"
+            )
+        }
+        screenshotRule.snap(window.surface)
+    }
+
+    @Test
+    fun `load SVG with unspecified viewbox`() {
+        assumeTrue(isLinux || isWindows)
+
+        val window = TestComposeWindow(width = 200, height = 200)
+        window.setContent {
+            Image(
+                painterResource("androidx/compose/ui/res/star-viewbox-unspecified.svg"),
                 contentDescription = "Star"
             )
         }
@@ -61,12 +80,12 @@ class DesktopSvgResourcesTest {
 
     @Test
     fun `load SVG with custom size`() {
-        assumeLinuxOrWindows()
+        assumeTrue(isLinux || isWindows)
 
         val window = TestComposeWindow(width = 200, height = 200)
         window.setContent {
             Image(
-                svgResource("androidx/compose/ui/res/star-size-unspecified.svg"),
+                painterResource("androidx/compose/ui/res/star-size-100.svg"),
                 contentDescription = "Star",
                 modifier = Modifier.size(50.dp)
             )
@@ -74,8 +93,35 @@ class DesktopSvgResourcesTest {
         screenshotRule.snap(window.surface)
     }
 
-    private fun assumeLinuxOrWindows() {
-        val os = System.getProperty("os.name").toLowerCase(Locale.US)
-        assumeTrue(os.startsWith("linux") || os.startsWith("win"))
+    @Test
+    fun `load SVG and fill bounds`() {
+        assumeTrue(isLinux || isWindows)
+
+        val window = TestComposeWindow(width = 200, height = 300)
+        window.setContent {
+            Image(
+                painterResource("androidx/compose/ui/res/star-size-100.svg"),
+                contentDescription = "Star",
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        screenshotRule.snap(window.surface)
+    }
+
+    @Test
+    fun `load SVG with unspecified viewbox and fill bounds`() {
+        assumeTrue(isLinux || isWindows)
+
+        val window = TestComposeWindow(width = 200, height = 300)
+        window.setContent {
+            Image(
+                painterResource("androidx/compose/ui/res/star-viewbox-unspecified.svg"),
+                contentDescription = "Star",
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        screenshotRule.snap(window.surface)
     }
 }

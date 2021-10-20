@@ -21,17 +21,21 @@ import android.content.Context
 import android.graphics.Outline
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.os.Build
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.View.MeasureSpec.makeMeasureSpec
 import android.view.ViewOutlineProvider
+import android.view.ViewTreeObserver
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
@@ -40,9 +44,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.R
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -52,11 +59,12 @@ import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.ViewRootForInspector
 import androidx.compose.ui.semantics.popup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -65,6 +73,7 @@ import androidx.lifecycle.ViewTreeLifecycleOwner
 import androidx.lifecycle.ViewTreeViewModelStoreOwner
 import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import org.jetbrains.annotations.TestOnly
+import java.util.UUID
 import kotlin.math.roundToInt
 
 /**
@@ -78,16 +87,48 @@ import kotlin.math.roundToInt
  * focusable then this property does nothing.
  * @property dismissOnClickOutside Whether the popup can be dismissed by clicking outside the
  * popup's bounds. If true, clicking outside the popup will call onDismissRequest.
- * @param securePolicy Policy for setting [WindowManager.LayoutParams.FLAG_SECURE] on the popup's
+ * @property securePolicy Policy for setting [WindowManager.LayoutParams.FLAG_SECURE] on the popup's
  * window.
+ * @property excludeFromSystemGesture A flag to check whether to set the systemGestureExclusionRects.
+ * The default is true.
+ * @property clippingEnabled Whether to allow the popup window to extend beyond the bounds of the
+ * screen. By default the window is clipped to the screen boundaries. Setting this to false will
+ * allow windows to be accurately positioned.
+ * The default value is true.
+ * @property usePlatformDefaultWidth Whether the width of the popup's content should be limited to
+ * the platform default, which is smaller than the screen width.
  */
 @Immutable
-class PopupProperties(
+class PopupProperties @ExperimentalComposeUiApi constructor(
     val focusable: Boolean = false,
     val dismissOnBackPress: Boolean = true,
     val dismissOnClickOutside: Boolean = true,
-    val securePolicy: SecureFlagPolicy = SecureFlagPolicy.Inherit
+    val securePolicy: SecureFlagPolicy = SecureFlagPolicy.Inherit,
+    val excludeFromSystemGesture: Boolean = true,
+    val clippingEnabled: Boolean = true,
+    @Suppress("EXPERIMENTAL_ANNOTATION_ON_WRONG_TARGET")
+    @get:ExperimentalComposeUiApi
+    val usePlatformDefaultWidth: Boolean = false
 ) {
+    @OptIn(ExperimentalComposeUiApi::class)
+    constructor(
+        focusable: Boolean = false,
+        dismissOnBackPress: Boolean = true,
+        dismissOnClickOutside: Boolean = true,
+        securePolicy: SecureFlagPolicy = SecureFlagPolicy.Inherit,
+        excludeFromSystemGesture: Boolean = true,
+        clippingEnabled: Boolean = true,
+    ) : this (
+        focusable = focusable,
+        dismissOnBackPress = dismissOnBackPress,
+        dismissOnClickOutside = dismissOnClickOutside,
+        securePolicy = securePolicy,
+        excludeFromSystemGesture = excludeFromSystemGesture,
+        clippingEnabled = clippingEnabled,
+        usePlatformDefaultWidth = false
+    )
+
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PopupProperties) return false
@@ -96,16 +137,23 @@ class PopupProperties(
         if (dismissOnBackPress != other.dismissOnBackPress) return false
         if (dismissOnClickOutside != other.dismissOnClickOutside) return false
         if (securePolicy != other.securePolicy) return false
+        if (excludeFromSystemGesture != other.excludeFromSystemGesture) return false
+        if (clippingEnabled != other.clippingEnabled) return false
+        if (usePlatformDefaultWidth != other.usePlatformDefaultWidth) return false
 
         return true
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun hashCode(): Int {
         var result = dismissOnBackPress.hashCode()
         result = 31 * result + focusable.hashCode()
         result = 31 * result + dismissOnBackPress.hashCode()
         result = 31 * result + dismissOnClickOutside.hashCode()
         result = 31 * result + securePolicy.hashCode()
+        result = 31 * result + excludeFromSystemGesture.hashCode()
+        result = 31 * result + clippingEnabled.hashCode()
+        result = 31 * result + usePlatformDefaultWidth.hashCode()
         return result
     }
 }
@@ -174,7 +222,7 @@ fun Popup(
     val layoutDirection = LocalLayoutDirection.current
     val parentComposition = rememberCompositionContext()
     val currentContent by rememberUpdatedState(content)
-
+    val popupId = rememberSaveable { UUID.randomUUID() }
     val popupLayout = remember {
         PopupLayout(
             onDismissRequest = onDismissRequest,
@@ -182,7 +230,8 @@ fun Popup(
             testTag = testTag,
             composeView = view,
             density = density,
-            initialPositionProvider = popupPositionProvider
+            initialPositionProvider = popupPositionProvider,
+            popupId = popupId
         ).apply {
             setContent(parentComposition) {
                 SimpleStack(
@@ -310,8 +359,12 @@ private class PopupLayout(
     var testTag: String,
     private val composeView: View,
     density: Density,
-    initialPositionProvider: PopupPositionProvider
-) : AbstractComposeView(composeView.context) {
+    initialPositionProvider: PopupPositionProvider,
+    popupId: UUID
+) : AbstractComposeView(composeView.context),
+    ViewRootForInspector,
+    ViewTreeObserver.OnGlobalLayoutListener,
+    View.OnAttachStateChangeListener {
     private val windowManager =
         composeView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val params = createLayoutParams()
@@ -329,11 +382,34 @@ private class PopupLayout(
 
     private val maxSupportedElevation = 30.dp
 
+    private val popupLayoutHelper: PopupLayoutHelper = if (Build.VERSION.SDK_INT >= 29) {
+        PopupLayoutHelperImpl29()
+    } else {
+        PopupLayoutHelperImpl()
+    }
+
+    // The window visible frame used for the last popup position calculation.
+    private val previousWindowVisibleFrame = Rect()
+    private val tmpWindowVisibleFrame = Rect()
+    // Whether the PopupLayout is currently listening to global layout changes.
+    private var isListeningToGlobalLayout = false
+
+    override val subCompositionView: AbstractComposeView get() = this
+
     init {
         id = android.R.id.content
         ViewTreeLifecycleOwner.set(this, ViewTreeLifecycleOwner.get(composeView))
         ViewTreeViewModelStoreOwner.set(this, ViewTreeViewModelStoreOwner.get(composeView))
         ViewTreeSavedStateRegistryOwner.set(this, ViewTreeSavedStateRegistryOwner.get(composeView))
+        // We are listening to composeView detach changes, in order to remove properly the
+        // global layout listener we add to its viewTreeObserver. We cannot just remove the
+        // listener in during popup's dismiss as this can happen only after the composeView was
+        // detached and no longer references the original viewTreeObserver.
+        composeView.addOnAttachStateChangeListener(this)
+        registerOnGlobalLayoutListener()
+        // Set unique id for AbstractComposeView. This allows state restoration for the state
+        // defined inside the Popup via rememberSaveable()
+        setTag(R.id.compose_view_saveable_id_tag, "Popup:$popupId")
 
         // Enable children to draw their shadow by not clipping them
         clipChildren = false
@@ -372,6 +448,42 @@ private class PopupLayout(
     override fun Content() {
         content()
     }
+
+    override fun internalOnMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        if (properties.usePlatformDefaultWidth) {
+            super.internalOnMeasure(widthMeasureSpec, heightMeasureSpec)
+        } else {
+            // usePlatformDefaultWidth false, so don't want to limit the popup width to the Android
+            // platform default. Therefore, we create a new measure spec for width, which
+            // corresponds to the full screen width. We do the same for height, even if
+            // ViewRootImpl gives it to us from the first measure.
+            val displayWidthMeasureSpec = makeMeasureSpec(displayWidth, MeasureSpec.AT_MOST)
+            val displayHeightMeasureSpec = makeMeasureSpec(displayHeight, MeasureSpec.AT_MOST)
+            super.internalOnMeasure(displayWidthMeasureSpec, displayHeightMeasureSpec)
+        }
+    }
+
+    override fun internalOnLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.internalOnLayout(changed, left, top, right, bottom)
+        // Now set the content size as fixed layout params, such that ViewRootImpl knows
+        // the exact window size.
+        val child = getChildAt(0) ?: return
+        params.width = child.measuredWidth
+        params.height = child.measuredHeight
+        windowManager.updateViewLayout(this, params)
+    }
+
+    private val displayWidth: Int
+        get() {
+            val density = context.resources.displayMetrics.density
+            return (context.resources.configuration.screenWidthDp * density).roundToInt()
+        }
+
+    private val displayHeight: Int
+        get() {
+            val density = context.resources.displayMetrics.density
+            return (context.resources.configuration.screenHeightDp * density).roundToInt()
+        }
 
     /**
      * Taken from PopupWindow
@@ -419,6 +531,14 @@ private class PopupLayout(
         )
     }
 
+    private fun setClippingEnabled(clippingEnabled: Boolean) = applyNewFlags(
+        if (clippingEnabled) {
+            params.flags and (WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS.inv())
+        } else {
+            params.flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        }
+    )
+
     fun updateParameters(
         onDismissRequest: (() -> Unit)?,
         properties: PopupProperties,
@@ -430,6 +550,7 @@ private class PopupLayout(
         this.testTag = testTag
         setIsFocusable(properties.focusable)
         setSecurePolicy(properties.securePolicy)
+        setClippingEnabled(properties.clippingEnabled)
         superSetLayoutDirection(layoutDirection)
     }
 
@@ -445,7 +566,7 @@ private class PopupLayout(
         val parentBounds = parentBounds ?: return
         val popupContentSize = popupContentSize ?: return
 
-        val windowSize = Rect().let {
+        val windowSize = previousWindowVisibleFrame.let {
             composeView.getWindowVisibleDisplayFrame(it)
             val bounds = it.toIntBounds()
             IntSize(width = bounds.width, height = bounds.height)
@@ -461,6 +582,12 @@ private class PopupLayout(
         params.x = popupPosition.x
         params.y = popupPosition.y
 
+        if (properties.excludeFromSystemGesture) {
+            // Resolve conflict with gesture navigation back when dragging this handle view on the
+            // edge of the screen.
+            popupLayoutHelper.setGestureExclusionRects(this, windowSize.width, windowSize.height)
+        }
+
         windowManager.updateViewLayout(this, params)
     }
 
@@ -469,6 +596,8 @@ private class PopupLayout(
      */
     fun dismiss() {
         ViewTreeLifecycleOwner.set(this, null)
+        unregisterOnGlobalLayoutListener()
+        composeView.removeOnAttachStateChangeListener(this)
         windowManager.removeViewImmediate(this)
     }
 
@@ -524,7 +653,6 @@ private class PopupLayout(
                 WindowManager.LayoutParams.FLAG_IGNORE_CHEEK_PRESSES or
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM or
                     WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
                 ).inv()
@@ -542,6 +670,10 @@ private class PopupLayout(
             height = WindowManager.LayoutParams.WRAP_CONTENT
 
             format = PixelFormat.TRANSLUCENT
+
+            // accessibilityTitle is not exposed as a public API therefore we set popup window
+            // title which is used as a fallback by a11y services
+            title = composeView.context.resources.getString(R.string.default_popup_window_title)
         }
     }
 
@@ -551,6 +683,54 @@ private class PopupLayout(
         right = right,
         bottom = bottom
     )
+
+    override fun onViewAttachedToWindow(composeView: View) = registerOnGlobalLayoutListener()
+
+    override fun onViewDetachedFromWindow(composeView: View) = unregisterOnGlobalLayoutListener()
+
+    private fun registerOnGlobalLayoutListener() {
+        if (isListeningToGlobalLayout || !composeView.isAttachedToWindow) return
+        composeView.viewTreeObserver.addOnGlobalLayoutListener(this)
+        isListeningToGlobalLayout = true
+    }
+
+    private fun unregisterOnGlobalLayoutListener() {
+        if (!isListeningToGlobalLayout) return
+        composeView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+        isListeningToGlobalLayout = false
+    }
+
+    override fun onGlobalLayout() {
+        // Update the position of the popup, in case getWindowVisibleDisplayFrame has changed.
+        composeView.getWindowVisibleDisplayFrame(tmpWindowVisibleFrame)
+        if (tmpWindowVisibleFrame != previousWindowVisibleFrame) {
+            updatePosition()
+        }
+    }
+}
+
+private interface PopupLayoutHelper {
+    fun setGestureExclusionRects(composeView: View, width: Int, height: Int)
+}
+
+private class PopupLayoutHelperImpl : PopupLayoutHelper {
+    override fun setGestureExclusionRects(composeView: View, width: Int, height: Int) {
+        // do nothing
+    }
+}
+
+@RequiresApi(29)
+private class PopupLayoutHelperImpl29 : PopupLayoutHelper {
+    override fun setGestureExclusionRects(composeView: View, width: Int, height: Int) {
+        composeView.systemGestureExclusionRects = mutableListOf(
+            Rect(
+                0,
+                0,
+                width,
+                height
+            )
+        )
+    }
 }
 
 internal fun View.isFlagSecureEnabled(): Boolean {

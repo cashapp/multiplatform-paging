@@ -20,6 +20,7 @@ import android.content.Context
 import android.hardware.camera2.CameraManager
 import android.util.ArrayMap
 import androidx.annotation.GuardedBy
+import androidx.annotation.RequiresApi
 import androidx.camera.camera2.pipe.CameraId
 import androidx.camera.camera2.pipe.CameraMetadata
 import androidx.camera.camera2.pipe.core.Debug
@@ -39,16 +40,17 @@ import javax.inject.Singleton
  * This class is designed to be thread safe and provides suspend functions for querying and
  * accessing CameraMetadata.
  */
+@RequiresApi(21) // TODO(b/200306659): Remove and replace with annotation on package-info.java
 @Singleton
 internal class Camera2MetadataCache @Inject constructor(
     private val context: Context,
     private val threads: Threads,
     private val permissions: Permissions
-) {
+) : CameraMetadataProvider {
     @GuardedBy("cache")
     private val cache = ArrayMap<String, CameraMetadata>()
 
-    suspend fun get(cameraId: CameraId): CameraMetadata {
+    override suspend fun getMetadata(cameraId: CameraId): CameraMetadata {
         synchronized(cache) {
             val existing = cache[cameraId.value]
             if (existing != null) {
@@ -62,7 +64,7 @@ internal class Camera2MetadataCache @Inject constructor(
         }
     }
 
-    fun awaitMetadata(cameraId: CameraId): CameraMetadata {
+    override fun awaitMetadata(cameraId: CameraId): CameraMetadata {
         return Debug.trace("Camera-${cameraId.value}#awaitMetadata") {
             synchronized(cache) {
                 val existing = cache[cameraId.value]
@@ -88,7 +90,7 @@ internal class Camera2MetadataCache @Inject constructor(
                 val characteristics =
                     cameraManager.getCameraCharacteristics(cameraId.value)
                 val cameraMetadata =
-                    Camera2CameraMetadata(cameraId, redacted, characteristics, emptyMap())
+                    Camera2CameraMetadata(cameraId, redacted, characteristics, this, emptyMap())
 
                 Log.info {
                     val duration = Timestamps.now() - start

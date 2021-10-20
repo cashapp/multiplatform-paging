@@ -16,13 +16,13 @@
 
 package androidx.compose.ui.semantics
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.ExperimentalComposeUiApi
 import kotlin.reflect.KProperty
 
 /**
@@ -36,9 +36,11 @@ object SemanticsProperties {
     /**
      * @see SemanticsPropertyReceiver.contentDescription
      */
-    val ContentDescription = SemanticsPropertyKey<String>(
+    val ContentDescription = SemanticsPropertyKey<List<String>>(
         name = "ContentDescription",
-        mergePolicy = { parentValue, _ -> parentValue }
+        mergePolicy = { parentValue, childValue ->
+            parentValue?.toMutableList()?.also { it.addAll(childValue) } ?: childValue
+        }
     )
 
     /**
@@ -66,6 +68,12 @@ object SemanticsProperties {
 
     /** @see SemanticsPropertyReceiver.selectableGroup */
     val SelectableGroup = SemanticsPropertyKey<Unit>("SelectableGroup")
+
+    /** @see SemanticsPropertyReceiver.collectionInfo */
+    val CollectionInfo = SemanticsPropertyKey<CollectionInfo>("CollectionInfo")
+
+    /** @see SemanticsPropertyReceiver.collectionItemInfo */
+    val CollectionItemInfo = SemanticsPropertyKey<CollectionItemInfo>("CollectionItemInfo")
 
     /**
      * @see SemanticsPropertyReceiver.heading
@@ -161,22 +169,13 @@ object SemanticsProperties {
     /**
      * @see SemanticsPropertyReceiver.text
      */
-    val Text = SemanticsPropertyKey<AnnotatedString>(
+    val Text = SemanticsPropertyKey<List<AnnotatedString>>(
         name = "Text",
         mergePolicy = { parentValue, childValue ->
-            if (parentValue == null) {
-                childValue
-            } else {
-                buildAnnotatedString {
-                    append(parentValue)
-                    append(", ")
-                    append(childValue)
-                }
-            }
+            parentValue?.toMutableList()?.also { it.addAll(childValue) } ?: childValue
         }
     )
 
-    // TODO(b/178121203) might need to be transformed text
     /**
      * @see SemanticsPropertyReceiver.editableText
      */
@@ -206,6 +205,16 @@ object SemanticsProperties {
      * @see SemanticsPropertyReceiver.password
      */
     val Password = SemanticsPropertyKey<Unit>("Password")
+
+    /**
+     * @see SemanticsPropertyReceiver.error
+     */
+    val Error = SemanticsPropertyKey<String>("Error")
+
+    /**
+     * @see SemanticsPropertyReceiver.indexForKey
+     */
+    val IndexForKey = SemanticsPropertyKey<(Any) -> Int>("IndexForKey")
 }
 
 /**
@@ -237,6 +246,11 @@ object SemanticsActions {
      * @see SemanticsPropertyReceiver.scrollBy
      */
     val ScrollBy = ActionPropertyKey<(x: Float, y: Float) -> Boolean>("ScrollBy")
+
+    /**
+     * @see SemanticsPropertyReceiver.scrollToIndex
+     */
+    val ScrollToIndex = ActionPropertyKey<(Int) -> Boolean>("ScrollToIndex")
 
     /**
      * @see SemanticsPropertyReceiver.setProgress
@@ -324,10 +338,7 @@ class SemanticsPropertyKey<T>(
     // TODO(KT-6519): Remove this getter
     // TODO(KT-32770): Cannot deprecate this either as the getter is considered called by "by"
     final operator fun getValue(thisRef: SemanticsPropertyReceiver, property: KProperty<*>): T {
-        throw UnsupportedOperationException(
-            "You cannot retrieve a semantics property directly - " +
-                "use one of the SemanticsConfiguration.getOr* methods instead"
-        )
+        return throwSemanticsGetNotSupported()
     }
 
     final operator fun setValue(
@@ -341,6 +352,13 @@ class SemanticsPropertyKey<T>(
     override fun toString(): String {
         return "SemanticsPropertyKey: $name"
     }
+}
+
+private fun <T> throwSemanticsGetNotSupported(): T {
+    throw UnsupportedOperationException(
+        "You cannot retrieve a semantics property directly - " +
+            "use one of the SemanticsConfiguration.getOr* methods instead"
+    )
 }
 
 /**
@@ -466,6 +484,39 @@ class ProgressBarRangeInfo(
 }
 
 /**
+ * Information about the collection.
+ *
+ * A collection of items has [rowCount] rows and [columnCount] columns.
+ * For example, a vertical list is a collection with one column, as many rows as the list items
+ * that are important for accessibility; A table is a collection with several rows and several
+ * columns.
+ *
+ * @param rowCount the number of rows in the collection, or -1 if unknown
+ * @param columnCount the number of columns in the collection, or -1 if unknown
+ */
+class CollectionInfo(val rowCount: Int, val columnCount: Int)
+
+/**
+ * Information about the item of a collection.
+ *
+ * A collection item is contained in a collection, it starts at a given [rowIndex] and
+ * [columnIndex] in the collection, and spans one or more rows and columns. For example, a header
+ * of two related table columns starts at the first row and the first column, spans one row and
+ * two columns.
+ *
+ * @param rowIndex the index of the row at which item is located
+ * @param rowSpan the number of rows the item spans
+ * @param columnIndex the index of the column at which item is located
+ * @param columnSpan the number of columns the item spans
+ */
+class CollectionItemInfo(
+    val rowIndex: Int,
+    val rowSpan: Int,
+    val columnIndex: Int,
+    val columnSpan: Int
+)
+
+/**
  * The scroll state of one axis if this node is scrollable.
  *
  * @param value current 0-based scroll position value (either in pixels, or lazy-item count)
@@ -478,7 +529,11 @@ class ScrollAxisRange(
     val value: () -> Float,
     val maxValue: () -> Float,
     val reverseScrolling: Boolean = false
-)
+) {
+    override fun toString(): String =
+        "ScrollAxisRange(value=${value()}, maxValue=${maxValue()}, " +
+            "reverseScrolling=$reverseScrolling)"
+}
 
 /**
  * The type of user interface element. Accessibility services might use this to describe the
@@ -487,44 +542,58 @@ class ScrollAxisRange(
  * exact role is not listed, [SemanticsPropertyReceiver.role] should not be set and the framework
  * will automatically resolve it.
  */
-enum class Role {
-    /**
-     * This element is a button control. Associated semantics properties for accessibility:
-     * [SemanticsProperties.Disabled], [SemanticsActions.OnClick]
-     */
-    Button,
-    /**
-     * This element is a Checkbox which is a component that represents two states (checked /
-     * unchecked). Associated semantics properties for accessibility:
-     * [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
-     * [SemanticsActions.OnClick]
-     */
-    Checkbox,
-    /**
-     * This element is a Switch which is a two state toggleable component that provides on/off
-     * like options. Associated semantics properties for accessibility:
-     * [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
-     * [SemanticsActions.OnClick]
-     */
-    Switch,
-    /**
-     * This element is a RadioButton which is a component to represent two states, selected and not
-     * selected. Associated semantics properties for accessibility: [SemanticsProperties.Disabled],
-     * [SemanticsProperties.StateDescription], [SemanticsActions.OnClick]
-     */
-    RadioButton,
-    /**
-     * This element is a Tab which represents a single page of content using a text label and/or
-     * icon. A Tab also has two states: selected and not selected. Associated semantics properties
-     * for accessibility: [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
-     * [SemanticsActions.OnClick]
-     */
-    Tab,
-    /**
-     * This element is an image. Associated semantics properties for accessibility:
-     * [SemanticsProperties.ContentDescription]
-     */
-    Image
+@Suppress("INLINE_CLASS_DEPRECATED")
+@Immutable
+inline class Role private constructor(@Suppress("unused") private val value: Int) {
+    companion object {
+        /**
+         * This element is a button control. Associated semantics properties for accessibility:
+         * [SemanticsProperties.Disabled], [SemanticsActions.OnClick]
+         */
+        val Button = Role(0)
+        /**
+         * This element is a Checkbox which is a component that represents two states (checked /
+         * unchecked). Associated semantics properties for accessibility:
+         * [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
+         * [SemanticsActions.OnClick]
+         */
+        val Checkbox = Role(1)
+        /**
+         * This element is a Switch which is a two state toggleable component that provides on/off
+         * like options. Associated semantics properties for accessibility:
+         * [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
+         * [SemanticsActions.OnClick]
+         */
+        val Switch = Role(2)
+        /**
+         * This element is a RadioButton which is a component to represent two states, selected and not
+         * selected. Associated semantics properties for accessibility: [SemanticsProperties.Disabled],
+         * [SemanticsProperties.StateDescription], [SemanticsActions.OnClick]
+         */
+        val RadioButton = Role(3)
+        /**
+         * This element is a Tab which represents a single page of content using a text label and/or
+         * icon. A Tab also has two states: selected and not selected. Associated semantics properties
+         * for accessibility: [SemanticsProperties.Disabled], [SemanticsProperties.StateDescription],
+         * [SemanticsActions.OnClick]
+         */
+        val Tab = Role(4)
+        /**
+         * This element is an image. Associated semantics properties for accessibility:
+         * [SemanticsProperties.ContentDescription]
+         */
+        val Image = Role(5)
+    }
+
+    override fun toString() = when (this) {
+        Button -> "Button"
+        Checkbox -> "Checkbox"
+        Switch -> "Switch"
+        RadioButton -> "RadioButton"
+        Tab -> "Tab"
+        Image -> "Image"
+        else -> "Unknown"
+    }
 }
 
 /**
@@ -532,17 +601,27 @@ enum class Role {
  * automatically notify the user about changes to the node's content description or text, or to
  * the content descriptions or text of the node's children (where applicable).
  */
-enum class LiveRegionMode {
-    /**
-     * Live region mode specifying that accessibility services should announce
-     * changes to this node.
-     */
-    Polite,
-    /**
-     * Live region mode specifying that accessibility services should interrupt
-     * ongoing speech to immediately announce changes to this node.
-     */
-    Assertive
+@Suppress("INLINE_CLASS_DEPRECATED")
+@Immutable
+inline class LiveRegionMode private constructor(@Suppress("unused") private val value: Int) {
+    companion object {
+        /**
+         * Live region mode specifying that accessibility services should announce
+         * changes to this node.
+         */
+        val Polite = LiveRegionMode(0)
+        /**
+         * Live region mode specifying that accessibility services should interrupt
+         * ongoing speech to immediately announce changes to this node.
+         */
+        val Assertive = LiveRegionMode(1)
+    }
+
+    override fun toString() = when (this) {
+        Polite -> "Polite"
+        Assertive -> "Assertive"
+        else -> "Unknown"
+    }
 }
 
 /**
@@ -556,10 +635,17 @@ interface SemanticsPropertyReceiver {
 /**
  * Developer-set content description of the semantics node.
  *
- * If this is not set, accessibility services will present the text of this node as the content
- * description.
+ * If this is not set, accessibility services will present the [text][SemanticsProperties.Text] of
+ * this node as the content.
+ *
+ * This typically should not be set directly by applications, because some screen readers will
+ * cease presenting other relevant information when this property is present. This is intended
+ * to be used via Foundation components which are inherently intractable to automatically
+ * describe, such as Image, Icon, and Canvas.
  */
-var SemanticsPropertyReceiver.contentDescription by SemanticsProperties.ContentDescription
+var SemanticsPropertyReceiver.contentDescription: String
+    get() = throwSemanticsGetNotSupported()
+    set(value) { set(SemanticsProperties.ContentDescription, listOf(value)) }
 
 /**
  * Developer-set state description of the semantics node.
@@ -678,8 +764,6 @@ fun SemanticsPropertyReceiver.dialog() {
  * properties of this element. But some elements with subtle differences need an exact role. If
  * an exact role is not listed in [Role], this property should not be set and the framework will
  * automatically resolve it.
- *
- * @see SemanticsProperties.Role
  */
 var SemanticsPropertyReceiver.role by SemanticsProperties.Role
 
@@ -694,10 +778,13 @@ var SemanticsPropertyReceiver.testTag by SemanticsProperties.TestTag
  *
  * @see SemanticsPropertyReceiver.editableText
  */
-var SemanticsPropertyReceiver.text by SemanticsProperties.Text
+var SemanticsPropertyReceiver.text: AnnotatedString
+    get() = throwSemanticsGetNotSupported()
+    set(value) { set(SemanticsProperties.Text, listOf(value)) }
 
 /**
- * Input text of the text field. It must be real text entered by the user instead of
+ * Input text of the text field with visual transformation applied to it. It must be a real text
+ * entered by the user with visual transformation applied on top of the input text instead of a
  * developer-set content description.
  */
 var SemanticsPropertyReceiver.editableText by SemanticsProperties.EditableText
@@ -722,12 +809,26 @@ var SemanticsPropertyReceiver.imeAction by SemanticsProperties.ImeAction
 var SemanticsPropertyReceiver.selected by SemanticsProperties.Selected
 
 /**
+ * This semantics marks node as a collection and provides the required information.
+ *
+ * @see collectionItemInfo
+ */
+var SemanticsPropertyReceiver.collectionInfo by SemanticsProperties.CollectionInfo
+
+/**
+ * This semantics marks node as an items of a collection and provides the required information.
+ *
+ * If you mark items of a collection, you should also be marking the collection with
+ * [collectionInfo].
+ */
+var SemanticsPropertyReceiver.collectionItemInfo by SemanticsProperties.CollectionItemInfo
+
+/**
  * The state of a toggleable component.
  *
  * The presence of this property indicates that the element is toggleable.
  */
-var SemanticsPropertyReceiver.toggleableState
-by SemanticsProperties.ToggleableState
+var SemanticsPropertyReceiver.toggleableState by SemanticsProperties.ToggleableState
 
 /**
  * The node is marked as a password.
@@ -737,7 +838,29 @@ fun SemanticsPropertyReceiver.password() {
 }
 
 /**
+ * Mark semantics node that contains invalid input or error.
+ *
+ * @param [description] a localized description explaining an error to the accessibility user
+ */
+fun SemanticsPropertyReceiver.error(description: String) {
+    this[SemanticsProperties.Error] = description
+}
+
+/**
+ * The index of an item identified by a given key. The key is usually defined during the creation
+ * of the container. If the key did not match any of the items' keys, the [mapping] must return -1.
+ */
+fun SemanticsPropertyReceiver.indexForKey(mapping: (Any) -> Int) {
+    this[SemanticsProperties.IndexForKey] = mapping
+}
+
+/**
  * The node is marked as a collection of horizontally or vertically stacked selectable elements.
+ *
+ * Unlike [collectionInfo] which marks a collection of any elements and asks developer to
+ * provide all the required information like number of elements etc., this semantics will
+ * populate the number of selectable elements automatically. Note that if you use this semantics
+ * with lazy collections, it won't get the number of elements in the collection.
  *
  * @see SemanticsPropertyReceiver.selected
 */
@@ -797,6 +920,18 @@ fun SemanticsPropertyReceiver.scrollBy(
     action: ((x: Float, y: Float) -> Boolean)?
 ) {
     this[SemanticsActions.ScrollBy] = AccessibilityAction(label, action)
+}
+
+/**
+ * Action to scroll a container to the index of one of its items.
+ *
+ * The [action] should throw an [IllegalArgumentException] if the index is out of bounds.
+ */
+fun SemanticsPropertyReceiver.scrollToIndex(
+    label: String? = null,
+    action: (Int) -> Boolean
+) {
+    this[SemanticsActions.ScrollToIndex] = AccessibilityAction(label, action)
 }
 
 /**

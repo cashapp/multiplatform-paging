@@ -18,44 +18,98 @@
 
 package androidx.compose.lint
 
-import com.android.tools.lint.checks.infrastructure.TestFiles.kt
+import androidx.compose.lint.test.Stubs
+import androidx.compose.lint.test.kotlinAndCompiledStub
 import com.android.tools.lint.checks.infrastructure.TestLintResult
-import com.android.tools.lint.checks.infrastructure.TestLintTask
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import androidx.compose.lint.UnnecessaryLambdaCreationDetector.Companion.ISSUE
-import com.android.tools.lint.checks.infrastructure.TestFiles.kotlin
+import com.android.tools.lint.checks.infrastructure.LintDetectorTest
+import com.android.tools.lint.checks.infrastructure.TestFile
+import com.android.tools.lint.checks.infrastructure.TestMode
+import com.android.tools.lint.detector.api.Detector
+import com.android.tools.lint.detector.api.Issue
 import org.intellij.lang.annotations.Language
+import org.junit.runners.Parameterized
 
 /* ktlint-disable max-line-length */
-@RunWith(JUnit4::class)
-class UnnecessaryLambdaCreationDetectorTest {
+@RunWith(Parameterized::class)
+class UnnecessaryLambdaCreationDetectorTest(
+    @Suppress("unused")
+    private val parameterizedDebugString: String,
+    private val stub: TestFile
+) : LintDetectorTest() {
+    companion object {
+        private val stub = kotlinAndCompiledStub(
+            filename = "Stub.kt",
+            filepath = "test",
+            checksum = 0xdbff73f0,
+            source = """
+                package test
 
-    private val stub = kt(
-        """
-        package test
+                import androidx.compose.runtime.Composable
 
-        import androidx.compose.runtime.Composable
+                fun function() {}
 
-        val lambda = @Composable { }
-        val anonymousFunction = @Composable fun() {}
-        val lambdaWithReceiver = @Composable { number: Int -> }
-        val anonymousFunctionWithReceiver = @Composable fun(number: Int) {}
-        fun function() {}
+                @Composable
+                fun ComposableFunction(content: @Composable () -> Unit) {
+                    content()
+                }
 
-        @Composable
-        fun ComposableFunction(content: @Composable () -> Unit) {
-            content()
-        }
-    """
-    ).to("test/stub.kt")
+                @Composable
+                inline fun InlineComposableFunction(content: @Composable () -> Unit) {
+                    content()
+                }
+
+                @Composable
+                inline fun <reified T> ReifiedComposableFunction(content: @Composable () -> Unit) {
+                    content()
+                }
+            """,
+            """
+            META-INF/main.kotlin_module:
+            H4sIAAAAAAAAAGNgYGBmYGBgBGJWKM3AJcbFUpJaXCLEFlxSmuQNpEOAPO8S
+            JQYtBgBDd0xtMAAAAA==
+            """,
+            """
+            test/StubKt.class:
+            H4sIAAAAAAAAAJ1UW08TQRT+ZnvZpRRZKigtCqhVCl621GuEmBgTQmNFI4gP
+            PE23Cw5tZ83utOGR+OJv8MnEf+Cb+mAIvvmjjGe2FLlUUZvsnJlzvu9858yl
+            3398+QrgFu4x9CsvVM6yalUfKxOMwd7kbe40uNxwnlY3PZe8MQZrvSVdJXzJ
+            ECtMrzJkHvnN137Iqw1vYT90qVCp+6ohpLPZbjpdSuh0EcU5TS2dhJrvxl9I
+            oeYeRKTLFS5rgS9qW44bKXtO0JJKND3nVyVzVELFDzacTU9VAy4oKZfSV7wj
+            sOSrpVajQSjT9aXypLKQZhg/UI0gdyB5wylLFRBfuKGJUwwj7ivPre8leMYD
+            3vQIyDBVqBzdr7kDnmWdZIMaSMPGUAqDyBzW69G9iWGGpJBtv+4xDBemjyuk
+            cQZn+zGCUYbJk7acYbQsCeD1OrHzeZFfz/8+zsoM2eeeWBderVd8cX7l/vH6
+            HvzPCY9HpfxBa6hLeuIpXuOKU2tGsx2jq8z0kKBy63pikH9L6FmRZrVZhvc7
+            28Opne2UYRuRGTU6nxXPjdk72zmjyEpDtpEbyMQzNC/Gdj8kKbho5ibsxG+j
+            u2+tb58Y0afspAZdTFo727Y5egI6aVsavfvGMFMJa/ddqch0mSVGfSDTbfLg
+            AbIVurL6jd6oK4b4I79GN2OwQme21GpWvWBFb5Tm+i5vrPJA6PWes29ZbEiu
+            WgHNx553nkxZtkUoKPzw1+tgyB+N7t/zQ7DUst8KXG9B6OzZPc7qsXyYhYE4
+            9C+OLBJIUndFWmXR+bGPeiAYopAeszBhEVzD5omuvadmMgOfcHrmM7IMLzXH
+            iDgpskkaB9CPEq3THTTZHNmbEa6P/uM62VNkb9Nn0mYSQVcxti+1SFCDrN2R
+            is33FLPo9Q7SM9ZiZ6K1hXM4H8nafylrZzFOtNg/yQ6T7Mgh2cmeshOHZA3c
+            iUYHd8kukPcCHcLFNcTKuFRGnkZcLuMKpsooYHoNLMQMrq6hL4QZ4lqIdIjr
+            IVIhxkKMh7gRIvETuPI3KzoGAAA=
+            """
+        )
+
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun params(): Array<Any> = arrayOf(
+            arrayOf("Source stubs", stub.kotlin),
+            arrayOf("Compiled stubs", stub.compiled)
+        )
+    }
+
+    override fun getDetector(): Detector = UnnecessaryLambdaCreationDetector()
+
+    override fun getIssues(): MutableList<Issue> =
+        mutableListOf(UnnecessaryLambdaCreationDetector.ISSUE)
 
     private fun check(@Language("kotlin") code: String): TestLintResult {
-        return TestLintTask.lint()
-            .files(kt(code.trimIndent()), stub, kotlin(Stubs.Composable))
-            .allowMissingSdk(true)
-            .issues(ISSUE)
+        return lint()
+            .files(kotlin(code.trimIndent()), stub, Stubs.Composable)
+            .skipTestModes(TestMode.TYPE_ALIAS)
             .run()
     }
 
@@ -67,9 +121,22 @@ class UnnecessaryLambdaCreationDetectorTest {
 
             import androidx.compose.runtime.Composable
 
+            val lambda = @Composable { }
+            val anonymousFunction = @Composable fun() {}
+            val lambdaWithReceiver = @Composable { number: Int -> }
+            val anonymousFunctionWithReceiver = @Composable fun(number: Int) {}
+
             @Composable
             fun Test() {
                 ComposableFunction {
+                    lambda()
+                }
+
+                InlineComposableFunction {
+                    lambda()
+                }
+
+                ReifiedComposableFunction<Any> {
                     lambda()
                 }
 
@@ -92,13 +159,19 @@ class UnnecessaryLambdaCreationDetectorTest {
         """
         ).expect(
             """
-src/test/test.kt:8: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+src/test/test.kt:13: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
         lambda()
         ~~~~~~
-src/test/test.kt:12: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+src/test/test.kt:17: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+        lambda()
+        ~~~~~~
+src/test/test.kt:21: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+        lambda()
+        ~~~~~~
+src/test/test.kt:25: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
         anonymousFunction()
         ~~~~~~~~~~~~~~~~~
-2 errors, 0 warnings
+4 errors, 0 warnings
         """
         )
     }
@@ -110,6 +183,8 @@ src/test/test.kt:12: Error: Creating an unnecessary lambda to emit a captured la
             package test
 
             import androidx.compose.runtime.Composable
+
+            val lambda = @Composable { }
 
             @Composable
             fun MultipleChildComposableFunction(
@@ -126,10 +201,10 @@ src/test/test.kt:12: Error: Creating an unnecessary lambda to emit a captured la
         """
         ).expect(
             """
-src/test/test.kt:13: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+src/test/test.kt:15: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
     MultipleChildComposableFunction( { lambda() }) {
                                        ~~~~~~
-src/test/test.kt:14: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
+src/test/test.kt:16: Error: Creating an unnecessary lambda to emit a captured lambda [UnnecessaryLambdaCreation]
         lambda()
         ~~~~~~
 2 errors, 0 warnings
@@ -144,6 +219,8 @@ src/test/test.kt:14: Error: Creating an unnecessary lambda to emit a captured la
             package test
 
             import androidx.compose.runtime.Composable
+
+            val lambda = @Composable { }
 
             @Composable
             fun Test() {
@@ -164,6 +241,8 @@ src/test/test.kt:14: Error: Creating an unnecessary lambda to emit a captured la
 
             import androidx.compose.runtime.Composable
 
+            val lambda = @Composable { }
+
             val property: @Composable () -> Unit = {
                 lambda()
             }
@@ -178,6 +257,8 @@ src/test/test.kt:14: Error: Creating an unnecessary lambda to emit a captured la
             package test
 
             import androidx.compose.runtime.Composable
+
+            val lambda = @Composable { }
 
             @Composable
             fun ComposableFunctionWithParams(
@@ -266,6 +347,7 @@ src/test/SomeScope.kt:24: Error: Creating an unnecessary lambda to emit a captur
 
             fun uncomposableLambdaFunction(child: () -> Unit) {}
 
+            val lambda = @Composable { }
             val uncomposableLambda = {}
 
             @Composable

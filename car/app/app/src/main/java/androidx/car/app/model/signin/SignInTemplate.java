@@ -16,8 +16,10 @@
 
 package androidx.car.app.model.signin;
 
+import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_BODY;
 import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_HEADER;
 import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_SIMPLE;
+import static androidx.car.app.model.constraints.CarTextConstraints.CLICKABLE_TEXT_ONLY;
 
 import static java.util.Objects.requireNonNull;
 
@@ -25,12 +27,15 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.car.app.Screen;
-import androidx.car.app.annotations.ExperimentalCarApi;
 import androidx.car.app.annotations.RequiresCarApi;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.ActionStrip;
 import androidx.car.app.model.CarText;
+import androidx.car.app.model.DistanceSpan;
+import androidx.car.app.model.DurationSpan;
+import androidx.car.app.model.ForegroundCarColorSpan;
 import androidx.car.app.model.Template;
+import androidx.car.app.model.constraints.CarTextConstraints;
 import androidx.car.app.utils.CollectionUtils;
 
 import java.util.ArrayList;
@@ -43,21 +48,11 @@ import java.util.Objects;
  *
  * <h4>Template Restrictions</h4>
  *
- * This template is considered the start of a new task and thus restarts the template quota when an
- * app reaches this template. If this template is sent consecutively, subsequent
- * {@link SignInTemplate}s will not trigger a quota reset, as they will be considered part of the
- * same sign-in flow. The quota will be reduced for these templates unless they are considered
- * a refresh of a previous one.
- *
- * This template is considered a refresh of a previous one if:
- *
- * <ul>
- *   <li>The template's header, sign-in method, instructions and additional text have not changed.
- * </ul>
+ * This template's body is only available to the user while the car is parked and does not count
+ * against the template quota.
  *
  * @see Screen#onGetTemplate()
  */
-@ExperimentalCarApi
 @RequiresCarApi(2)
 public final class SignInTemplate implements Template {
     /**
@@ -65,8 +60,6 @@ public final class SignInTemplate implements Template {
      */
     public interface SignInMethod {
     }
-
-    private static final int MAX_ACTIONS_ALLOWED = 2;
 
     @Keep
     private final boolean mIsLoading;
@@ -237,6 +230,7 @@ public final class SignInTemplate implements Template {
     }
 
     /** A builder of {@link SignInTemplate}. */
+    @RequiresCarApi(2)
     public static final class Builder {
         boolean mIsLoading;
         final SignInMethod mSignInMethod;
@@ -311,23 +305,27 @@ public final class SignInTemplate implements Template {
         /**
          * Adds an {@link Action} to display alongside the sign-in content.
          *
-         * <p>By default, no actions are displayed.
-         *
          * <h4>Requirements</h4>
          *
-         * This template allows up to 2 {@link Action}s.
+         * This template allows up to 2 {@link Action}s in its body, and they must use a
+         * {@link androidx.car.app.model.ParkedOnlyOnClickListener}.
          *
-         * @throws NullPointerException  if {@code action} is {@code null}
-         * @throws IllegalStateException if more than two actions have been added.
+         * <p>Each action's title color can be customized with {@link ForegroundCarColorSpan}
+         * instances. Any other span is not supported.
+         *
+         * @throws NullPointerException     if {@code action} is {@code null}
+         * @throws IllegalArgumentException if {@code action} does not meet the requirements
          */
         @NonNull
         public Builder addAction(@NonNull Action action) {
-            if (mActionList.size() >= MAX_ACTIONS_ALLOWED) {
-                throw new IllegalStateException(
-                        "This template allows only up to " + MAX_ACTIONS_ALLOWED + " actions");
-            }
             requireNonNull(action);
+            if (!requireNonNull(action.getOnClickDelegate()).isParkedOnly()) {
+                throw new IllegalArgumentException("The action must use a "
+                        + "ParkedOnlyOnClickListener");
+            }
+
             mActionList.add(action);
+            ACTIONS_CONSTRAINTS_BODY.validateOrThrow(mActionList);
             return this;
         }
 
@@ -336,13 +334,16 @@ public final class SignInTemplate implements Template {
          *
          * <p>Unless set with this method, the template will not have a title.
          *
-         * <p>Spans are not supported in the input string.
+         * <p>Only {@link DistanceSpan}s and {@link DurationSpan}s are supported in the input
+         * string.
          *
-         * @throws NullPointerException if {@code title} is {@code null}
+         * @throws NullPointerException     if {@code title} is {@code null}
+         * @throws IllegalArgumentException if {@code title} contains unsupported spans
          */
         @NonNull
         public Builder setTitle(@NonNull CharSequence title) {
             mTitle = CarText.create(requireNonNull(title));
+            CarTextConstraints.TEXT_ONLY.validateOrThrow(mTitle);
             return this;
         }
 
@@ -351,15 +352,19 @@ public final class SignInTemplate implements Template {
          *
          * <p>Unless set with this method, the template will not have instructions.
          *
-         * <p>Spans are supported in the input string.
+         * <p>{@link androidx.car.app.model.DistanceSpan},
+         * {@link androidx.car.app.model.DurationSpan}, and
+         * {@link androidx.car.app.model.ForegroundCarColorSpan} are
+         * supported in the input string.
          *
-         * @throws NullPointerException if {@code instructions} is {@code null}
+         * @throws NullPointerException     if {@code instructions} is {@code null}
+         * @throws IllegalArgumentException if {@code instructions} contains unsupported spans
          * @see CarText for details on text handling and span support.
          */
-        // TODO(b/181569051): document supported span types.
         @NonNull
         public Builder setInstructions(@NonNull CharSequence instructions) {
             mInstructions = CarText.create(requireNonNull(instructions));
+            CarTextConstraints.TEXT_WITH_COLORS.validateOrThrow(mInstructions);
             return this;
         }
 
@@ -369,15 +374,18 @@ public final class SignInTemplate implements Template {
          *
          * <p>Unless set with this method, the template will not have additional text.
          *
-         * <p>Spans are supported in the input string.
+         * <p>{@link androidx.car.app.model.ClickableSpan},
+         * {@link androidx.car.app.model.DistanceSpan}, and
+         * {@link androidx.car.app.model.DurationSpan} are supported in the input string.
          *
-         * @throws NullPointerException if {@code additionalText} is {@code null}
+         * @throws NullPointerException     if {@code additionalText} is {@code null}
+         * @throws IllegalArgumentException if {@code additionalText} contains unsupported spans
          * @see CarText
          */
-        // TODO(b/181569051): document supported span types.
         @NonNull
         public Builder setAdditionalText(@NonNull CharSequence additionalText) {
             mAdditionalText = CarText.create(requireNonNull(additionalText));
+            CLICKABLE_TEXT_ONLY.validateOrThrow(mAdditionalText);
             return this;
         }
 

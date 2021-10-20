@@ -19,10 +19,11 @@ package androidx.compose.compiler.plugins.kotlin
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /* ktlint-disable max-line-length */
-@RunWith(ComposeRobolectricTestRunner::class)
+@RunWith(RobolectricTestRunner::class)
 @Config(
     manifest = Config.NONE,
     minSdk = 23,
@@ -120,6 +121,74 @@ class ComposerParamSignatureTests : AbstractCodegenSignatureTest() {
         inline fun c(foo: Foo, label: String) {
             used(label)
         }
+        """
+    )
+
+    @Test
+    fun testArrayListSizeOverride(): Unit = validateBytecode(
+        """
+        class CustomList : ArrayList<Any>() {
+            override val size: Int
+                get() = super.size
+        }
+        """, dumpClasses = true
+    ) {
+        assertTrue(it.contains("INVOKESPECIAL java/util/ArrayList.size ()I"))
+        assertFalse(it.contains("INVOKESPECIAL java/util/ArrayList.getSize ()I"))
+    }
+
+    @Test
+    fun testForLoopIssue1(): Unit = codegen(
+        """
+            @Composable
+            fun Test(text: String, callback: @Composable () -> Unit) {
+                for (char in text) {
+                    if (char == '}') {
+                        callback()
+                        continue
+                    }
+                }
+            }
+        """
+    )
+
+    @Test
+    fun testForLoopIssue2(): Unit = codegen(
+        """
+            @Composable
+            fun Test(text: List<String>, callback: @Composable () -> Unit) {
+                for ((i, value) in text.withIndex()) {
+                    if (value == "" || i == 0) {
+                        callback()
+                        continue
+                    }
+                }
+            }
+        """
+    )
+
+    @Test
+    fun test32Params(): Unit = codegen(
+        """
+        @Composable
+        fun <T> TooVerbose(
+            v00: T, v01: T, v02: T, v03: T, v04: T, v05: T, v06: T, v07: T, v08: T, v09: T,
+            v10: T, v11: T, v12: T, v13: T, v14: T, v15: T, v16: T, v17: T, v18: T, v19: T,
+            v20: T, v21: T, v22: T, v23: T, v24: T, v25: T, v26: T, v27: T, v28: T, v29: T,
+            v30: T, v31: T,
+        ) {
+        }
+
+        @Composable
+        fun Test() {
+            TooVerbose(
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1,
+            )
+        }
+
         """
     )
 
@@ -397,7 +466,7 @@ class ComposerParamSignatureTests : AbstractCodegenSignatureTest() {
             }
             final class TestKt%a%1 extends kotlin/jvm/internal/Lambda implements kotlin/jvm/functions/Function0 {
               <init>()V
-              public final invoke()I
+              public final invoke()Ljava/lang/Integer;
               public synthetic bridge invoke()Ljava/lang/Object;
               static <clinit>()V
               public final static LTestKt%a%1; INSTANCE
@@ -1499,6 +1568,19 @@ class ComposerParamSignatureTests : AbstractCodegenSignatureTest() {
               public final static LTestKt%Example%1; INSTANCE
               OUTERCLASS TestKt Example (LA;)V
               final static INNERCLASS TestKt%Example%1 null null
+            }
+        """
+    )
+
+    @Test
+    fun testComposableMap(): Unit = codegen(
+        """
+            class Repro {
+                private val composables = linkedMapOf<String, @Composable () -> Unit>()
+
+                fun doSomething() {
+                    composables[""]
+                }
             }
         """
     )

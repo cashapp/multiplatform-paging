@@ -40,7 +40,7 @@ import java.util.Set;
 
 /** Variant of {@link TileUpdateRequester} which requests an update from the Wear SysUI app. */
 // TODO(b/173688156): Renovate this whole class, and especially work around all the locks.
-public class SysUiTileUpdateRequester implements TileUpdateRequester {
+class SysUiTileUpdateRequester implements TileUpdateRequester {
     private static final String TAG = "HTUpdateRequester";
 
     private static final String DEFAULT_TARGET_SYSUI = "com.google.android.wearable.app";
@@ -64,9 +64,9 @@ public class SysUiTileUpdateRequester implements TileUpdateRequester {
     }
 
     @Override
-    public void requestUpdate(@NonNull Class<? extends Service> tileProvider) {
+    public void requestUpdate(@NonNull Class<? extends TileService> tileService) {
         synchronized (mLock) {
-            mPendingServices.add(tileProvider);
+            mPendingServices.add(tileService);
 
             if (mBindInProgress) {
                 // Something else kicked off the bind; let that carry on binding.
@@ -140,9 +140,8 @@ public class SysUiTileUpdateRequester implements TileUpdateRequester {
                         }
 
                         // This is a little suboptimal, as if an update is requested in this lock,
-                        // we'll
-                        // unbind, then immediately rebind. That said, this class should be used
-                        // pretty rarely
+                        // we'll unbind, then immediately rebind. That said, this class should be
+                        // used pretty rarely
                         // (and it'll be rare to have two in-flight update requests at once
                         // regardless), so
                         // it's probably fine.

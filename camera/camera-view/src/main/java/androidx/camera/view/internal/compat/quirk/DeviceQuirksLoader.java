@@ -17,6 +17,7 @@
 package androidx.camera.view.internal.compat.quirk;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.camera.core.impl.Quirk;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.List;
 /**
  * Loads all device specific quirks required for the current device
  */
+@RequiresApi(21) // TODO(b/200306659): Remove and replace with annotation on package-info.java
 public class DeviceQuirksLoader {
 
     private DeviceQuirksLoader() {
@@ -39,12 +41,16 @@ public class DeviceQuirksLoader {
         final List<Quirk> quirks = new ArrayList<>();
 
         // Load all device specific quirks
-        if (PreviewStretchedQuirk.load()) {
-            quirks.add(new PreviewStretchedQuirk());
+        if (PreviewOneThirdWiderQuirk.load()) {
+            quirks.add(new PreviewOneThirdWiderQuirk());
         }
 
         if (SurfaceViewStretchedQuirk.load()) {
             quirks.add(new SurfaceViewStretchedQuirk());
+        }
+
+        if (TextureViewRotationQuirk.load()) {
+            quirks.add(new TextureViewRotationQuirk());
         }
 
         return quirks;

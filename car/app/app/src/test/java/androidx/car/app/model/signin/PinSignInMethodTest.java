@@ -30,29 +30,35 @@ import org.robolectric.annotation.internal.DoNotInstrument;
 @DoNotInstrument
 public class PinSignInMethodTest {
     @Test
-    public void create_emptyPin_throws() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new PinSignInMethod.Builder(""));
+    public void create_defaultValues() {
+        PinSignInMethod signIn = new PinSignInMethod("ABC");
+        assertThat(signIn.getPinCode().toString()).isEqualTo("ABC");
     }
 
     @Test
-    public void create_defaultValues() {
-        PinSignInMethod signIn = new PinSignInMethod.Builder("ABC").build();
+    public void create_checkPinLimits() {
+        // Zero
+        assertThrows(IllegalArgumentException.class, () -> new PinSignInMethod(""));
 
-        assertThat(signIn.getPin()).isEqualTo("ABC");
+        // Over max of 12
+        assertThrows(IllegalArgumentException.class,
+                () -> new PinSignInMethod("123456123456x"));
+
+        // Just at max
+        PinSignInMethod signIn = new PinSignInMethod("123456123456");
+        assertThat(signIn.getPinCode().toString().length() == 12);
     }
 
     @Test
     public void equals() {
         String pin = "ABC";
-        PinSignInMethod signIn = new PinSignInMethod.Builder(pin).build();
-        assertThat(signIn).isEqualTo(new PinSignInMethod.Builder(pin).build());
+        PinSignInMethod signIn = new PinSignInMethod(pin);
+        assertThat(signIn).isEqualTo(new PinSignInMethod(pin));
     }
 
     @Test
     public void notEquals_differentPin() {
-        PinSignInMethod signIn = new PinSignInMethod.Builder("ABC").build();
-        assertThat(signIn).isNotEqualTo(new PinSignInMethod.Builder("DEF").build());
+        PinSignInMethod signIn = new PinSignInMethod("ABC");
+        assertThat(signIn).isNotEqualTo(new PinSignInMethod("DEF"));
     }
 }

@@ -61,6 +61,7 @@ import androidx.media2.session.TestUtils.SyncHandler;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.Suppress;
 import androidx.testutils.PollingCheck;
 
 import org.junit.After;
@@ -98,7 +99,8 @@ public class MediaControllerTest extends MediaSessionTestBase {
         super.setUp();
         final Intent sessionActivity = new Intent(mContext, MockActivity.class);
         // Create this test specific MediaSession to use our own Handler.
-        mIntent = PendingIntent.getActivity(mContext, 0, sessionActivity, 0);
+        mIntent = PendingIntent.getActivity(mContext, 0, sessionActivity,
+                Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
 
         mPlayer = new MockPlayer(1);
         mSession = new MediaSession.Builder(mContext, mPlayer)
@@ -907,6 +909,7 @@ public class MediaControllerTest extends MediaSessionTestBase {
     }
 
     @Test
+    @Suppress // b/183700008
     public void setVolumeWithLocalVolume() throws Exception {
         if (Build.VERSION.SDK_INT >= 21 && mAudioManager.isVolumeFixed()) {
             // This test is not eligible for this device.
@@ -951,6 +954,7 @@ public class MediaControllerTest extends MediaSessionTestBase {
     }
 
     @Test
+    @Suppress // b/183700008
     public void adjustVolumeWithLocalVolume() throws Exception {
         if (Build.VERSION.SDK_INT >= 21 && mAudioManager.isVolumeFixed()) {
             // This test is not eligible for this device.

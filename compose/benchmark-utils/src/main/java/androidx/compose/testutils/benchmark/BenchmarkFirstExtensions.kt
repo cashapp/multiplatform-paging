@@ -24,14 +24,44 @@ import androidx.compose.testutils.ComposeExecutionControl
 import androidx.compose.testutils.ComposeTestCase
 import androidx.compose.testutils.LayeredComposeTestCase
 import androidx.compose.testutils.assertNoPendingChanges
+import androidx.compose.testutils.benchmark.android.AndroidTestCase
 import androidx.compose.testutils.doFramesUntilNoChangesPending
 import org.junit.Assert.assertTrue
+
+/**
+ * Measures the time to draw the first pixel right after the given test case is added to an
+ * already existing hierarchy. This benchmarks the full compose -> measure -> layout -> draw cycle.
+ */
+fun ComposeBenchmarkRule.benchmarkToFirstPixel(caseFactory: () -> LayeredComposeTestCase) {
+    runBenchmarkFor(LayeredCaseAdapter.of(caseFactory)) {
+        measureRepeated {
+            runWithTimingDisabled {
+                doFramesUntilNoChangesPending()
+                // Add the content to benchmark
+                getTestCase().addMeasuredContent()
+            }
+
+            recomposeUntilNoChangesPending()
+            requestLayout()
+            measure()
+            layout()
+            drawPrepare()
+            draw()
+
+            runWithTimingDisabled {
+                drawFinish()
+                assertNoPendingChanges()
+                disposeContent()
+            }
+        }
+    }
+}
 
 /**
  * Measures the time of the first composition right after the given test case is added to an
  * already existing hierarchy.
  */
-fun ComposeBenchmarkRule.benchmarkFirstComposeFast(caseFactory: () -> LayeredComposeTestCase) {
+fun ComposeBenchmarkRule.benchmarkFirstCompose(caseFactory: () -> LayeredComposeTestCase) {
     runBenchmarkFor(LayeredCaseAdapter.of(caseFactory)) {
         measureRepeated {
             runWithTimingDisabled {
@@ -53,7 +83,7 @@ fun ComposeBenchmarkRule.benchmarkFirstComposeFast(caseFactory: () -> LayeredCom
  * Measures the time of the first measure right after the given test case is added to an already
  * existing hierarchy.
  */
-fun ComposeBenchmarkRule.benchmarkFirstMeasureFast(caseFactory: () -> LayeredComposeTestCase) {
+fun ComposeBenchmarkRule.benchmarkFirstMeasure(caseFactory: () -> LayeredComposeTestCase) {
     runBenchmarkFor(LayeredCaseAdapter.of(caseFactory)) {
         measureRepeated {
             runWithTimingDisabled {
@@ -78,7 +108,7 @@ fun ComposeBenchmarkRule.benchmarkFirstMeasureFast(caseFactory: () -> LayeredCom
  * Measures the time of the first layout right after the given test case is added to an already
  * existing hierarchy.
  */
-fun ComposeBenchmarkRule.benchmarkFirstLayoutFast(caseFactory: () -> LayeredComposeTestCase) {
+fun ComposeBenchmarkRule.benchmarkFirstLayout(caseFactory: () -> LayeredComposeTestCase) {
     runBenchmarkFor(LayeredCaseAdapter.of(caseFactory)) {
         measureRepeated {
             runWithTimingDisabled {
@@ -104,7 +134,7 @@ fun ComposeBenchmarkRule.benchmarkFirstLayoutFast(caseFactory: () -> LayeredComp
  * Measures the time of the first draw right after the given test case is added to an already
  * existing hierarchy.
  */
-fun ComposeBenchmarkRule.benchmarkFirstDrawFast(caseFactory: () -> LayeredComposeTestCase) {
+fun ComposeBenchmarkRule.benchmarkFirstDraw(caseFactory: () -> LayeredComposeTestCase) {
     runBenchmarkFor(LayeredCaseAdapter.of(caseFactory)) {
         measureRepeated {
             runWithTimingDisabled {
@@ -123,6 +153,85 @@ fun ComposeBenchmarkRule.benchmarkFirstDrawFast(caseFactory: () -> LayeredCompos
             runWithTimingDisabled {
                 drawFinish()
                 assertNoPendingChanges()
+                disposeContent()
+            }
+        }
+    }
+}
+
+/**
+ * Measures the time of the first set content of the given Android test case.
+ */
+fun AndroidBenchmarkRule.benchmarkFirstSetContent(caseFactory: () -> AndroidTestCase) {
+    runBenchmarkFor(caseFactory) {
+        measureRepeated {
+            setupContent()
+            runWithTimingDisabled {
+                disposeContent()
+            }
+        }
+    }
+}
+
+/**
+ * Measures the time of the first measure of the given test case.
+ */
+fun AndroidBenchmarkRule.benchmarkFirstMeasure(caseFactory: () -> AndroidTestCase) {
+    runBenchmarkFor(caseFactory) {
+        measureRepeated {
+            runWithTimingDisabled {
+                setupContent()
+                requestLayout()
+            }
+
+            measure()
+
+            runWithTimingDisabled {
+                disposeContent()
+            }
+        }
+    }
+}
+
+/**
+ * Measures the time of the first layout of the given test case.
+ */
+fun AndroidBenchmarkRule.benchmarkFirstLayout(caseFactory: () -> AndroidTestCase) {
+    runBenchmarkFor(caseFactory) {
+        measureRepeated {
+            runWithTimingDisabled {
+                setupContent()
+                requestLayout()
+                measure()
+            }
+
+            layout()
+
+            runWithTimingDisabled {
+                disposeContent()
+            }
+        }
+    }
+}
+
+/**
+ * Measures the time of the first draw of the given test case.
+ */
+fun AndroidBenchmarkRule.benchmarkFirstDraw(caseFactory: () -> AndroidTestCase) {
+    runBenchmarkFor(caseFactory) {
+        measureRepeated {
+            runWithTimingDisabled {
+                setupContent()
+                requestLayout()
+                measure()
+                layout()
+                drawPrepare()
+            }
+
+            draw()
+
+            runWithTimingDisabled {
+                drawFinish()
                 disposeContent()
             }
         }

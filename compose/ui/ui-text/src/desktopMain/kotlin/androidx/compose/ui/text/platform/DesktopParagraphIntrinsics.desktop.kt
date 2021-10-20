@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,59 +15,15 @@
  */
 package androidx.compose.ui.text.platform
 
-import androidx.compose.ui.text.AnnotatedString.Range
-import androidx.compose.ui.text.ParagraphIntrinsics
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.unit.Density
-import org.jetbrains.skija.paragraph.Paragraph
-import kotlin.math.ceil
+import androidx.compose.ui.text.style.ResolvedTextDirection
 
-internal actual fun ActualParagraphIntrinsics(
-    text: String,
-    style: TextStyle,
-    spanStyles: List<Range<SpanStyle>>,
-    placeholders: List<Range<Placeholder>>,
-    density: Density,
-    resourceLoader: Font.ResourceLoader
-): ParagraphIntrinsics =
-    DesktopParagraphIntrinsics(
-        text,
-        style,
-        spanStyles,
-        placeholders,
-        density,
-        resourceLoader
-    )
-
-internal class DesktopParagraphIntrinsics(
-    val text: String,
-    style: TextStyle,
-    spanStyles: List<Range<SpanStyle>>,
-    placeholders: List<Range<Placeholder>>,
-    density: Density,
-    resourceLoader: Font.ResourceLoader
-) : ParagraphIntrinsics {
-
-    val fontLoader = resourceLoader as FontLoader
-    val builder: ParagraphBuilder
-    var para: Paragraph
-    init {
-        builder = ParagraphBuilder(
-            fontLoader = fontLoader,
-            text = text,
-            textStyle = style,
-            spanStyles = spanStyles,
-            placeholders = placeholders,
-            density = density
-        )
-        para = builder.build()
-
-        para.layout(Float.POSITIVE_INFINITY)
+internal actual fun String.contentBasedTextDirection(): ResolvedTextDirection? {
+    for (char in this) {
+        when (char.directionality) {
+            CharDirectionality.LEFT_TO_RIGHT -> return ResolvedTextDirection.Ltr
+            CharDirectionality.RIGHT_TO_LEFT -> return ResolvedTextDirection.Rtl
+            else -> continue
+        }
     }
-
-    override val minIntrinsicWidth = ceil(para.getMinIntrinsicWidth())
-    override val maxIntrinsicWidth = ceil(para.getMaxIntrinsicWidth())
+    return null
 }

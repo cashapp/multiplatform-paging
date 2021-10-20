@@ -19,25 +19,17 @@ package androidx.compose.ui.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.AlignmentLine
-import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.node.LayoutNode
 import androidx.compose.ui.node.LayoutNodeWrapper
 import androidx.compose.ui.node.RootForTest
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastForEach
-
-/**
- * Signature for a function that is called for each [SemanticsNode].
- *
- * Return false to stop visiting nodes.
- *
- * Used by [SemanticsNode.visitChildren].
- */
-internal typealias SemanticsNodeVisitor = (node: SemanticsNode) -> Boolean
 
 /**
  * A list of key/value pairs associated with a layout node or its subtree.
@@ -64,6 +56,12 @@ class SemanticsNode internal constructor(
      */
     val mergingEnabled: Boolean
 ) {
+    // We emit fake nodes for several cases. One is to prevent the content description clobbering
+    // issue. Another case is  temporary workaround to retrieve default role ordering for Button
+    // and other selection controls.
+    internal var isFake = false
+    private var fakeNodeParent: SemanticsNode? = null
+
     internal val unmergedConfig = outerSemanticsNodeWrapper.collapsedSemanticsConfiguration()
     val id: Int = outerSemanticsNodeWrapper.modifier.id
 
@@ -85,6 +83,16 @@ class SemanticsNode internal constructor(
     // GEOMETRY
 
     /**
+     * The rectangle of the touchable area.
+     *
+     * If this is a clickable region, this is the rectangle that accepts touch input. This can
+     * be larger than [size] when the layout is less than
+     * [ViewConfiguration.minimumTouchTargetSize]
+     */
+    val touchBoundsInRoot: Rect
+        get() = findWrapperToGetBounds().touchBoundsInRoot()
+
+    /**
      * The size of the bounding box for this node, with no clipping applied
      */
     val size: IntSize get() = findWrapperToGetBounds().size
@@ -94,36 +102,40 @@ class SemanticsNode internal constructor(
      * clipping applied. To get the bounds with no clipping applied, use
      * Rect([positionInRoot], [size].toSize())
      */
-    val boundsInRoot: Rect get() {
-        if (!layoutNode.isAttached) return Rect.Zero
-        return this.findWrapperToGetBounds().boundsInRoot()
-    }
+    val boundsInRoot: Rect
+        get() {
+            if (!layoutNode.isAttached) return Rect.Zero
+            return findWrapperToGetBounds().boundsInRoot()
+        }
 
     /**
      * The position of this node relative to the root of this Compose hierarchy, with no clipping
      * applied
      */
-    val positionInRoot: Offset get() {
-        if (!layoutNode.isAttached) return Offset.Zero
-        return findWrapperToGetBounds().positionInRoot()
-    }
+    val positionInRoot: Offset
+        get() {
+            if (!layoutNode.isAttached) return Offset.Zero
+            return findWrapperToGetBounds().positionInRoot()
+        }
 
     /**
      * The bounding box for this node relative to the screen, with clipping applied. To get the
      * bounds with no clipping applied, use PxBounds([positionInWindow], [size].toSize())
      */
-    val boundsInWindow: Rect get() {
-        if (!layoutNode.isAttached) return Rect.Zero
-        return findWrapperToGetBounds().boundsInWindow()
-    }
+    val boundsInWindow: Rect
+        get() {
+            if (!layoutNode.isAttached) return Rect.Zero
+            return findWrapperToGetBounds().boundsInWindow()
+        }
 
     /**
      * The position of this node relative to the screen, with no clipping applied
      */
-    val positionInWindow: Offset get() {
-        if (!layoutNode.isAttached) return Offset.Zero
-        return findWrapperToGetBounds().positionInWindow()
-    }
+    val positionInWindow: Offset
+        get() {
+            if (!layoutNode.isAttached) return Offset.Zero
+            return findWrapperToGetBounds().positionInWindow()
+        }
 
     /**
      * Returns the position of an [alignment line][AlignmentLine], or [AlignmentLine.Unspecified]
@@ -142,7 +154,7 @@ class SemanticsNode internal constructor(
      * In addition, if mergeDescendants and mergingEnabled are both true, then it
      * also includes the semantics properties of descendant nodes.
      */
-    // TODO(aelias): This is too expensive for a val (full subtree recreation every call);
+    // TODO(b/184376083): This is too expensive for a val (full subtree recreation every call);
     //               optimize this when the merging algorithm is improved.
     val config: SemanticsConfiguration
         get() {
@@ -171,67 +183,99 @@ class SemanticsNode internal constructor(
     private val isMergingSemanticsOfDescendants: Boolean
         get() = mergingEnabled && unmergedConfig.isMergingSemanticsOfDescendants
 
-    internal fun unmergedChildren(): List<SemanticsNode> {
+    internal fun unmergedChildren(
+        sortByBounds: Boolean = false,
+        includeFakeNodes: Boolean = false
+    ): List<SemanticsNode> {
+        if (this.isFake) return listOf()
         val unmergedChildren: MutableList<SemanticsNode> = mutableListOf()
 
-        val semanticsChildren = this.layoutNode.findOneLayerOfSemanticsWrappers()
+        val semanticsChildren = if (sortByBounds) {
+            this.layoutNode.findOneLayerOfSemanticsWrappersSortedByBounds()
+        } else {
+            this.layoutNode.findOneLayerOfSemanticsWrappers()
+        }
         semanticsChildren.fastForEach { semanticsChild ->
             unmergedChildren.add(SemanticsNode(semanticsChild, mergingEnabled))
+        }
+
+        if (includeFakeNodes) {
+            emitFakeNodes(unmergedChildren)
         }
 
         return unmergedChildren
     }
 
-    /** Contains the children in inverse hit test order (i.e. paint order).
+    /**
+     * Contains the children in inverse hit test order (i.e. paint order).
      *
      * Note that if mergingEnabled and mergeDescendants are both true, then there
      * are no children (except those that are themselves mergeDescendants).
      */
-    // TODO(aelias): This is too expensive for a val (full subtree recreation every call);
+    // TODO(b/184376083): This is too expensive for a val (full subtree recreation every call);
     //               optimize this when the merging algorithm is improved.
     val children: List<SemanticsNode>
-        get() {
-            // Replacing semantics never appear to have any children in the merged tree.
-            if (mergingEnabled && unmergedConfig.isClearingSemantics) {
-                return listOf()
-            }
-
-            if (isMergingSemanticsOfDescendants) {
-                // In most common merging scenarios like Buttons, this will return nothing.
-                // In cases like a clickable Row itself containing a Button, this will
-                // return the Button as a child.
-                return findOneLayerOfMergingSemanticsNodes()
-            }
-
-            return unmergedChildren()
-        }
+        get() = getChildren(
+            sortByBounds = false,
+            includeReplacedSemantics = !mergingEnabled,
+            includeFakeNodes = false
+        )
 
     /**
-     * Visits the immediate children of this node.
+     * Contains the children in inverse hit test order (i.e. paint order).
      *
-     * This function calls visitor for each immediate child until visitor returns
-     * false.
+     * Unlike [children] property that includes replaced semantics nodes in unmerged tree, here
+     * node marked as [clearAndSetSemantics] will not have children.
+     * This property is primarily used in Accessibility delegate.
      */
-    private fun visitChildren(visitor: SemanticsNodeVisitor) {
-        children.fastForEach {
-            if (!visitor(it)) {
-                return
-            }
-        }
-    }
+    internal val replacedChildren: List<SemanticsNode>
+        get() = getChildren(
+            sortByBounds = false,
+            includeReplacedSemantics = false,
+            includeFakeNodes = true
+        )
 
     /**
-     * Visit all the descendants of this node.  *
-     * This function calls visitor for each descendant in a pre-order traversal
-     * until visitor returns false. Returns true if all the visitor calls
-     * returned true, otherwise returns false.
+     * Similar to [replacedChildren] but children are sorted by bounds: top to down, left to
+     * right(right to left in RTL mode).
      */
-    internal fun visitDescendants(visitor: SemanticsNodeVisitor): Boolean {
-        children.fastForEach {
-            if (!visitor(it) || !it.visitDescendants(visitor))
-                return false
+    // TODO(b/184376083): This is too expensive for a val (full subtree recreation every call);
+    //               optimize this when the merging algorithm is improved.
+    internal val replacedChildrenSortedByBounds: List<SemanticsNode>
+        get() = getChildren(
+            sortByBounds = true,
+            includeReplacedSemantics = false,
+            includeFakeNodes = true
+        )
+
+    /**
+     * @param sortByBounds if true, nodes in the result list will be sorted with respect to their
+     * bounds. Otherwise children will be in the order they are added to the composition
+     * @param includeReplacedSemantics if true, the result will contain children of nodes marked
+     * as [clearAndSetSemantics]. For accessibility we always use false, but in testing and
+     * debugging we should be able to investigate both
+     * @param includeFakeNodes if true, the tree will include fake nodes. For accessibility we
+     * set to true, but for testing purposes we don't want to expose the fake nodes and therefore
+     * set to false. When Talkback can properly handle unmerged tree, fake nodes will be removed
+     * and so will be this parameter.
+     */
+    private fun getChildren(
+        sortByBounds: Boolean,
+        includeReplacedSemantics: Boolean,
+        includeFakeNodes: Boolean
+    ): List<SemanticsNode> {
+        if (!includeReplacedSemantics && unmergedConfig.isClearingSemantics) {
+            return listOf()
         }
-        return true
+
+        if (isMergingSemanticsOfDescendants) {
+            // In most common merging scenarios like Buttons, this will return nothing.
+            // In cases like a clickable Row itself containing a Button, this will
+            // return the Button as a child.
+            return findOneLayerOfMergingSemanticsNodes(sortByBounds = sortByBounds)
+        }
+
+        return unmergedChildren(sortByBounds, includeFakeNodes)
     }
 
     /**
@@ -243,6 +287,7 @@ class SemanticsNode internal constructor(
     /** The parent of this node in the tree. */
     val parent: SemanticsNode?
         get() {
+            if (fakeNodeParent != null) return fakeNodeParent
             var node: LayoutNode? = null
             if (mergingEnabled) {
                 node = this.layoutNode.findClosestParentNode {
@@ -264,13 +309,14 @@ class SemanticsNode internal constructor(
         }
 
     private fun findOneLayerOfMergingSemanticsNodes(
-        list: MutableList<SemanticsNode> = mutableListOf<SemanticsNode>()
+        list: MutableList<SemanticsNode> = mutableListOf(),
+        sortByBounds: Boolean = false
     ): List<SemanticsNode> {
-        unmergedChildren().fastForEach { child ->
-            if (child.isMergingSemanticsOfDescendants == true) {
+        unmergedChildren(sortByBounds).fastForEach { child ->
+            if (child.isMergingSemanticsOfDescendants) {
                 list.add(child)
             } else {
-                if (child.unmergedConfig.isClearingSemantics == false) {
+                if (!child.unmergedConfig.isClearingSemantics) {
                     child.findOneLayerOfMergingSemanticsNodes(list)
                 }
             }
@@ -284,12 +330,60 @@ class SemanticsNode internal constructor(
      * of use cases it means that accessibility bounds will be equal to the clickable area.
      * Otherwise the outermost semantics will be used to report bounds, size and position.
      */
-    private fun findWrapperToGetBounds(): LayoutNodeWrapper {
-        return if (isMergingSemanticsOfDescendants) {
+    internal fun findWrapperToGetBounds(): SemanticsWrapper {
+        return if (unmergedConfig.isMergingSemanticsOfDescendants) {
             layoutNode.outerMergingSemantics ?: outerSemanticsNodeWrapper
         } else {
             outerSemanticsNodeWrapper
         }
+    }
+
+    // Fake nodes
+    private fun emitFakeNodes(unmergedChildren: MutableList<SemanticsNode>) {
+        val nodeRole = this.role
+        if (nodeRole != null && unmergedConfig.isMergingSemanticsOfDescendants &&
+            unmergedChildren.isNotEmpty()
+        ) {
+            val fakeNode = fakeSemanticsNode(nodeRole) {
+                this.role = nodeRole
+            }
+            unmergedChildren.add(fakeNode)
+        }
+
+        // Fake node for contentDescription clobbering issue
+        if (unmergedConfig.contains(SemanticsProperties.ContentDescription) &&
+            unmergedChildren.isNotEmpty() && unmergedConfig.isMergingSemanticsOfDescendants
+        ) {
+            val contentDescription =
+                this.unmergedConfig.getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull()
+            if (contentDescription != null) {
+                val fakeNode = fakeSemanticsNode(null) {
+                    this.contentDescription = contentDescription
+                }
+                unmergedChildren.add(0, fakeNode)
+            }
+        }
+    }
+
+    private fun fakeSemanticsNode(
+        role: Role?,
+        properties: SemanticsPropertyReceiver.() -> Unit
+    ): SemanticsNode {
+        val fakeNode = SemanticsNode(
+            outerSemanticsNodeWrapper = SemanticsWrapper(
+                wrapped = LayoutNode(isVirtual = true).innerLayoutNodeWrapper,
+                semanticsModifier = SemanticsModifierCore(
+                    if (role != null) this.roleFakeNodeId() else contentDescriptionFakeNodeId(),
+                    mergeDescendants = false,
+                    clearAndSetSemantics = false,
+                    properties = properties
+                )
+            ),
+            mergingEnabled = false
+        )
+        fakeNode.isFake = true
+        fakeNode.fakeNodeParent = this
+        return fakeNode
     }
 }
 
@@ -318,17 +412,8 @@ internal inline fun LayoutNodeWrapper.nearestSemantics(
     return null
 }
 
-internal fun SemanticsNode.findChildById(id: Int): SemanticsNode? {
-    if (this.id == id) return this
-    children.fastForEach {
-        val result = it.findChildById(id)
-        if (result != null) return result
-    }
-    return null
-}
-
 private fun LayoutNode.findOneLayerOfSemanticsWrappers(
-    list: MutableList<SemanticsWrapper> = mutableListOf<SemanticsWrapper>()
+    list: MutableList<SemanticsWrapper> = mutableListOf()
 ): List<SemanticsWrapper> {
     zSortedChildren.forEach { child ->
         val outerSemantics = child.outerSemantics
@@ -358,3 +443,7 @@ private fun LayoutNode.findClosestParentNode(selector: (LayoutNode) -> Boolean):
 
     return null
 }
+
+private val SemanticsNode.role get() = this.unmergedConfig.getOrNull(SemanticsProperties.Role)
+private fun SemanticsNode.contentDescriptionFakeNodeId() = this.id + 2_000_000_000
+private fun SemanticsNode.roleFakeNodeId() = this.id + 1_000_000_000

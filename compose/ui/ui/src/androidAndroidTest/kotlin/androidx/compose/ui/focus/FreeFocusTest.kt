@@ -18,15 +18,14 @@ package androidx.compose.ui.focus
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusState.Active
-import androidx.compose.ui.focus.FocusState.ActiveParent
-import androidx.compose.ui.focus.FocusState.Captured
-import androidx.compose.ui.focus.FocusState.Disabled
-import androidx.compose.ui.focus.FocusState.Inactive
+import androidx.compose.ui.focus.FocusStateImpl.Active
+import androidx.compose.ui.focus.FocusStateImpl.ActiveParent
+import androidx.compose.ui.focus.FocusStateImpl.Captured
+import androidx.compose.ui.focus.FocusStateImpl.Inactive
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import com.google.common.truth.Truth
+import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,14 +39,14 @@ class FreeFocusTest {
     @Test
     fun active_freeFocus_retainFocusAsActive() {
         // Arrange.
-        var focusState: FocusState = Active
+        lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(focusState))
+                    .then(FocusModifier(Active))
             )
         }
 
@@ -56,22 +55,22 @@ class FreeFocusTest {
             val success = focusRequester.freeFocus()
 
             // Assert.
-            Truth.assertThat(success).isTrue()
-            Truth.assertThat(focusState).isEqualTo(Active)
+            assertThat(success).isTrue()
+            assertThat(focusState.isFocused).isTrue()
         }
     }
 
     @Test
     fun activeParent_freeFocus_retainFocusAsActiveParent() {
         // Arrange.
-        var focusState: FocusState = ActiveParent
+        lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(focusState))
+                    .then(FocusModifier(ActiveParent))
             )
         }
 
@@ -80,22 +79,22 @@ class FreeFocusTest {
             val success = focusRequester.freeFocus()
 
             // Assert.
-            Truth.assertThat(success).isFalse()
-            Truth.assertThat(focusState).isEqualTo(ActiveParent)
+            assertThat(success).isFalse()
+            assertThat(focusState.hasFocus).isTrue()
         }
     }
 
     @Test
     fun captured_freeFocus_changesStateToActive() {
         // Arrange.
-        var focusState: FocusState = Captured
+        lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(focusState))
+                    .then(FocusModifier(Captured))
             )
         }
 
@@ -104,22 +103,23 @@ class FreeFocusTest {
             val success = focusRequester.freeFocus()
 
             // Assert.
-            Truth.assertThat(success).isTrue()
-            Truth.assertThat(focusState).isEqualTo(Active)
+            assertThat(success).isTrue()
+            assertThat(focusState.isFocused).isTrue()
         }
     }
 
     @Test
-    fun disabled_freeFocus_retainFocusAsDisabled() {
+    fun deactivated_freeFocus_retainFocusAsDeactivated() {
         // Arrange.
-        var focusState: FocusState = Disabled
+        lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(focusState))
+                    .focusProperties { canFocus = false }
+                    .then(FocusModifier(Inactive))
             )
         }
 
@@ -128,22 +128,22 @@ class FreeFocusTest {
             val success = focusRequester.freeFocus()
 
             // Assert.
-            Truth.assertThat(success).isFalse()
-            Truth.assertThat(focusState).isEqualTo(Disabled)
+            assertThat(success).isFalse()
+            assertThat(focusState.isDeactivated).isTrue()
         }
     }
 
     @Test
     fun inactive_freeFocus_retainFocusAsInactive() {
         // Arrange.
-        var focusState: FocusState = Inactive
+        lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(focusState))
+                    .then(FocusModifier(Inactive))
             )
         }
 
@@ -152,8 +152,11 @@ class FreeFocusTest {
             val success = focusRequester.freeFocus()
 
             // Assert.
-            Truth.assertThat(success).isFalse()
-            Truth.assertThat(focusState).isEqualTo(Inactive)
+            assertThat(success).isFalse()
+            assertThat(focusState.isFocused).isFalse()
         }
     }
 }
+
+private val FocusState.isDeactivated: Boolean
+    get() = (this as FocusStateImpl).isDeactivated

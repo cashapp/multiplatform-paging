@@ -25,6 +25,7 @@ import static androidx.recyclerview.widget.RecyclerView.Adapter.StateRestoration
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
 
 import android.util.Log;
+import android.util.Pair;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -325,6 +326,15 @@ class ConcatAdapterController implements NestedAdapterWrapper.Callback {
         return wrapper.onCreateViewHolder(parent, globalViewType);
     }
 
+    public Pair<Adapter<? extends ViewHolder>, Integer> getWrappedAdapterAndPosition(
+            int globalPosition) {
+        WrapperAndLocalPosition wrapper = findWrapperAndLocalPosition(globalPosition);
+        Pair<Adapter<? extends ViewHolder>, Integer> pair = new Pair<>(wrapper.mWrapper.adapter,
+                wrapper.mLocalPosition);
+        releaseWrapperAndLocalPosition(wrapper);
+        return pair;
+    }
+
     /**
      * Always call {@link #releaseWrapperAndLocalPosition(WrapperAndLocalPosition)} when you are
      * done with it
@@ -389,21 +399,24 @@ class ConcatAdapterController implements NestedAdapterWrapper.Callback {
     }
 
     public void onViewRecycled(ViewHolder holder) {
-        NestedAdapterWrapper wrapper = mBinderLookup.remove(holder);
+        NestedAdapterWrapper wrapper = mBinderLookup.get(holder);
         if (wrapper == null) {
             throw new IllegalStateException("Cannot find wrapper for " + holder
                     + ", seems like it is not bound by this adapter: " + this);
         }
         wrapper.adapter.onViewRecycled(holder);
+        mBinderLookup.remove(holder);
     }
 
     public boolean onFailedToRecycleView(ViewHolder holder) {
-        NestedAdapterWrapper wrapper = mBinderLookup.remove(holder);
+        NestedAdapterWrapper wrapper = mBinderLookup.get(holder);
         if (wrapper == null) {
             throw new IllegalStateException("Cannot find wrapper for " + holder
                     + ", seems like it is not bound by this adapter: " + this);
         }
-        return wrapper.adapter.onFailedToRecycleView(holder);
+        final boolean result = wrapper.adapter.onFailedToRecycleView(holder);
+        mBinderLookup.remove(holder);
+        return result;
     }
 
     @NonNull

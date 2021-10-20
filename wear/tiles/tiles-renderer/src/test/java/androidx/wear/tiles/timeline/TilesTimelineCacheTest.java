@@ -19,12 +19,12 @@ package androidx.wear.tiles.timeline;
 import static com.google.common.truth.Truth.assertThat;
 
 import androidx.annotation.Nullable;
+import androidx.wear.tiles.LayoutElementBuilders.Layout;
+import androidx.wear.tiles.LayoutElementBuilders.Text;
 import androidx.wear.tiles.TilesTestRunner;
-import androidx.wear.tiles.builders.LayoutElementBuilders.Layout;
-import androidx.wear.tiles.builders.LayoutElementBuilders.Text;
-import androidx.wear.tiles.builders.TimelineBuilders.TimeInterval;
-import androidx.wear.tiles.builders.TimelineBuilders.Timeline;
-import androidx.wear.tiles.builders.TimelineBuilders.TimelineEntry;
+import androidx.wear.tiles.TimelineBuilders.TimeInterval;
+import androidx.wear.tiles.TimelineBuilders.Timeline;
+import androidx.wear.tiles.TimelineBuilders.TimelineEntry;
 
 import com.google.common.truth.Expect;
 
@@ -44,8 +44,8 @@ public class TilesTimelineCacheTest {
     public void timelineCache_noValidityMakesDefaultTile() {
         // Purposefully not setting a validity period.
         TimelineEntry entry =
-                TimelineEntry.builder().setLayout(buildTextLayout("Hello World")).build();
-        Timeline timeline = Timeline.builder().addTimelineEntry(entry).build();
+                new TimelineEntry.Builder().setLayout(buildTextLayout("Hello World")).build();
+        Timeline timeline = new Timeline.Builder().addTimelineEntry(entry).build();
 
         TilesTimelineCache timelineCache = new TilesTimelineCache(timeline);
 
@@ -66,25 +66,27 @@ public class TilesTimelineCacheTest {
         final long cutoverMillis = Duration.ofMinutes(10).toMillis();
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Tile1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(0)
-                                        .setEndMillis(cutoverMillis))
+                                        .setEndMillis(cutoverMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry2 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Tile2"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(cutoverMillis)
-                                        .setEndMillis(Long.MAX_VALUE))
+                                        .setEndMillis(Long.MAX_VALUE)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder().addTimelineEntry(entry1).addTimelineEntry(entry2).build();
+                new Timeline.Builder().addTimelineEntry(entry1).addTimelineEntry(entry2).build();
 
         TilesTimelineCache timelineCache = new TilesTimelineCache(timeline);
 
@@ -95,7 +97,8 @@ public class TilesTimelineCacheTest {
         // 1m before cutover
         expectTimelineEntryEqual(
                 timelineCache.findTimelineEntryForTime(
-                        cutoverMillis - Duration.ofMinutes(1).toMillis()), entry1);
+                        cutoverMillis - Duration.ofMinutes(1).toMillis()),
+                entry1);
 
         // Cutover
         expectTimelineEntryEqual(timelineCache.findTimelineEntryForTime(cutoverMillis), entry2);
@@ -105,14 +108,14 @@ public class TilesTimelineCacheTest {
         // 1m after
         expectTimelineEntryEqual(
                 timelineCache.findTimelineEntryForTime(
-                        cutoverMillis + Duration.ofMinutes(1).toMillis()), entry2);
+                        cutoverMillis + Duration.ofMinutes(1).toMillis()),
+                entry2);
     }
 
     @Test
     public void timelineCache_overlappingEntryWithDefault() {
         // Test that with a default, and an entry "on top", the entry is shown for its validity
-        // period,
-        // and the default for all other times. As an example
+        // period, and the default for all other times. As an example
         //              +---------------------+
         //              |         E1          |
         //  ...---------+---------------------+----------------...
@@ -127,19 +130,23 @@ public class TilesTimelineCacheTest {
         final long entry1EndMillis = entry1StartMillis + Duration.ofMinutes(10).toMillis();
 
         TimelineEntry defaultEntry =
-                TimelineEntry.builder().setLayout(buildTextLayout("DefaultTile")).build();
+                new TimelineEntry.Builder().setLayout(buildTextLayout("DefaultTile")).build();
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry1StartMillis)
-                                        .setEndMillis(entry1EndMillis))
+                                        .setEndMillis(entry1EndMillis)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder().addTimelineEntry(entry1).addTimelineEntry(defaultEntry).build();
+                new Timeline.Builder()
+                        .addTimelineEntry(entry1)
+                        .addTimelineEntry(defaultEntry)
+                        .build();
 
         TilesTimelineCache timelineCache = new TilesTimelineCache(timeline);
 
@@ -185,37 +192,40 @@ public class TilesTimelineCacheTest {
                 entry3StartMillis + Duration.ofMinutes(2).toMillis(); // Valid for 2 minutes
 
         TimelineEntry defaultEntry =
-                TimelineEntry.builder().setLayout(buildTextLayout("DefaultTile")).build();
+                new TimelineEntry.Builder().setLayout(buildTextLayout("DefaultTile")).build();
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry1StartMillis)
-                                        .setEndMillis(entry1EndMillis))
+                                        .setEndMillis(entry1EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry2 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry2"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry2StartMillis)
-                                        .setEndMillis(entry2EndMillis))
+                                        .setEndMillis(entry2EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry3 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry3"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry3StartMillis)
-                                        .setEndMillis(entry3EndMillis))
+                                        .setEndMillis(entry3EndMillis)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder()
+                new Timeline.Builder()
                         .addTimelineEntry(defaultEntry)
                         .addTimelineEntry(entry1)
                         .addTimelineEntry(entry2)
@@ -282,37 +292,40 @@ public class TilesTimelineCacheTest {
                 entry3StartMillis + Duration.ofMinutes(4).toMillis(); // Valid for 4 minutes
 
         TimelineEntry defaultEntry =
-                TimelineEntry.builder().setLayout(buildTextLayout("DefaultTile")).build();
+                new TimelineEntry.Builder().setLayout(buildTextLayout("DefaultTile")).build();
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry1StartMillis)
-                                        .setEndMillis(entry1EndMillis))
+                                        .setEndMillis(entry1EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry2 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry2"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry2StartMillis)
-                                        .setEndMillis(entry2EndMillis))
+                                        .setEndMillis(entry2EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry3 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry3"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry3StartMillis)
-                                        .setEndMillis(entry3EndMillis))
+                                        .setEndMillis(entry3EndMillis)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder()
+                new Timeline.Builder()
                         .addTimelineEntry(defaultEntry)
                         .addTimelineEntry(entry1)
                         .addTimelineEntry(entry2)
@@ -377,37 +390,40 @@ public class TilesTimelineCacheTest {
                 entry3StartMillis + Duration.ofMinutes(6).toMillis(); // Valid for 6 minutes
 
         TimelineEntry defaultEntry =
-                TimelineEntry.builder().setLayout(buildTextLayout("DefaultTile")).build();
+                new TimelineEntry.Builder().setLayout(buildTextLayout("DefaultTile")).build();
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry1StartMillis)
-                                        .setEndMillis(entry1EndMillis))
+                                        .setEndMillis(entry1EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry2 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry2"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry2StartMillis)
-                                        .setEndMillis(entry2EndMillis))
+                                        .setEndMillis(entry2EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry3 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry3"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry3StartMillis)
-                                        .setEndMillis(entry3EndMillis))
+                                        .setEndMillis(entry3EndMillis)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder()
+                new Timeline.Builder()
                         .addTimelineEntry(defaultEntry)
                         .addTimelineEntry(entry1)
                         .addTimelineEntry(entry2)
@@ -459,31 +475,32 @@ public class TilesTimelineCacheTest {
                 entry2StartMillis + Duration.ofMinutes(10).toMillis(); // 10 minutes
 
         TimelineEntry entry1 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry1"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry1StartMillis)
-                                        .setEndMillis(entry1EndMillis))
+                                        .setEndMillis(entry1EndMillis)
+                                        .build())
                         .build();
 
         TimelineEntry entry2 =
-                TimelineEntry.builder()
+                new TimelineEntry.Builder()
                         .setLayout(buildTextLayout("Entry2"))
                         .setValidity(
-                                TimeInterval.builder()
+                                new TimeInterval.Builder()
                                         .setStartMillis(entry2StartMillis)
-                                        .setEndMillis(entry2EndMillis))
+                                        .setEndMillis(entry2EndMillis)
+                                        .build())
                         .build();
 
         Timeline timeline =
-                Timeline.builder().addTimelineEntry(entry1).addTimelineEntry(entry2).build();
+                new Timeline.Builder().addTimelineEntry(entry1).addTimelineEntry(entry2).build();
 
         TilesTimelineCache timelineCache = new TilesTimelineCache(timeline);
 
         // This is really undefined behaviour at the moment, but, well, let's keep this as the
-        // assumed behaviour for now.
-        // Should just pick entry1 in this case.
+        // assumed behaviour for now. Should just pick entry1 in this case.
         expectTimelineEntryEqual(timelineCache.findTimelineEntryForTime(0L), null);
         expectTimelineEntryEqual(timelineCache.findClosestTimelineEntry(0L), entry1);
         expect.that(timelineCache.findCurrentTimelineEntryExpiry(entry1, 0L))
@@ -492,13 +509,16 @@ public class TilesTimelineCacheTest {
         // And after the end, should pick entry2
         expectTimelineEntryEqual(
                 timelineCache.findTimelineEntryForTime(
-                        entry2EndMillis + Duration.ofMinutes(1).toMillis()), null);
+                        entry2EndMillis + Duration.ofMinutes(1).toMillis()),
+                null);
         expectTimelineEntryEqual(
                 timelineCache.findClosestTimelineEntry(
-                        entry2EndMillis + Duration.ofMinutes(1).toMillis()), entry2);
+                        entry2EndMillis + Duration.ofMinutes(1).toMillis()),
+                entry2);
 
-        expect.that(timelineCache.findCurrentTimelineEntryExpiry(
-                entry1, entry2EndMillis + Duration.ofMinutes(1).toMillis()))
+        expect.that(
+                        timelineCache.findCurrentTimelineEntryExpiry(
+                                entry1, entry2EndMillis + Duration.ofMinutes(1).toMillis()))
                 .isEqualTo(Long.MAX_VALUE);
     }
 
@@ -513,6 +533,6 @@ public class TilesTimelineCacheTest {
     }
 
     private static Layout buildTextLayout(String text) {
-        return Layout.builder().setRoot(Text.builder().setText(text)).build();
+        return new Layout.Builder().setRoot(new Text.Builder().setText(text).build()).build();
     }
 }

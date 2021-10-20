@@ -18,12 +18,14 @@ package androidx.wear.tiles;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.concurrent.futures.ResolvableFuture;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -46,8 +48,9 @@ public class CompositeTileUpdateRequesterTest {
         mFakeUpdateRequester1 = new FakeUpdateRequester();
         mFakeUpdateRequester2 = new FakeUpdateRequester();
 
-        mCompositeTileUpdateRequesterUnderTest = new CompositeTileUpdateRequester(
-                List.of(mFakeUpdateRequester1, mFakeUpdateRequester2));
+        mCompositeTileUpdateRequesterUnderTest =
+                new CompositeTileUpdateRequester(
+                        List.of(mFakeUpdateRequester1, mFakeUpdateRequester2));
     }
 
     @Test
@@ -59,16 +62,33 @@ public class CompositeTileUpdateRequesterTest {
     }
 
     private class FakeUpdateRequester implements TileUpdateRequester {
-        @Nullable Class<? extends Service> mCalledService = null;
+        @Nullable Class<? extends TileService> mCalledService = null;
 
         @Override
-        public void requestUpdate(
-                @NonNull Class<? extends Service> tileProvider) {
-            this.mCalledService = tileProvider;
+        public void requestUpdate(@NonNull Class<? extends TileService> tileService) {
+            this.mCalledService = tileService;
         }
     }
 
-    private class FakeService extends Service {
+    private class FakeService extends TileService {
+        @NonNull
+        @Override
+        protected ListenableFuture<TileBuilders.Tile> onTileRequest(
+                @NonNull RequestBuilders.TileRequest requestParams) {
+            ResolvableFuture<TileBuilders.Tile> f = ResolvableFuture.create();
+            f.set(null);
+            return f;
+        }
+
+        @NonNull
+        @Override
+        protected ListenableFuture<ResourceBuilders.Resources> onResourcesRequest(
+                @NonNull RequestBuilders.ResourcesRequest requestParams) {
+            ResolvableFuture<ResourceBuilders.Resources> f = ResolvableFuture.create();
+            f.set(null);
+            return f;
+        }
+
         @Nullable
         @Override
         public IBinder onBind(Intent intent) {

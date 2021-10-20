@@ -24,6 +24,7 @@ import androidx.camera.camera2.pipe.CameraGraph
 import androidx.camera.camera2.pipe.CameraStream
 import androidx.camera.camera2.pipe.Request
 import androidx.camera.camera2.pipe.StreamFormat
+import androidx.test.filters.FlakyTest
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -73,8 +74,6 @@ public class CameraGraphSimulatorTest {
         simulator.cameraGraph.start()
 
         val frame = simulator.simulateNextFrame()
-        assertThat(frame).isNotNull()
-        frame!! // Tell kotlin that this is not null.
 
         assertThat(frame.request).isSameInstanceAs(request)
         assertThat(frame.frameNumber.value).isGreaterThan(0)
@@ -185,7 +184,7 @@ public class CameraGraphSimulatorTest {
         }
         simulator.cameraGraph.start()
 
-        val frame = simulator.simulateNextFrame()!!
+        val frame = simulator.simulateNextFrame()
         assertThat(frame.request).isSameInstanceAs(request)
 
         frame.simulateBufferLoss(stream.id)
@@ -195,6 +194,7 @@ public class CameraGraphSimulatorTest {
         assertThat(lossEvent.streamId).isEqualTo(stream.id)
     }
 
+    @FlakyTest(bugId = 188446185)
     @Test
     fun simulatorCanIssueMultipleFrames() = runBlocking {
         val listener = FakeRequestListener()
@@ -208,9 +208,9 @@ public class CameraGraphSimulatorTest {
         }
         simulator.cameraGraph.start()
 
-        val frame1 = simulator.simulateNextFrame()!!
-        val frame2 = simulator.simulateNextFrame()!!
-        val frame3 = simulator.simulateNextFrame()!!
+        val frame1 = simulator.simulateNextFrame()
+        val frame2 = simulator.simulateNextFrame()
+        val frame3 = simulator.simulateNextFrame()
 
         assertThat(frame1).isNotEqualTo(frame2)
         assertThat(frame2).isNotEqualTo(frame3)
@@ -234,7 +234,7 @@ public class CameraGraphSimulatorTest {
             frame3.simulateComplete(resultMetadata)
         }
 
-        val startEvents = withTimeout(timeMillis = 150) {
+        val startEvents = withTimeout(timeMillis = 250) {
             listener.onStartedFlow.take(3).toList()
         }
         assertThat(startEvents).hasSize(3)
@@ -259,7 +259,7 @@ public class CameraGraphSimulatorTest {
         assertThat(event2.requestMetadata.request).isSameInstanceAs(request)
         assertThat(event3.requestMetadata.request).isSameInstanceAs(request)
 
-        val completeEvents = withTimeout(timeMillis = 150) {
+        val completeEvents = withTimeout(timeMillis = 250) {
             listener.onCompleteFlow.take(3).toList()
         }
         assertThat(completeEvents).hasSize(3)

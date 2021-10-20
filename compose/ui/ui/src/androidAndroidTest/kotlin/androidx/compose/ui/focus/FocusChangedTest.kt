@@ -19,11 +19,9 @@ package androidx.compose.ui.focus
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusState.Active
-import androidx.compose.ui.focus.FocusState.ActiveParent
-import androidx.compose.ui.focus.FocusState.Captured
-import androidx.compose.ui.focus.FocusState.Disabled
-import androidx.compose.ui.focus.FocusState.Inactive
+import androidx.compose.ui.focus.FocusStateImpl.Active
+import androidx.compose.ui.focus.FocusStateImpl.Captured
+import androidx.compose.ui.focus.FocusStateImpl.Inactive
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -57,7 +55,7 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState).isEqualTo(Active)
+            assertThat(focusState.isFocused).isTrue()
         }
     }
 
@@ -66,24 +64,26 @@ class FocusChangedTest {
     fun activeParent_requestFocus() {
         // Arrange.
         lateinit var focusState: FocusState
+        lateinit var childFocusState: FocusState
         val (focusRequester, childFocusRequester) = FocusRequester.createRefs()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .focusModifier()
+                    .focusTarget()
             ) {
                 Box(
                     modifier = Modifier
+                        .onFocusChanged { childFocusState = it }
                         .focusRequester(childFocusRequester)
-                        .focusModifier()
+                        .focusTarget()
                 )
             }
         }
         rule.runOnIdle {
             childFocusRequester.requestFocus()
-            assertThat(focusState).isEqualTo(ActiveParent)
+            assertThat(focusState.hasFocus).isTrue()
         }
 
         rule.runOnIdle {
@@ -91,7 +91,8 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState).isEqualTo(Active)
+            assertThat(focusState.isFocused).isTrue()
+            assertThat(childFocusState.isFocused).isFalse()
         }
     }
 
@@ -114,12 +115,12 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState).isEqualTo(Captured)
+            assertThat(focusState.isCaptured).isTrue()
         }
     }
 
     @Test
-    fun disabled_requestFocus() {
+    fun deactivated_requestFocus() {
         // Arrange.
         lateinit var focusState: FocusState
         val focusRequester = FocusRequester()
@@ -128,7 +129,8 @@ class FocusChangedTest {
                 modifier = Modifier
                     .onFocusChanged { focusState = it }
                     .focusRequester(focusRequester)
-                    .then(FocusModifier(Disabled))
+                    .focusProperties { canFocus = false }
+                    .focusTarget()
             )
         }
 
@@ -137,7 +139,50 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState).isEqualTo(Disabled)
+            assertThat(focusState.isDeactivated).isTrue()
+        }
+    }
+
+    @ExperimentalComposeUiApi
+    @Test
+    fun deactivatedParent_requestFocus() {
+        // Arrange.
+        lateinit var focusState: FocusState
+        lateinit var childFocusState: FocusState
+        val (focusRequester, childFocusRequester) = FocusRequester.createRefs()
+        rule.setFocusableContent {
+            Box(
+                modifier = Modifier
+                    .onFocusChanged { focusState = it }
+                    .focusRequester(focusRequester)
+                    .focusProperties { canFocus = false }
+                    .focusTarget()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .onFocusChanged { childFocusState = it }
+                        .focusRequester(childFocusRequester)
+                        .focusTarget()
+                )
+            }
+        }
+        rule.runOnIdle {
+            childFocusRequester.requestFocus()
+            assertThat(childFocusState.isFocused).isTrue()
+            assertThat(focusState.hasFocus).isTrue()
+            assertThat(focusState.isFocused).isFalse()
+            assertThat(focusState.isDeactivated).isTrue()
+        }
+
+        rule.runOnIdle {
+            // Act.
+            focusRequester.requestFocus()
+
+            // Assert.
+            assertThat(childFocusState.isFocused).isTrue()
+            assertThat(focusState.hasFocus).isTrue()
+            assertThat(focusState.isFocused).isFalse()
+            assertThat(focusState.isDeactivated).isTrue()
         }
     }
 
@@ -160,7 +205,7 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState).isEqualTo(Active)
+            assertThat(focusState.isFocused).isTrue()
         }
     }
 
@@ -203,33 +248,33 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState1).isEqualTo(Active)
-            assertThat(focusState2).isEqualTo(Active)
-            assertThat(focusState3).isEqualTo(Active)
-            assertThat(focusState4).isEqualTo(Active)
-            assertThat(focusState5).isEqualTo(Active)
-            assertThat(focusState6).isEqualTo(Active)
+            assertThat(focusState1.isFocused).isTrue()
+            assertThat(focusState2.isFocused).isTrue()
+            assertThat(focusState3.isFocused).isTrue()
+            assertThat(focusState4.isFocused).isTrue()
+            assertThat(focusState5.isFocused).isTrue()
+            assertThat(focusState6.isFocused).isTrue()
         }
     }
 
     @Test
-    fun active_requestFocus_multipleObserversWithExtraFocusModifierInBetween() {
+    fun active_requestFocus_multipleObserversWithExtraFocusTargetInBetween() {
         // Arrange.
-        var focusState1: FocusState? = null
-        var focusState2: FocusState? = null
-        var focusState3: FocusState? = null
-        var focusState4: FocusState? = null
+        lateinit var focusState1: FocusState
+        lateinit var focusState2: FocusState
+        lateinit var focusState3: FocusState
+        lateinit var focusState4: FocusState
         val focusRequester = FocusRequester()
         rule.setFocusableContent {
             Box(
                 modifier = Modifier
                     .onFocusChanged { focusState1 = it }
                     .onFocusChanged { focusState2 = it }
-                    .focusModifier()
+                    .focusTarget()
                     .onFocusChanged { focusState3 = it }
                     .onFocusChanged { focusState4 = it }
                     .focusRequester(focusRequester)
-                    .focusModifier()
+                    .focusTarget()
             )
         }
 
@@ -238,10 +283,13 @@ class FocusChangedTest {
             focusRequester.requestFocus()
 
             // Assert.
-            assertThat(focusState1).isEqualTo(ActiveParent)
-            assertThat(focusState2).isEqualTo(ActiveParent)
-            assertThat(focusState3).isEqualTo(Active)
-            assertThat(focusState4).isEqualTo(Active)
+            assertThat(focusState1.hasFocus).isTrue()
+            assertThat(focusState2.hasFocus).isTrue()
+            assertThat(focusState3.isFocused).isTrue()
+            assertThat(focusState4.isFocused).isTrue()
         }
     }
 }
+
+private val FocusState.isDeactivated: Boolean
+    get() = (this as FocusStateImpl).isDeactivated

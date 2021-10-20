@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+@file:RequiresApi(21) // TODO(b/200306659): Remove and replace with annotation on package-info.java
+
 package androidx.camera.camera2.pipe
 
 import android.content.Context
 import android.os.HandlerThread
+import androidx.annotation.RequiresApi
 import androidx.camera.camera2.pipe.config.CameraGraphConfigModule
 import androidx.camera.camera2.pipe.config.CameraPipeComponent
 import androidx.camera.camera2.pipe.config.CameraPipeConfigModule
@@ -99,7 +102,7 @@ public class CameraPipe(config: Config, threadConfig: ThreadConfig = ThreadConfi
      * External may be used if the underlying implementation needs to delegate to another library
      * or system.
      */
-    class External(private val threadConfig: ThreadConfig = ThreadConfig()) {
+    class External(threadConfig: ThreadConfig = ThreadConfig()) {
         private val component: ExternalCameraPipeComponent = DaggerExternalCameraPipeComponent
             .builder()
             .threadConfigModule(ThreadConfigModule(threadConfig))

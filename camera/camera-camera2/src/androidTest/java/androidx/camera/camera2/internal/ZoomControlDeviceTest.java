@@ -56,6 +56,7 @@ import androidx.core.os.HandlerCompat;
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -65,7 +66,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.concurrent.CountDownLatch;
@@ -76,6 +76,7 @@ import java.util.concurrent.TimeoutException;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = 21)
 public final class ZoomControlDeviceTest {
     private static final int TOLERANCE = 5;
     private ZoomControl mZoomControl;
@@ -246,12 +247,8 @@ public final class ZoomControlDeviceTest {
 
     @NonNull
     private Rect getSessionCropRegion(ControlUpdateCallback controlUpdateCallback) {
-        ArgumentCaptor<SessionConfig> sessionConfigArgumentCaptor =
-                ArgumentCaptor.forClass(SessionConfig.class);
-
-        verify(controlUpdateCallback, times(1)).onCameraControlUpdateSessionConfig(
-                sessionConfigArgumentCaptor.capture());
-        SessionConfig sessionConfig = sessionConfigArgumentCaptor.getValue();
+        verify(controlUpdateCallback, times(1)).onCameraControlUpdateSessionConfig();
+        SessionConfig sessionConfig = mCamera2CameraControlImpl.getSessionConfig();
         Camera2ImplConfig camera2Config = new Camera2ImplConfig(
                 sessionConfig.getImplementationOptions());
 
@@ -262,12 +259,8 @@ public final class ZoomControlDeviceTest {
 
     @NonNull
     private Float getAndroidRZoomRatio(ControlUpdateCallback controlUpdateCallback) {
-        ArgumentCaptor<SessionConfig> sessionConfigArgumentCaptor =
-                ArgumentCaptor.forClass(SessionConfig.class);
-
-        verify(controlUpdateCallback, times(1)).onCameraControlUpdateSessionConfig(
-                sessionConfigArgumentCaptor.capture());
-        SessionConfig sessionConfig = sessionConfigArgumentCaptor.getValue();
+        verify(controlUpdateCallback, times(1)).onCameraControlUpdateSessionConfig();
+        SessionConfig sessionConfig = mCamera2CameraControlImpl.getSessionConfig();
         Camera2ImplConfig camera2Config = new Camera2ImplConfig(
                 sessionConfig.getImplementationOptions());
 

@@ -117,7 +117,11 @@ class AndroidPaint : Paint {
 }
 
 internal fun makeNativePaint() =
-    android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    android.graphics.Paint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG or
+            android.graphics.Paint.DITHER_FLAG or
+            android.graphics.Paint.FILTER_BITMAP_FLAG
+    )
 
 internal fun NativePaint.setNativeBlendMode(mode: BlendMode) {
     if (Build.VERSION.SDK_INT >= 29) {
@@ -183,6 +187,7 @@ internal fun NativePaint.setNativeStrokeCap(value: StrokeCap) {
         StrokeCap.Square -> android.graphics.Paint.Cap.SQUARE
         StrokeCap.Round -> android.graphics.Paint.Cap.ROUND
         StrokeCap.Butt -> android.graphics.Paint.Cap.BUTT
+        else -> android.graphics.Paint.Cap.BUTT
     }
 }
 
@@ -199,6 +204,7 @@ internal fun NativePaint.setNativeStrokeJoin(value: StrokeJoin) {
         StrokeJoin.Miter -> android.graphics.Paint.Join.MITER
         StrokeJoin.Bevel -> android.graphics.Paint.Join.BEVEL
         StrokeJoin.Round -> android.graphics.Paint.Join.ROUND
+        else -> android.graphics.Paint.Join.MITER
     }
 }
 

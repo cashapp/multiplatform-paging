@@ -67,7 +67,7 @@ public abstract class ActivityResultRegistry {
     private Random mRandom = new Random();
 
     private final Map<Integer, String> mRcToKey = new HashMap<>();
-    private final Map<String, Integer> mKeyToRc = new HashMap<>();
+    final Map<String, Integer> mKeyToRc = new HashMap<>();
     private final Map<String, LifecycleContainer> mKeyToLifecycleContainers = new HashMap<>();
     ArrayList<String> mLaunchedKeys = new ArrayList<>();
 
@@ -124,7 +124,7 @@ public abstract class ActivityResultRegistry {
                     + "they are STARTED.");
         }
 
-        final int requestCode = registerKey(key);
+        registerKey(key);
         LifecycleContainer lifecycleContainer = mKeyToLifecycleContainers.get(key);
         if (lifecycleContainer == null) {
             lifecycleContainer = new LifecycleContainer(lifecycle);
@@ -162,8 +162,20 @@ public abstract class ActivityResultRegistry {
         return new ActivityResultLauncher<I>() {
             @Override
             public void launch(I input, @Nullable ActivityOptionsCompat options) {
+                Integer innerCode = mKeyToRc.get(key);
+                if (innerCode == null) {
+                    throw new IllegalStateException("Attempting to launch an unregistered "
+                            + "ActivityResultLauncher with contract " + contract + " and input "
+                            + input + ". You must ensure the ActivityResultLauncher is registered "
+                            + "before calling launch().");
+                }
                 mLaunchedKeys.add(key);
-                onLaunch(requestCode, contract, input, options);
+                try {
+                    onLaunch(innerCode, contract, input, options);
+                } catch (Exception e) {
+                    mLaunchedKeys.remove(key);
+                    throw e;
+                }
             }
 
             @Override
@@ -200,7 +212,7 @@ public abstract class ActivityResultRegistry {
             @NonNull final String key,
             @NonNull final ActivityResultContract<I, O> contract,
             @NonNull final ActivityResultCallback<O> callback) {
-        final int requestCode = registerKey(key);
+        registerKey(key);
         mKeyToCallback.put(key, new CallbackAndContract<>(callback, contract));
 
         if (mParsedPendingResults.containsKey(key)) {
@@ -220,8 +232,15 @@ public abstract class ActivityResultRegistry {
         return new ActivityResultLauncher<I>() {
             @Override
             public void launch(I input, @Nullable ActivityOptionsCompat options) {
+                Integer innerCode = mKeyToRc.get(key);
+                if (innerCode == null) {
+                    throw new IllegalStateException("Attempting to launch an unregistered "
+                            + "ActivityResultLauncher with contract " + contract + " and input "
+                            + input + ". You must ensure the ActivityResultLauncher is registered "
+                            + "before calling launch().");
+                }
                 mLaunchedKeys.add(key);
-                onLaunch(requestCode, contract, input, options);
+                onLaunch(innerCode, contract, input, options);
             }
 
             @Override
@@ -277,9 +296,9 @@ public abstract class ActivityResultRegistry {
      */
     public final void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putIntegerArrayList(KEY_COMPONENT_ACTIVITY_REGISTERED_RCS,
-                new ArrayList<>(mRcToKey.keySet()));
+                new ArrayList<>(mKeyToRc.values()));
         outState.putStringArrayList(KEY_COMPONENT_ACTIVITY_REGISTERED_KEYS,
-                new ArrayList<>(mRcToKey.values()));
+                new ArrayList<>(mKeyToRc.keySet()));
         outState.putStringArrayList(KEY_COMPONENT_ACTIVITY_LAUNCHED_KEYS,
                 new ArrayList<>(mLaunchedKeys));
         outState.putBundle(KEY_COMPONENT_ACTIVITY_PENDING_RESULTS,
@@ -303,15 +322,28 @@ public abstract class ActivityResultRegistry {
         if (keys == null || rcs == null) {
             return;
         }
-        int numKeys = keys.size();
-        for (int i = 0; i < numKeys; i++) {
-            bindRcKey(rcs.get(i), keys.get(i));
-        }
         mLaunchedKeys =
                 savedInstanceState.getStringArrayList(KEY_COMPONENT_ACTIVITY_LAUNCHED_KEYS);
         mRandom = (Random) savedInstanceState.getSerializable(KEY_COMPONENT_ACTIVITY_RANDOM_OBJECT);
         mPendingResults.putAll(
                 savedInstanceState.getBundle(KEY_COMPONENT_ACTIVITY_PENDING_RESULTS));
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            // Developers may have already registered with this same key by the time we restore
+            // state, which caused us to generate a new requestCode that doesn't match what we're
+            // about to restore. Clear out the new requestCode to ensure that we use the
+            // previously saved requestCode.
+            if (mKeyToRc.containsKey(key)) {
+                Integer newRequestCode = mKeyToRc.remove(key);
+                // On the chance that developers have already called launch() with this new
+                // requestCode, keep the mapping around temporarily to ensure the result is
+                // properly delivered to both the new requestCode and the restored requestCode
+                if (!mPendingResults.containsKey(key)) {
+                    mRcToKey.remove(newRequestCode);
+                }
+            }
+            bindRcKey(rcs.get(i), keys.get(i));
+        }
     }
 
     /**
@@ -331,8 +363,6 @@ public abstract class ActivityResultRegistry {
         if (key == null) {
             return false;
         }
-        mLaunchedKeys.remove(key);
-
         doDispatch(key, resultCode, data, mKeyToCallback.get(key));
         return true;
     }
@@ -352,7 +382,6 @@ public abstract class ActivityResultRegistry {
         if (key == null) {
             return false;
         }
-        mLaunchedKeys.remove(key);
 
         CallbackAndContract<?> callbackAndContract = mKeyToCallback.get(key);
         if (callbackAndContract == null || callbackAndContract.mCallback == null) {
@@ -364,17 +393,21 @@ public abstract class ActivityResultRegistry {
             @SuppressWarnings("unchecked")
             ActivityResultCallback<O> callback =
                     (ActivityResultCallback<O>) callbackAndContract.mCallback;
-            callback.onActivityResult(result);
+            if (mLaunchedKeys.remove(key)) {
+                callback.onActivityResult(result);
+            }
         }
         return true;
     }
 
     private <O> void doDispatch(String key, int resultCode, @Nullable Intent data,
             @Nullable CallbackAndContract<O> callbackAndContract) {
-        if (callbackAndContract != null && callbackAndContract.mCallback != null) {
+        if (callbackAndContract != null && callbackAndContract.mCallback != null
+                && mLaunchedKeys.contains(key)) {
             ActivityResultCallback<O> callback = callbackAndContract.mCallback;
             ActivityResultContract<?, O> contract = callbackAndContract.mContract;
             callback.onActivityResult(contract.parseResult(resultCode, data));
+            mLaunchedKeys.remove(key);
         } else {
             // Remove any parsed pending result
             mParsedPendingResults.remove(key);
@@ -383,14 +416,13 @@ public abstract class ActivityResultRegistry {
         }
     }
 
-    private int registerKey(String key) {
+    private void registerKey(String key) {
         Integer existing = mKeyToRc.get(key);
         if (existing != null) {
-            return existing;
+            return;
         }
         int rc = generateRandomNumber();
         bindRcKey(rc, key);
-        return rc;
     }
 
     /**

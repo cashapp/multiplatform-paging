@@ -28,7 +28,6 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.ProgressIndicatorDefaults.IndicatorBackgroundOpacity
@@ -50,7 +49,11 @@ import kotlin.math.abs
 import kotlin.math.max
 
 /**
- * A determinate linear progress indicator that represents progress by drawing a horizontal line.
+ * Determinate <a href="https://material.io/components/progress-indicators#linear-progress-indicators" class="external" target="_blank">Material Design linear progress indicator</a>.
+ *
+ * Progress indicators express an unspecified wait time or display the length of a process.
+ *
+ * ![Linear progress indicator image](https://developer.android.com/images/reference/androidx/compose/material/linear-progress-indicator.png)
  *
  * By default there is no animation between [progress] values. You can use
  * [ProgressIndicatorDefaults.ProgressAnimationSpec] as the default recommended
@@ -76,17 +79,19 @@ fun LinearProgressIndicator(
         modifier
             .progressSemantics(progress)
             .size(LinearIndicatorWidth, LinearIndicatorHeight)
-            .focusable()
     ) {
-        val strokeWidth = ProgressIndicatorDefaults.StrokeWidth.toPx()
+        val strokeWidth = size.height
         drawLinearIndicatorBackground(backgroundColor, strokeWidth)
         drawLinearIndicator(0f, progress, color, strokeWidth)
     }
 }
 
 /**
- * An indeterminate linear progress indicator that represents continual progress without a defined
- * start or end point.
+ * Indeterminate <a href="https://material.io/components/progress-indicators#linear-progress-indicators" class="external" target="_blank">Material Design linear progress indicator</a>.
+ *
+ * Progress indicators express an unspecified wait time or display the length of a process.
+ *
+ * ![Linear progress indicator image](https://developer.android.com/images/reference/androidx/compose/material/linear-progress-indicator.png)
  *
  * @param color The color of the progress indicator.
  * @param backgroundColor The color of the background behind the indicator, visible when the
@@ -150,9 +155,8 @@ fun LinearProgressIndicator(
         modifier
             .progressSemantics()
             .size(LinearIndicatorWidth, LinearIndicatorHeight)
-            .focusable()
     ) {
-        val strokeWidth = ProgressIndicatorDefaults.StrokeWidth.toPx()
+        val strokeWidth = size.height
         drawLinearIndicatorBackground(backgroundColor, strokeWidth)
         if (firstLineHead - firstLineTail > 0) {
             drawLinearIndicator(
@@ -198,8 +202,11 @@ private fun DrawScope.drawLinearIndicatorBackground(
 ) = drawLinearIndicator(0f, 1f, color, strokeWidth)
 
 /**
- * A determinate circular progress indicator that represents progress by drawing an arc ranging from
- * 0 to 360 degrees.
+ * Determinate <a href="https://material.io/components/progress-indicators#circular-progress-indicators" class="external" target="_blank">Material Design circular progress indicator</a>.
+ *
+ * Progress indicators express an unspecified wait time or display the length of a process.
+ *
+ * ![Circular progress indicator image](https://developer.android.com/images/reference/androidx/compose/material/circular-progress-indicator.png)
  *
  * By default there is no animation between [progress] values. You can use
  * [ProgressIndicatorDefaults.ProgressAnimationSpec] as the default recommended
@@ -227,7 +234,6 @@ fun CircularProgressIndicator(
         modifier
             .progressSemantics(progress)
             .size(CircularIndicatorDiameter)
-            .focusable()
     ) {
         // Start at 12 O'clock
         val startAngle = 270f
@@ -237,8 +243,11 @@ fun CircularProgressIndicator(
 }
 
 /**
- * An indeterminate circular progress indicator that represents continual progress without a defined
- * start or end point.
+ * Indeterminate <a href="https://material.io/components/progress-indicators#circular-progress-indicators" class="external" target="_blank">Material Design circular progress indicator</a>.
+ *
+ * Progress indicators express an unspecified wait time or display the length of a process.
+ *
+ * ![Circular progress indicator image](https://developer.android.com/images/reference/androidx/compose/material/circular-progress-indicator.png)
  *
  * @param color The color of the progress indicator.
  * @param strokeWidth The stroke width for the progress indicator.
@@ -305,7 +314,6 @@ fun CircularProgressIndicator(
         modifier
             .progressSemantics()
             .size(CircularIndicatorDiameter)
-            .focusable()
     ) {
 
         val currentRotationAngleOffset = (currentRotation * RotationAngleOffset) % 360f

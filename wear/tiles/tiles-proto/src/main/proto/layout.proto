@@ -15,24 +15,24 @@ option java_outer_classname = "LayoutElementProto";
 // The horizontal alignment of an element within its container.
 enum HorizontalAlignment {
   // Horizontal alignment is undefined.
-  HALIGN_UNDEFINED = 0;
+  HORIZONTAL_ALIGN_UNDEFINED = 0;
 
   // Horizontally align to the left.
-  HALIGN_LEFT = 1;
+  HORIZONTAL_ALIGN_LEFT = 1;
 
   // Horizontally align to center.
-  HALIGN_CENTER = 2;
+  HORIZONTAL_ALIGN_CENTER = 2;
 
   // Horizontally align to the right.
-  HALIGN_RIGHT = 3;
+  HORIZONTAL_ALIGN_RIGHT = 3;
 
   // Horizontally align to the content start (left in LTR layouts, right in RTL
   // layouts).
-  HALIGN_START = 4;
+  HORIZONTAL_ALIGN_START = 4;
 
   // Horizontally align to the content end (right in LTR layouts, left in RTL
   // layouts).
-  HALIGN_END = 5;
+  HORIZONTAL_ALIGN_END = 5;
 }
 
 // An extensible HorizontalAlignment property.
@@ -44,16 +44,16 @@ message HorizontalAlignmentProp {
 // The vertical alignment of an element within its container.
 enum VerticalAlignment {
   // Vertical alignment is undefined.
-  VALIGN_UNDEFINED = 0;
+  VERTICAL_ALIGN_UNDEFINED = 0;
 
   // Vertically align to the top.
-  VALIGN_TOP = 1;
+  VERTICAL_ALIGN_TOP = 1;
 
   // Vertically align to center.
-  VALIGN_CENTER = 2;
+  VERTICAL_ALIGN_CENTER = 2;
 
   // Vertically align to the bottom.
-  VALIGN_BOTTOM = 3;
+  VERTICAL_ALIGN_BOTTOM = 3;
 }
 
 // An extensible VerticalAlignment property.
@@ -70,6 +70,9 @@ enum FontWeight {
   // Normal font weight.
   FONT_WEIGHT_NORMAL = 400;
 
+  // Medium font weight.
+  FONT_WEIGHT_MEDIUM = 500;
+
   // Bold font weight.
   FONT_WEIGHT_BOLD = 700;
 }
@@ -78,6 +81,49 @@ enum FontWeight {
 message FontWeightProp {
   // The value.
   FontWeight value = 1;
+}
+
+// The variant of a font. Some renderers may use different fonts for title and
+// body text, which can be selected using this field.
+enum FontVariant {
+  // Font variant is undefined.
+  FONT_VARIANT_UNDEFINED = 0;
+
+  // Font variant suited for title text.
+  FONT_VARIANT_TITLE = 1;
+
+  // Font variant suited for body text.
+  FONT_VARIANT_BODY = 2;
+}
+
+// An extensible FontVariant property.
+message FontVariantProp {
+  // The value.
+  FontVariant value = 1;
+}
+
+// The alignment of a SpanImage within the line height of the surrounding
+// Spannable.
+enum SpanVerticalAlignment {
+  // Alignment is undefined.
+  SPAN_VERTICAL_ALIGN_UNDEFINED = 0;
+
+  // Align to the bottom of the line (descent of the largest text in this line).
+  // If there is no text in the line containing this image, this will align to
+  // the bottom of the line, where the line height is defined as the height of
+  // the largest image in the line.
+  SPAN_VERTICAL_ALIGN_BOTTOM = 1;
+
+  // Align to the baseline of the text. Note that if the line in the Spannable
+  // which contains this image does not contain any text, the effects of using
+  // this alignment are undefined.
+  SPAN_VERTICAL_ALIGN_TEXT_BASELINE = 2;
+}
+
+// An extensible SpanVerticalAlignment property.
+message SpanVerticalAlignmentProp {
+  // The value.
+  SpanVerticalAlignment value = 1;
 }
 
 // The styling of a font (e.g. font size, and metrics).
@@ -106,6 +152,11 @@ message FontStyle {
   // letters while negative numbers tighten the space. If not specified,
   // defaults to 0.
   EmProp letter_spacing = 6;
+
+  // The variant of a font. Some renderers may use different fonts for title and
+  // body text, which can be selected using this field. If not specified,
+  // defaults to "body".
+  FontVariantProp variant = 7;
 }
 
 // Alignment of a text element.
@@ -133,8 +184,6 @@ message TextAlignmentProp {
 
 // How text that will not fit inside the bounds of a Text element will be
 // handled.
-//
-// TODO(b/175536688): Rename this to align with Spannable
 enum TextOverflow {
   // Overflow behavior is undefined.
   TEXT_OVERFLOW_UNDEFINED = 0;
@@ -263,7 +312,21 @@ enum ContentScaleMode {
 
 // An extensible ContentScaleMode property.
 message ContentScaleModeProp {
+  // The value
   ContentScaleMode value = 1;
+}
+
+// Filtering parameters used for images. This can be used to apply a color tint
+// to images.
+message ColorFilter {
+  // The tint color to use. If specified, the image will be tinted, using
+  // SRC_IN blending (that is, all color information will be stripped from the
+  // target image, and only the alpha channel will be blended with the requested
+  // color).
+  //
+  // Note that only Android image resources can be tinted; Inline images will
+  // not be tinted, and this property will have no effect.
+  ColorProp tint = 1;
 }
 
 // An image.
@@ -290,6 +353,10 @@ message Image {
 
   // Modifiers for this element.
   Modifiers modifiers = 5;
+
+  // Filtering parameters for this image. If not specified, defaults to no
+  // filtering.
+  ColorFilter filter = 6;
 }
 
 // A simple spacer, typically used to provide padding between adjacent elements.
@@ -322,11 +389,11 @@ message Box {
   ContainerDimension width = 3;
 
   // The horizontal alignment of the element inside this Box. If not defined,
-  // defaults to HALIGN_CENTER.
+  // defaults to HORIZONTAL_ALIGN_CENTER.
   HorizontalAlignmentProp horizontal_alignment = 4;
 
   // The vertical alignment of the element inside this Box. If not defined,
-  // defaults to VALIGN_CENTER.
+  // defaults to VERTICAL_ALIGN_CENTER.
   VerticalAlignmentProp vertical_alignment = 5;
 
   // Modifiers for this element.
@@ -362,6 +429,10 @@ message SpanImage {
 
   // Modifiers for this element.
   SpanModifiers modifiers = 4;
+
+  // Alignment of this image within the line height of the surrounding
+  // Spannable. If undefined, defaults to SPAN_VERTICAL_ALIGN_BOTTOM.
+  SpanVerticalAlignmentProp alignment = 5;
 }
 
 // A single Span. Each Span forms part of a larger Spannable widget. At the
@@ -413,6 +484,11 @@ message Spannable {
   // first line or after the last line. The default value is zero and negative
   // values will decrease the interline spacing.
   SpProp line_spacing = 6;
+
+  // The explicit height between lines of text. This is equivalent to the
+  // vertical distance between subsequent baselines. If not specified, defaults
+  // the font's recommended interline spacing.
+  SpProp line_height = 7;
 }
 
 // A column of elements. Each child element will be laid out vertically, one
@@ -429,7 +505,7 @@ message Column {
 
   // The horizontal alignment of elements inside this column, if they are
   // narrower than the resulting width of the column. If not defined, defaults
-  // to HALIGN_CENTER.
+  // to HORIZONTAL_ALIGN_CENTER.
   HorizontalAlignmentProp horizontal_alignment = 2;
 
   // The width of this column. If not defined, this will size itself to fit
@@ -458,7 +534,7 @@ message Row {
 
   // The vertical alignment of elements inside this row, if they are narrower
   // than the resulting height of the row. If not defined, defaults to
-  // VALIGN_CENTER.
+  // VERTICAL_ALIGN_CENTER.
   VerticalAlignmentProp vertical_alignment = 2;
 
   // The width of this row. If not defined, this will size itself to fit
@@ -490,16 +566,15 @@ message Arc {
   // degrees), and values >360 will be be placed at X mod 360 degrees.
   DegreesProp anchor_angle = 2;
 
-  // How to align the contents of this container relative to anchor_angle. See
-  // the descriptions of options in ArcAnchorType for more information. If not
-  // defined, defaults to ARC_ANCHOR_CENTER.
+  // How to align the contents of this container relative to anchor_angle. If
+  // not defined, defaults to ARC_ANCHOR_CENTER.
   ArcAnchorTypeProp anchor_type = 3;
 
   // Vertical alignment of elements within the arc. If the Arc's thickness is
   // larger than the thickness of the element being drawn, this controls whether
   // the element should be drawn towards the inner or outer edge of the arc, or
   // drawn in the center.
-  // If not defined, defaults to VALIGN_CENTER
+  // If not defined, defaults to VERTICAL_ALIGN_CENTER
   VerticalAlignmentProp vertical_align = 4;
 
   // Modifiers for this element.

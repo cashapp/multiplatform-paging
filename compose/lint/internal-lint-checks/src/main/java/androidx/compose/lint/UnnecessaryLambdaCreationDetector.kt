@@ -27,14 +27,16 @@ import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
-import com.android.tools.lint.detector.api.UastLintUtils.Companion.tryResolveUDeclaration
 import com.intellij.psi.impl.source.PsiClassReferenceType
 import org.jetbrains.uast.ULambdaExpression
 import org.jetbrains.uast.UVariable
 import org.jetbrains.uast.kotlin.KotlinUBlockExpression
 import org.jetbrains.uast.kotlin.KotlinUFunctionCallExpression
 import org.jetbrains.uast.kotlin.KotlinUImplicitReturnExpression
+import org.jetbrains.uast.kotlin.UnknownKotlinExpression
+import org.jetbrains.uast.skipParenthesizedExprDown
 import org.jetbrains.uast.toUElement
+import org.jetbrains.uast.tryResolve
 
 /**
  * Lint [Detector] to ensure that we are not creating extra lambdas just to emit already captured
@@ -83,7 +85,7 @@ class UnnecessaryLambdaCreationDetector : Detector(), SourceCodeScanner {
 
             if (expressions.size != 1) return
 
-            val expression = when (val expr = expressions.first()) {
+            val expression = when (val expr = expressions.first().skipParenthesizedExprDown()) {
                 is KotlinUFunctionCallExpression -> expr
                 is KotlinUImplicitReturnExpression ->
                     expr.returnExpression as? KotlinUFunctionCallExpression
@@ -115,24 +117,22 @@ class UnnecessaryLambdaCreationDetector : Detector(), SourceCodeScanner {
             // with 0 parameters, but one that has a receiver scope (SomeScope.() -> Unit).
             if (functionType != argumentType) return
 
-            // Unfortunately if the types come from a separate module, we don't have access to
-            // the type information in the function / argument, so instead we just get an error
-            // type. If both compare equally, and they are reporting an error type, we cannot do
-            // anything about this so just skip warning. This will only happen if there _are_
-            // types, i.e a scoped / parameterized function type, so it's rare enough that it
-            // shouldn't matter that much in practice.
-            if (functionType.reference.canonicalText.contains(NonExistentClass)) return
-
             val expectedComposable = node.isComposable
 
-            // Hack to get the psi of the lambda declaration / source. The !!s here probably
-            // aren't safe, but nothing fails with them currently - so it could be a useful
-            // indicator if something breaks in the future to let us know to update this lint check.
-            val resolvedLambdaSource = expression.sourcePsi.calleeExpression!!.toUElement()!!
-                .tryResolveUDeclaration()!!.sourcePsi!!.toUElement()
+            // Try and get the UElement for the source of the lambda
+            val resolvedLambdaSource = expression.sourcePsi.calleeExpression?.toUElement()
+                ?.tryResolve()?.toUElement()
+                // Sometimes the above will give us a method (representing the getter for a
+                // property), when the actual backing element is a property. Going to the source
+                // and back should give us the actual UVariable we are looking for.
+                ?.sourcePsi.toUElement()
 
             val isComposable = when (resolvedLambdaSource) {
                 is UVariable -> resolvedLambdaSource.isComposable
+                // TODO: if the resolved source is a parameter in a local function, it
+                //  incorrectly returns an UnknownKotlinExpression instead of a UParameter
+                //  https://youtrack.jetbrains.com/issue/KTIJ-19125
+                is UnknownKotlinExpression -> return
                 else -> throw IllegalStateException(resolvedLambdaSource.toString())
             }
 
@@ -148,9 +148,7 @@ class UnnecessaryLambdaCreationDetector : Detector(), SourceCodeScanner {
     }
 
     companion object {
-        private const val NonExistentClass = "error.NonExistentClass"
-
-        private const val explanation =
+        private const val Explanation =
             "Creating this extra lambda instead of just passing the already captured lambda means" +
                 " that during code generation the Compose compiler will insert code around " +
                 "this lambda to track invalidations. This adds some extra runtime cost so you" +
@@ -159,7 +157,7 @@ class UnnecessaryLambdaCreationDetector : Detector(), SourceCodeScanner {
         val ISSUE = Issue.create(
             "UnnecessaryLambdaCreation",
             "Creating an unnecessary lambda to emit a captured lambda",
-            explanation,
+            Explanation,
             Category.PERFORMANCE, 5, Severity.ERROR,
             Implementation(
                 UnnecessaryLambdaCreationDetector::class.java,

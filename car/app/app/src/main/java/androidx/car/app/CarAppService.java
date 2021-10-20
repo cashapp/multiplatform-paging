@@ -72,6 +72,9 @@ import java.security.InvalidParameterException;
  * </service>
  * }</pre>
  *
+ * <p>For a list of all the supported categories see
+ * <a href="https://developer.android.com/training/cars/apps#supported-app-categories">Supported App Categories</a>.
+ *
  * <h4>Accessing Location</h4>
  *
  * When the app is running in the car display, the system will not consider it as being in the
@@ -82,8 +85,9 @@ import java.security.InvalidParameterException;
  *
  * <p>To reliably get location for your car app, we recommended that you use a <a
  * href="https://developer.android.com/guide/components/services?#Types-of-services">foreground
- * service</a>. Also note that accessing location may become unreliable when the phone is in the
- * battery saver mode.
+ * service</a>. If you have a service other than your {@link CarAppService} that accesses
+ * location, run the service and your `CarAppService` in the same process. Also note that
+ * accessing location may become unreliable when the phone is in the battery saver mode.
  */
 public abstract class CarAppService extends Service {
     /**
@@ -188,8 +192,8 @@ public abstract class CarAppService extends Service {
      * don't hold the aforementioned permission (for example, Android Auto and Android
      * Automotive OS hosts below API level 31), by allow-listing the signatures of those hosts.
      *
-     * <p>Please refer to {@link androidx.car.app.R.array#hosts_allowlist_sample} to obtain a list
-     * of package names and signatures that should be allow-listed by default.
+     * <p>Refer to {@code androidx.car.app.R.array.hosts_allowlist_sample} to obtain a
+     * list of package names and signatures that should be allow-listed by default.
      *
      * <p>It is also advised to allow connections from unknown hosts in debug builds to facilitate
      * debugging and testing.
@@ -203,7 +207,7 @@ public abstract class CarAppService extends Service {
      *     if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
      *         return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR;
      *     } else {
-     *         return new HostValidator.Builder()
+     *         return new HostValidator.Builder(context)
      *             .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
      *             .build();
      *     }
@@ -225,7 +229,7 @@ public abstract class CarAppService extends Service {
      *
      * <p>Called by the system, do not call this method directly.
      *
-     * @see CarContext#startCarApp
+     * @see CarContext#startCarApp(Intent)
      */
     @NonNull
     public abstract Session onCreateSession();
@@ -315,6 +319,7 @@ public abstract class CarAppService extends Service {
         if (!CarAppApiLevels.isValid(apiLevel)) {
             throw new IllegalArgumentException("Invalid Car App API level received: " + apiLevel);
         }
+
         mHandshakeInfo = handshakeInfo;
     }
 
@@ -327,7 +332,7 @@ public abstract class CarAppService extends Service {
     @Nullable
     LifecycleRegistry getLifecycleIfValid() {
         Session session = getCurrentSession();
-        return session == null ? null : (LifecycleRegistry) session.getLifecycle();
+        return session == null ? null : (LifecycleRegistry) session.getLifecycleInternal();
     }
 
     @NonNull
@@ -361,7 +366,9 @@ public abstract class CarAppService extends Service {
                             setCurrentSession(session);
                         }
 
-                        session.configure(CarAppService.this, requireNonNull(getHandshakeInfo()),
+                        session.configure(CarAppService.this,
+                                requireNonNull(getHandshakeInfo()),
+                                requireNonNull(getHostInfo()),
                                 carHost, configuration);
 
                         // Whenever the host unbinds, the screens in the stack are destroyed.  If
@@ -517,6 +524,19 @@ public abstract class CarAppService extends Service {
                                             + packageName + "', uid:" + uid));
                             return;
                         }
+
+                        int appMinApiLevel =
+                                CarAppService.this.getAppInfo().getMinCarAppApiLevel();
+                        int hostApiLevel = deserializedHandshakeInfo.getHostCarAppApiLevel();
+                        if (appMinApiLevel > hostApiLevel) {
+                            RemoteUtils.sendFailureResponseToHost(callback, "onHandshakeCompleted",
+                                    new IllegalArgumentException(
+                                            "Host API level (" + hostApiLevel + ") is "
+                                                    + "less than the app's min API level ("
+                                                    + appMinApiLevel + ")"));
+                            return;
+                        }
+
                         setHostInfo(hostInfo);
                         setHandshakeInfo(deserializedHandshakeInfo);
                         RemoteUtils.sendSuccessResponseToHost(callback, "onHandshakeCompleted",

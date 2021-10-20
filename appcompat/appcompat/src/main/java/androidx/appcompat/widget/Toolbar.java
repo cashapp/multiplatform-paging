@@ -20,6 +20,7 @@ import static androidx.annotation.RestrictTo.Scope.LIBRARY;
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP_PREFIX;
 import static androidx.annotation.RestrictTo.Scope.TESTS;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
@@ -44,6 +45,7 @@ import android.widget.TextView;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.MainThread;
 import androidx.annotation.MenuRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -62,8 +64,13 @@ import androidx.appcompat.view.menu.MenuView;
 import androidx.appcompat.view.menu.SubMenuBuilder;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.MarginLayoutParamsCompat;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuHostHelper;
+import androidx.core.view.MenuProvider;
 import androidx.core.view.ViewCompat;
 import androidx.customview.view.AbsSavedState;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.resourceinspection.annotation.Attribute;
 
 import java.util.ArrayList;
@@ -144,7 +151,7 @@ import java.util.List;
  * {@link androidx.appcompat.R.attr#titleTextColor}
  * {@link androidx.appcompat.R.attr#menu}
  */
-public class Toolbar extends ViewGroup {
+public class Toolbar extends ViewGroup implements MenuHost {
     private static final String TAG = "Toolbar";
 
     private ActionMenuView mMenuView;
@@ -199,13 +206,18 @@ public class Toolbar extends ViewGroup {
 
     private final int[] mTempMargins = new int[2];
 
+    final MenuHostHelper mMenuHostHelper = new MenuHostHelper(this::invalidateMenu);
+    private ArrayList<MenuItem> mProvidedMenuItems = new ArrayList<>();
     OnMenuItemClickListener mOnMenuItemClickListener;
 
     private final ActionMenuView.OnMenuItemClickListener mMenuViewItemClickListener =
             new ActionMenuView.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem item) {
-                    if (mOnMenuItemClickListener != null) {
+                    boolean consumed = mMenuHostHelper.onMenuItemSelected(item);
+                    if (consumed) {
+                        return true;
+                    } else if (mOnMenuItemClickListener != null) {
                         return mOnMenuItemClickListener.onMenuItemClick(item);
                     }
                     return false;
@@ -658,7 +670,6 @@ public class Toolbar extends ViewGroup {
      * @see #setLogo(android.graphics.drawable.Drawable)
      */
     @Attribute("androidx.appcompat:logo")
-    @Nullable
     public Drawable getLogo() {
         return mLogoView != null ? mLogoView.getDrawable() : null;
     }
@@ -698,7 +709,6 @@ public class Toolbar extends ViewGroup {
      * @return A description of the logo
      */
     @Attribute("androidx.appcompat:logoDescription")
-    @Nullable
     public CharSequence getLogoDescription() {
         return mLogoView != null ? mLogoView.getContentDescription() : null;
     }
@@ -746,6 +756,7 @@ public class Toolbar extends ViewGroup {
      *
      * @return The current title.
      */
+    @Attribute("androidx.appcompat:title")
     public CharSequence getTitle() {
         return mTitleText;
     }
@@ -803,7 +814,6 @@ public class Toolbar extends ViewGroup {
      * @return The current subtitle
      */
     @Attribute("androidx.appcompat:subtitle")
-    @Nullable
     public CharSequence getSubtitle() {
         return mSubtitleText;
     }
@@ -962,6 +972,7 @@ public class Toolbar extends ViewGroup {
         }
         if (mNavButtonView != null) {
             mNavButtonView.setContentDescription(description);
+            TooltipCompat.setTooltipText(mNavButtonView, description);
         }
     }
 
@@ -1143,7 +1154,6 @@ public class Toolbar extends ViewGroup {
      * {@link androidx.appcompat.R.attr#menu}
      */
     @Attribute("androidx.appcompat:menu")
-    @Nullable
     public Menu getMenu() {
         ensureMenu();
         return mMenuView.getMenu();
@@ -1513,6 +1523,17 @@ public class Toolbar extends ViewGroup {
             lp.gravity = GravityCompat.START | (mButtonGravity & Gravity.VERTICAL_GRAVITY_MASK);
             mNavButtonView.setLayoutParams(lp);
         }
+    }
+
+    /**
+     * Returns the navigation button view.
+     *
+     * @hide Only for use in tests.
+     */
+    @RestrictTo(RestrictTo.Scope.TESTS)
+    @Nullable
+    View getNavButtonView() {
+        return mNavButtonView;
     }
 
     void ensureCollapseButtonView() {
@@ -2341,6 +2362,68 @@ public class Toolbar extends ViewGroup {
 
     Context getPopupContext() {
         return mPopupContext;
+    }
+
+    private ArrayList<MenuItem> getCurrentMenuItems() {
+        ArrayList<MenuItem> menuItems = new ArrayList<>();
+
+        Menu menu = getMenu();
+        for (int i = 0; i < menu.size(); i++) {
+            menuItems.add(menu.getItem(i));
+        }
+
+        return menuItems;
+    }
+
+    private void onCreateMenu() {
+        ArrayList<MenuItem> oldMenuItemList = getCurrentMenuItems();
+        mMenuHostHelper.onCreateMenu(getMenu(), getMenuInflater());
+
+        ArrayList<MenuItem> newMenuItemList = getCurrentMenuItems();
+        newMenuItemList.removeAll(oldMenuItemList);
+        mProvidedMenuItems = newMenuItemList;
+    }
+
+    @Override
+    @MainThread
+    public void addMenuProvider(@NonNull MenuProvider provider) {
+        mMenuHostHelper.addMenuProvider(provider);
+    }
+
+    @Override
+    @MainThread
+    public void addMenuProvider(@NonNull MenuProvider provider, @NonNull LifecycleOwner owner) {
+        mMenuHostHelper.addMenuProvider(provider, owner);
+    }
+
+    @Override
+    @MainThread
+    @SuppressLint("LambdaLast")
+    public void addMenuProvider(@NonNull MenuProvider provider, @NonNull LifecycleOwner owner,
+            @NonNull Lifecycle.State state) {
+        mMenuHostHelper.addMenuProvider(provider, owner, state);
+    }
+
+    @Override
+    @MainThread
+    public void removeMenuProvider(@NonNull MenuProvider provider) {
+        mMenuHostHelper.removeMenuProvider(provider);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Only the {@link MenuItem items} in the {@link Menu} that were provided by
+     * {@link MenuProvider}s should be removed and repopulated, leaving all manually
+     * inflated menu items untouched, as they should continue to be managed manually.
+     */
+    @Override
+    @MainThread
+    public void invalidateMenu() {
+        for (MenuItem menuItem : mProvidedMenuItems) {
+            getMenu().removeItem(menuItem.getItemId());
+        }
+        onCreateMenu();
     }
 
     /**

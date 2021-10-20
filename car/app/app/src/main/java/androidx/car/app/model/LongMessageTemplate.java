@@ -16,6 +16,7 @@
 
 package androidx.car.app.model;
 
+import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_BODY_WITH_PRIMARY_ACTION;
 import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_HEADER;
 import static androidx.car.app.model.constraints.ActionsConstraints.ACTIONS_CONSTRAINTS_SIMPLE;
 
@@ -24,8 +25,9 @@ import static java.util.Objects.requireNonNull;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.car.app.annotations.ExperimentalCarApi;
+import androidx.car.app.Screen;
 import androidx.car.app.annotations.RequiresCarApi;
+import androidx.car.app.model.constraints.CarTextConstraints;
 import androidx.car.app.utils.CollectionUtils;
 
 import java.util.ArrayList;
@@ -39,13 +41,13 @@ import java.util.Objects;
  *
  * <h4>Template Restrictions</h4>
  *
- * This template's body is only available while the car is parked. While driving the text and the
- * actions will be disabled.
+ * This template's body is only available to the user while the car is parked and does not count
+ * against the template quota.
+ *
+ * @see Screen#onGetTemplate()
  */
-@ExperimentalCarApi
 @RequiresCarApi(2)
 public final class LongMessageTemplate implements Template {
-
     @Keep
     @Nullable
     private final CarText mTitle;
@@ -158,6 +160,7 @@ public final class LongMessageTemplate implements Template {
     }
 
     /** A builder of {@link LongMessageTemplate}. */
+    @RequiresCarApi(2)
     public static final class Builder {
         @Nullable
         CarText mTitle;
@@ -173,14 +176,17 @@ public final class LongMessageTemplate implements Template {
          *
          * <p>Unless set with this method, the template will not have a title.
          *
-         * <p>Spans are not supported in the input string.
+         * <p>Only {@link DistanceSpan}s and {@link DurationSpan}s are supported in the input
+         * string.
          *
-         * @throws NullPointerException if {@code title} is {@code null}
+         * @throws NullPointerException     if {@code title} is {@code null}
+         * @throws IllegalArgumentException if {@code title} contains unsupported spans
          * @see CarText
          */
         @NonNull
         public Builder setTitle(@NonNull CharSequence title) {
             mTitle = CarText.create(requireNonNull(title));
+            CarTextConstraints.TEXT_ONLY.validateOrThrow(mTitle);
             return this;
         }
 
@@ -233,15 +239,26 @@ public final class LongMessageTemplate implements Template {
          *
          * <h4>Requirements</h4>
          *
-         * Any actions above the maximum limit of 2 will be ignored. These {@link Action}s will
-         * only be available while the car is parked.
+         * This template allows up to 2 {@link Action}s in its body, and they must use a
+         * {@link androidx.car.app.model.ParkedOnlyOnClickListener}. One of these actions can be
+         * declared as primary via {@link Action.Builder#setFlags}.
          *
-         * @throws NullPointerException if {@code action} is {@code null}
+         * Each action's title color can be customized with {@link ForegroundCarColorSpan}
+         * instances. Any other span is not supported.
+         *
+         * @throws IllegalArgumentException if {@code action} does not meet the requirements
+         * @throws NullPointerException     if {@code action} is {@code null}
          */
         @NonNull
         public Builder addAction(@NonNull Action action) {
             requireNonNull(action);
+            if (!requireNonNull(action.getOnClickDelegate()).isParkedOnly()) {
+                throw new IllegalArgumentException("The action must use a "
+                        + "ParkedOnlyOnClickListener");
+            }
+
             mActionList.add(action);
+            ACTIONS_CONSTRAINTS_BODY_WITH_PRIMARY_ACTION.validateOrThrow(mActionList);
             return this;
         }
 
@@ -275,7 +292,6 @@ public final class LongMessageTemplate implements Template {
          *
          * @param message the text message to display in the template. This message will only be
          *                displayed when the car is parked.
-         *
          * @throws NullPointerException if the {@code message} is {@code null}
          */
         public Builder(@NonNull CharSequence message) {

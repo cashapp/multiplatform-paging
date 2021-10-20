@@ -50,10 +50,17 @@ class ParagraphBenchmark(
         @JvmStatic
         @Parameterized.Parameters(name = "length={0} type={1} alphabet={2}")
         fun initParameters(): List<Array<Any>> = cartesian(
-            arrayOf(32, 512),
-            arrayOf(TextType.PlainText, TextType.StyledText),
+            arrayOf(512),
+            arrayOf(TextType.PlainText),
             arrayOf(Alphabet.Latin, Alphabet.Cjk)
         )
+
+        // A fake resource loader required to construct Paragraph
+        val resourceLoader = object : Font.ResourceLoader {
+            override fun load(font: Font): Any {
+                return false
+            }
+        }
     }
 
     @get:Rule
@@ -75,13 +82,6 @@ class ParagraphBenchmark(
             textBenchmarkRule.widthDp,
             instrumentationContext.resources.displayMetrics
         )
-    }
-
-    // A fake resource loader required to construct Paragraph
-    private val resourceLoader = object : Font.ResourceLoader {
-        override fun load(font: Font): Any {
-            return false
-        }
     }
 
     private fun text(textGenerator: RandomTextGenerator): AnnotatedString {
