@@ -40,7 +40,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockitoCore4)
     testImplementation(libs.mockitoKotlin4)
-    testImplementation(project(":internal-testutils-common"))
     testImplementation(project(":internal-testutils-ktx"))
     testImplementation(project(":internal-testutils-paging"))
     testImplementation(libs.kotlinTest)

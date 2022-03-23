@@ -7,5 +7,15 @@ ParameterNameChange: androidx.paging.PagingDataAdapter#submitData(androidx.pagin
     Attempted to remove parameter name from parameter arg2 in androidx.paging.PagingDataAdapter.submitData
 
 
+RemovedClass: androidx.paging.LivePagedListKt:
+    Removed class androidx.paging.LivePagedListKt
 RemovedClass: androidx.paging.NullPaddedListDiffHelperKt:
     Removed class androidx.paging.NullPaddedListDiffHelperKt
+
+
+RemovedDeprecatedClass: androidx.paging.AsyncPagedListDiffer:
+    Removed deprecated class androidx.paging.AsyncPagedListDiffer
+RemovedDeprecatedClass: androidx.paging.LivePagedListBuilder:
+    Removed deprecated class androidx.paging.LivePagedListBuilder
+RemovedDeprecatedClass: androidx.paging.PagedListAdapter:
+    Removed deprecated class androidx.paging.PagedListAdapter

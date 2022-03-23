@@ -5,12 +5,18 @@ ParameterNameChange: androidx.paging.PagingSource#load(androidx.paging.PagingSou
 
 RemovedClass: androidx.paging.CancelableChannelFlowKt:
     Removed class androidx.paging.CancelableChannelFlowKt
+RemovedClass: androidx.paging.DataSource:
+    Removed class androidx.paging.DataSource
 RemovedClass: androidx.paging.FlowExtKt:
     Removed class androidx.paging.FlowExtKt
 RemovedClass: androidx.paging.HintHandlerKt:
     Removed class androidx.paging.HintHandlerKt
 RemovedClass: androidx.paging.PageFetcherSnapshotKt:
     Removed class androidx.paging.PageFetcherSnapshotKt
+RemovedClass: androidx.paging.PagedListConfigKt:
+    Removed class androidx.paging.PagedListConfigKt
+RemovedClass: androidx.paging.PagedListKt:
+    Removed class androidx.paging.PagedListKt
 RemovedClass: androidx.paging.PagingSourceKt:
     Removed class androidx.paging.PagingSourceKt
 RemovedClass: androidx.paging.RemoteMediatorAccessorKt:
@@ -19,3 +25,13 @@ RemovedClass: androidx.paging.SeparatorsKt:
     Removed class androidx.paging.SeparatorsKt
 RemovedClass: androidx.paging.SimpleChannelFlowKt:
     Removed class androidx.paging.SimpleChannelFlowKt
+
+
+RemovedDeprecatedClass: androidx.paging.ItemKeyedDataSource:
+    Removed deprecated class androidx.paging.ItemKeyedDataSource
+RemovedDeprecatedClass: androidx.paging.PageKeyedDataSource:
+    Removed deprecated class androidx.paging.PageKeyedDataSource
+RemovedDeprecatedClass: androidx.paging.PagedList:
+    Removed deprecated class androidx.paging.PagedList
+RemovedDeprecatedClass: androidx.paging.PositionalDataSource:
+    Removed deprecated class androidx.paging.PositionalDataSource

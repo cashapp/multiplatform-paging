@@ -208,9 +208,6 @@ internal class PageFetcher<Key : Any, Value : Any>(
         previousPagingSource: PagingSource<Key, Value>?
     ): PagingSource<Key, Value> {
         val pagingSource = pagingSourceFactory()
-        if (pagingSource is LegacyPagingSource) {
-            pagingSource.setPageSize(config.pageSize)
-        }
         // Ensure pagingSourceFactory produces a new instance of PagingSource.
         check(pagingSource !== previousPagingSource) {
             """
