@@ -54,6 +54,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(libs.kotlinTest)
+                implementation(libs.kotlinCoroutinesTest)
             }
         }
         nonJsMain {
@@ -65,7 +66,6 @@ kotlin {
                 implementation(libs.mockitoCore4)
                 implementation(libs.mockitoKotlin4)
                 implementation(project(":internal-testutils-paging"))
-                implementation(libs.kotlinCoroutinesTest)
                 implementation(libs.truth)
             }
         }
