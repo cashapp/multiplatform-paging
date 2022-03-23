@@ -41,7 +41,6 @@ dependencies {
     api(libs.kotlinCoroutinesAndroid)
     implementation("androidx.core:core-ktx:1.2.0")
 
-    androidTestImplementation(project(":internal-testutils-common"))
     androidTestImplementation(project(":internal-testutils-ktx"))
     androidTestImplementation(project(":internal-testutils-paging"))
     androidTestImplementation(projectOrArtifact(":lifecycle:lifecycle-runtime-testing"))

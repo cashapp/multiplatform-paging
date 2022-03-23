@@ -16,7 +16,6 @@
 
 package androidx.paging
 
-import androidx.paging.ContiguousPagedListTest.Companion.EXCEPTION
 import androidx.paging.LoadState.Error
 import androidx.paging.LoadState.Loading
 import androidx.paging.LoadState.NotLoading
@@ -71,6 +70,8 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runCurrent
+
+private val EXCEPTION = Exception()
 
 @ExperimentalPagingApi
 @OptIn(ExperimentalCoroutinesApi::class)
