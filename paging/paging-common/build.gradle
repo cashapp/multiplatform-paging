@@ -16,30 +16,39 @@
 
 import androidx.build.LibraryGroups
 import androidx.build.Publish
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
 
 plugins {
     id("AndroidXPlugin")
-    id("kotlin")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-dependencies {
-    api("androidx.annotation:annotation:1.3.0")
-    api(libs.kotlinStdlib)
-    api(libs.kotlinCoroutinesCore)
+kotlin {
+    ios()
+    js(IR) {
+        nodejs()
+        binaries.executable()
+    }
+    jvm()
 
-    testImplementation(libs.junit)
-    testImplementation(libs.mockitoCore)
-    testImplementation(libs.mockitoKotlin, {
-        exclude group: "org.mockito" // to keep control on the mockito version
-    })
-    testImplementation(project(":internal-testutils-ktx"))
-    testImplementation(project(":internal-testutils-paging"))
-    testImplementation(libs.kotlinTest)
-    testImplementation(libs.kotlinCoroutinesTest)
-    testImplementation(libs.truth)
-
-    samples(project(":paging:paging-samples"))
+    sourceSets {
+        jvmMain {
+            dependencies {
+                api("androidx.annotation:annotation:1.3.0")
+                api(libs.kotlinStdlib)
+                api(libs.kotlinCoroutinesCore)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(libs.junit)
+                implementation(project(":internal-testutils-ktx"))
+                implementation(project(":internal-testutils-paging"))
+                implementation(libs.kotlinTest)
+                implementation(libs.truth)
+            }
+        }
+    }
 }
 
 androidx {
@@ -48,10 +57,13 @@ androidx {
     mavenGroup = LibraryGroups.PAGING
     inceptionYear = "2017"
     description = "Android Paging-Common"
+    // TODO Ideally we'd set this to false, but doing so also enforces strict API mode in test modules.
+    legacyDisableKotlinStrictApiMode = true
+    publishPlatforms = ["jvm", "js"]
 }
 
 // Allow usage of Kotlin's @OptIn.
-tasks.withType(KotlinCompile).configureEach {
+tasks.withType(KotlinCompileCommon).configureEach {
     kotlinOptions {
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
