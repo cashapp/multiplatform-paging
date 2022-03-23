@@ -40,6 +40,12 @@ kotlin {
                 implementation("co.touchlab:stately-iso-collections:1.2.0")
             }
         }
+        commonTest {
+            dependencies {
+                implementation(libs.kotlinTest)
+                implementation(libs.kotlinCoroutinesTest)
+            }
+        }
         nonJsMain {
             dependsOn(commonMain)
         }
@@ -51,10 +57,8 @@ kotlin {
         }
         jvmTest {
             dependencies {
-                implementation(libs.junit)
                 implementation(project(":internal-testutils-ktx"))
                 implementation(project(":internal-testutils-paging"))
-                implementation(libs.kotlinTest)
                 implementation(libs.truth)
             }
         }
