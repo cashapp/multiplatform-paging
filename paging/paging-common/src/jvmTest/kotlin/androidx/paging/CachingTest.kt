@@ -23,6 +23,7 @@ import androidx.paging.ActiveFlowTracker.FlowType.PAGED_DATA_FLOW
 import androidx.paging.ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW
 import assertk.assertThat
 import assertk.assertions.*
+import co.touchlab.stately.concurrency.AtomicInt
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +48,6 @@ import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.yield
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -624,8 +624,8 @@ class CachingTest {
 
     private class ActiveFlowTrackerImpl : ActiveFlowTracker {
         private val counters = mapOf(
-            PAGED_DATA_FLOW to AtomicInteger(0),
-            PAGE_EVENT_FLOW to AtomicInteger(0)
+            PAGED_DATA_FLOW to AtomicInt(0),
+            PAGE_EVENT_FLOW to AtomicInt(0)
         )
 
         override suspend fun onStart(flowType: FlowType) {

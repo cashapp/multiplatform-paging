@@ -24,6 +24,7 @@ import androidx.paging.RemoteMediatorMock.LoadEvent
 import androidx.paging.TestPagingSource.Companion.LOAD_ERROR
 import assertk.assertThat
 import assertk.assertions.*
+import co.touchlab.stately.concurrency.AtomicBoolean
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -36,7 +37,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -438,7 +438,7 @@ class RemoteMediatorAccessorTest {
                 return try {
                     super.load(loadType, state)
                 } finally {
-                    loading.set(false)
+                    loading.value = false
                 }
             }
         }
@@ -521,7 +521,7 @@ class RemoteMediatorAccessorTest {
                 return try {
                     super.load(loadType, state)
                 } finally {
-                    loading.set(false)
+                    loading.value = false
                 }
             }
         }
