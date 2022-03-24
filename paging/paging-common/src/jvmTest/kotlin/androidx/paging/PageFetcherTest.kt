@@ -47,8 +47,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runBlockingTest
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -56,7 +54,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class PageFetcherTest {
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private val pagingSourceFactory = suspend { TestPagingSource() }

@@ -76,7 +76,6 @@ private val EXCEPTION = Exception()
 
 @ExperimentalPagingApi
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class PageFetcherSnapshotTest {
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private val retryBus = ConflatedEventBus<Unit>()

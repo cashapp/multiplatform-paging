@@ -46,12 +46,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.yield
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class CachingTest {
     private val testScope = TestCoroutineScope()
 

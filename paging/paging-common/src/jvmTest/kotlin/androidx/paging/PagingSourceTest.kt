@@ -29,7 +29,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-@RunWith(JUnit4::class)
 class PagingSourceTest {
 
     // ----- STANDARD -----
