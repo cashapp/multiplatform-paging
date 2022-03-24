@@ -19,6 +19,7 @@ import androidx.kruth.assertThat
 import androidx.paging.ActiveFlowTracker.FlowType
 import androidx.paging.ActiveFlowTracker.FlowType.PAGED_DATA_FLOW
 import androidx.paging.ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW
+import co.touchlab.stately.concurrency.AtomicInt
 import kotlin.test.Test
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +41,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -812,8 +812,8 @@ class CachingTest {
 
     private class ActiveFlowTrackerImpl : ActiveFlowTracker {
         private val counters = mapOf(
-            PAGED_DATA_FLOW to AtomicInteger(0),
-            PAGE_EVENT_FLOW to AtomicInteger(0)
+            PAGED_DATA_FLOW to AtomicInt(0),
+            PAGE_EVENT_FLOW to AtomicInt(0)
         )
 
         override fun onNewCachedEventFlow(cachedPageEventFlow: CachedPageEventFlow<*>) {
