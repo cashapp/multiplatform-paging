@@ -67,13 +67,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 private val EXCEPTION = Exception()
 
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalPagingApi::class)
-@RunWith(JUnit4::class)
 class PageFetcherSnapshotTest {
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private val retryBus = ConflatedEventBus<Unit>()

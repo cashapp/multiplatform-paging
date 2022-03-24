@@ -21,15 +21,12 @@ import androidx.paging.PagingSource.LoadParams
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED
 import kotlinx.coroutines.runBlocking
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-@RunWith(JUnit4::class)
 class PagingSourceTest {
 
     // ----- STANDARD -----

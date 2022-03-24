@@ -24,8 +24,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.test.assertEquals
 
 /**
@@ -37,7 +35,6 @@ private val fullLoadStates = loadStates(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class HeaderFooterTest {
 
     private fun <T : Any> PageEvent<T>.toPagingData() = PagingData(

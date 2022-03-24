@@ -32,8 +32,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import kotlin.test.Test
@@ -43,7 +41,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class SingleRunnerTest {
     private val testScope = TestScope()
 
