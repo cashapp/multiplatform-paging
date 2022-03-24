@@ -29,10 +29,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import kotlin.test.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-@RunWith(JUnit4::class)
 class FlattenedPageEventStorageTest {
     private val list = FlattenedPageEventStorage<String>()
 
