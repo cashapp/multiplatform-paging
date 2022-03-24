@@ -23,8 +23,6 @@ import androidx.paging.PagePresenter.ProcessPageEventCallback
 import androidx.paging.PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -83,7 +81,6 @@ internal fun <T : Any> PagePresenter<T>.dropPages(
 internal fun <T : Any> PagePresenter<T>.asList() = List(size) { get(it) }
 
 @Suppress("SameParameterValue")
-@RunWith(JUnit4::class)
 class PagePresenterTest {
     private fun verifyAppend(
         initialItems: Int,
