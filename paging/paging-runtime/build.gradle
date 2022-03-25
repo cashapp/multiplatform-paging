@@ -37,7 +37,6 @@ kotlin {
         }
         jvmTest {
             dependencies {
-                implementation(project(":internal-testutils-ktx"))
                 implementation(project(":internal-testutils-paging"))
                 implementation("androidx.arch.core:core-testing:2.1.0")
                 implementation(libs.truth)
