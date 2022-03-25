@@ -17,7 +17,6 @@
 package androidx.paging
 
 import androidx.recyclerview.widget.DiffUtil
-import androidx.testutils.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -27,8 +26,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.Rule
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -46,10 +48,15 @@ class LoadFullListTest(
 
     private val testScope = TestScope()
 
-    @get:Rule
-    val dispatcherRule = MainDispatcherRule(
-        testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher
-    )
+    @Before
+    fun before() {
+        Dispatchers.setMain(testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher)
+    }
+
+    @After
+    fun after() {
+        Dispatchers.resetMain()
+    }
 
     private val differ = AsyncPagingDataDiffer(
         diffCallback = object : DiffUtil.ItemCallback<Int>() {

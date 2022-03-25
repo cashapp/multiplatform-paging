@@ -22,7 +22,6 @@ import androidx.paging.LoadType.PREPEND
 import androidx.paging.PageEvent.Drop
 import androidx.paging.PagingSource.LoadResult
 import androidx.testutils.DirectDispatcher
-import androidx.testutils.MainDispatcherRule
 import androidx.testutils.TestDispatcher
 import com.google.common.truth.Truth.assertThat
 import kotlin.coroutines.ContinuationInterceptor
@@ -33,6 +32,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -48,14 +48,17 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
-import org.junit.Rule
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalPagingApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalPagingApi::class, ExperimentalStdlibApi::class)
 @RunWith(Parameterized::class)
 class PagingDataDifferTest(
     /**
@@ -66,10 +69,15 @@ class PagingDataDifferTest(
 ) {
     private val testScope = TestScope(UnconfinedTestDispatcher())
 
-    @get:Rule
-    val dispatcherRule = MainDispatcherRule(
-        testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher
-    )
+    @Before
+    fun before() {
+        Dispatchers.setMain(testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher)
+    }
+
+    @After
+    fun after() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun collectFrom_static() = testScope.runTest {
@@ -869,7 +877,7 @@ class PagingDataDifferTest(
         val collectLoadStates = differ.collectLoadStates()
 
         // execute queued initial REFRESH
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.snapshot()).containsExactlyElementsIn(50 until 59)
         assertThat(differ.newCombinedLoadStates()).containsExactly(
@@ -880,7 +888,7 @@ class PagingDataDifferTest(
         differ.refresh()
 
         // execute second REFRESH load
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // second refresh still loads from initialKey = 50 because anchorPosition/refreshKey is null
         assertThat(pagingSources.size).isEqualTo(2)
@@ -902,7 +910,7 @@ class PagingDataDifferTest(
         }
         val collectLoadStates = differ.collectLoadStates()
         // execute initial refresh
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 9)
         assertThat(differ.newCombinedLoadStates()).containsExactly(
             localLoadStatesOf(
@@ -917,7 +925,7 @@ class PagingDataDifferTest(
         differ.refresh()
         // after a refresh, make sure the loading event comes in 1 piece w/ the end of pagination
         // reset
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
         assertThat(differ.newCombinedLoadStates()).containsExactly(
             localLoadStatesOf(
                 refreshLocal = Loading,
@@ -978,7 +986,7 @@ class PagingDataDifferTest(
 
         // using poll().run() instead of executeAll, otherwise this invalid APPEND + subsequent
         // REFRESH will auto run consecutively and we won't be able to assert them incrementally
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(pagingSources.size).isEqualTo(2)
         assertThat(differ.newCombinedLoadStates()).containsExactly(
@@ -996,7 +1004,7 @@ class PagingDataDifferTest(
         )
 
         // the LoadResult.Invalid from failed APPEND triggers new pagingSource + initial REFRESH
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.snapshot()).containsExactlyElementsIn(11 until 20)
         assertThat(differ.newCombinedLoadStates()).containsExactly(
@@ -1036,7 +1044,7 @@ class PagingDataDifferTest(
         // do an invalid prepend which will return LoadResult.Invalid
         differ[0]
         pagingSources[0].nextLoadResult = LoadResult.Invalid()
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(pagingSources.size).isEqualTo(2)
         assertThat(differ.newCombinedLoadStates()).containsExactly(
@@ -1049,7 +1057,7 @@ class PagingDataDifferTest(
         )
 
         // the LoadResult.Invalid from failed PREPEND triggers new pagingSource + initial REFRESH
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // load starts from 0 again because the provided initialKey = 50 is not multi-generational
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 9)
@@ -1067,7 +1075,7 @@ class PagingDataDifferTest(
 
         // execute queued initial REFRESH load which will return LoadResult.Invalid()
         pagingSources[0].nextLoadResult = LoadResult.Invalid()
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.snapshot()).isEmpty()
         assertThat(differ.newCombinedLoadStates()).containsExactly(
@@ -1077,7 +1085,7 @@ class PagingDataDifferTest(
         )
 
         // execute second REFRESH load
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // second refresh still loads from initialKey = 50 because anchorPosition/refreshKey is null
         assertThat(pagingSources.size).isEqualTo(2)
@@ -1108,7 +1116,7 @@ class PagingDataDifferTest(
         val exception = Throwable()
         pagingSources[0].nextLoadResult = LoadResult.Error(exception)
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.newCombinedLoadStates()).containsExactly(
             localLoadStatesOf(
@@ -1124,7 +1132,7 @@ class PagingDataDifferTest(
 
         // retry append
         differ.retry()
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // make sure append success
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 12)
@@ -1160,7 +1168,7 @@ class PagingDataDifferTest(
         val exception = Throwable()
         pagingSources[0].nextLoadResult = LoadResult.Error(exception)
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.newCombinedLoadStates()).containsExactly(
             localLoadStatesOf(prependLocal = Loading),
@@ -1171,7 +1179,7 @@ class PagingDataDifferTest(
         // retry prepend
         differ.retry()
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // make sure prepend success
         assertThat(differ.snapshot()).containsExactlyElementsIn(47 until 59)
@@ -1202,7 +1210,7 @@ class PagingDataDifferTest(
         // retry refresh
         differ.retry()
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // refresh retry does not trigger new gen
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 9)
@@ -1235,7 +1243,7 @@ class PagingDataDifferTest(
         val exception = Throwable()
         pagingSources[0].nextLoadResult = LoadResult.Error(exception)
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.newCombinedLoadStates()).containsExactly(
             localLoadStatesOf(prependLocal = Loading),
@@ -1244,7 +1252,7 @@ class PagingDataDifferTest(
 
         // refresh() should reset local LoadStates and trigger new REFRESH
         differ.refresh()
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         // Initial load starts from 0 because initialKey is single gen.
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 9)
@@ -1278,7 +1286,7 @@ class PagingDataDifferTest(
         // refresh should trigger new generation
         differ.refresh()
 
-        loadDispatcher.queue.poll()?.run()
+        loadDispatcher.queue.removeLastOrNull()?.run()
 
         assertThat(differ.snapshot()).containsExactlyElementsIn(0 until 9)
         // Goes directly from Error --> Loading without resetting refresh to NotLoading
