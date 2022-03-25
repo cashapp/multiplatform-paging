@@ -50,8 +50,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.TestCoroutineScope
+//import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -67,7 +66,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runCurrent
 
 private val EXCEPTION = Exception()
@@ -1614,102 +1612,104 @@ class PageFetcherSnapshotTest {
         }
     }
 
-    @Suppress("DEPRECATION") // b/220884819
-    @Test
-    fun retry_remotePrepend() = runBlockingTest {
-        @OptIn(ExperimentalPagingApi::class)
-        val remoteMediator = object : RemoteMediatorMock() {
-            override suspend fun load(
-                loadType: LoadType,
-                state: PagingState<Int, Int>
-            ): MediatorResult {
-                super.load(loadType, state)
+// TODO Commented out during rebase. Just uncomment this.
+//    @Suppress("DEPRECATION") // b/220884819
+//    @Test
+//    fun retry_remotePrepend() = runTest {
+//        @OptIn(ExperimentalPagingApi::class)
+//        val remoteMediator = object : RemoteMediatorMock() {
+//            override suspend fun load(
+//                loadType: LoadType,
+//                state: PagingState<Int, Int>
+//            ): MediatorResult {
+//                super.load(loadType, state)
+//
+//                return if (loadType == PREPEND) {
+//                    MediatorResult.Error(EXCEPTION)
+//                } else {
+//                    MediatorResult.Success(endOfPaginationReached = true)
+//                }
+//            }
+//        }
+//
+//        var createdPagingSource = false
+//        val factory = suspend {
+//            check(!createdPagingSource)
+//            createdPagingSource = true
+//            TestPagingSource(items = List(2) { it })
+//        }
+//        val pager = PageFetcher(
+//            initialKey = 0,
+//            pagingSourceFactory = factory,
+//            config = config,
+//            remoteMediator = remoteMediator
+//        )
+//
+//        pager.collectEvents {
+//            awaitIdle()
+//            retry()
+//            awaitIdle()
+//            retry()
+//            awaitIdle()
+//            assertThat(
+//                remoteMediator.loadEventCounts()
+//            ).containsOnly(
+//                PREPEND to 3,
+//                APPEND to 1,
+//                REFRESH to 0
+//            )
+//        }
+//    }
 
-                return if (loadType == PREPEND) {
-                    MediatorResult.Error(EXCEPTION)
-                } else {
-                    MediatorResult.Success(endOfPaginationReached = true)
-                }
-            }
-        }
-
-        var createdPagingSource = false
-        val factory = suspend {
-            check(!createdPagingSource)
-            createdPagingSource = true
-            TestPagingSource(items = List(2) { it })
-        }
-        val pager = PageFetcher(
-            initialKey = 0,
-            pagingSourceFactory = factory,
-            config = config,
-            remoteMediator = remoteMediator
-        )
-
-        pager.collectEvents {
-            awaitIdle()
-            retry()
-            awaitIdle()
-            retry()
-            awaitIdle()
-            assertThat(
-                remoteMediator.loadEventCounts()
-            ).containsOnly(
-                PREPEND to 3,
-                APPEND to 1,
-                REFRESH to 0
-            )
-        }
-    }
-
-    @Suppress("DEPRECATION") // b/220884819
-    @Test
-    fun retry_remoteAppend() = runBlockingTest {
-        @OptIn(ExperimentalPagingApi::class)
-        val remoteMediator = object : RemoteMediatorMock() {
-            override suspend fun load(
-                loadType: LoadType,
-                state: PagingState<Int, Int>
-            ): MediatorResult {
-                super.load(loadType, state)
-
-                return if (loadType == APPEND) {
-                    MediatorResult.Error(EXCEPTION)
-                } else {
-                    MediatorResult.Success(endOfPaginationReached = true)
-                }
-            }
-        }
-
-        var createdPagingSource = false
-        val factory = suspend {
-            check(!createdPagingSource)
-            createdPagingSource = true
-            TestPagingSource(items = List(2) { it })
-        }
-        val pager = PageFetcher(
-            initialKey = 0,
-            pagingSourceFactory = factory,
-            config = config,
-            remoteMediator = remoteMediator
-        )
-
-        pager.collectEvents {
-            // Resolve initial load.
-            awaitIdle()
-            retry()
-            awaitIdle()
-            retry()
-            awaitIdle()
-            assertThat(
-                remoteMediator.loadEventCounts()
-            ).containsOnly(
-                PREPEND to 1,
-                APPEND to 3,
-                REFRESH to 0
-            )
-        }
-    }
+// TODO Commented out during rebase. Just uncomment this.
+//    @Suppress("DEPRECATION") // b/220884819
+//    @Test
+//    fun retry_remoteAppend() = runBlockingTest {
+//        @OptIn(ExperimentalPagingApi::class)
+//        val remoteMediator = object : RemoteMediatorMock() {
+//            override suspend fun load(
+//                loadType: LoadType,
+//                state: PagingState<Int, Int>
+//            ): MediatorResult {
+//                super.load(loadType, state)
+//
+//                return if (loadType == APPEND) {
+//                    MediatorResult.Error(EXCEPTION)
+//                } else {
+//                    MediatorResult.Success(endOfPaginationReached = true)
+//                }
+//            }
+//        }
+//
+//        var createdPagingSource = false
+//        val factory = suspend {
+//            check(!createdPagingSource)
+//            createdPagingSource = true
+//            TestPagingSource(items = List(2) { it })
+//        }
+//        val pager = PageFetcher(
+//            initialKey = 0,
+//            pagingSourceFactory = factory,
+//            config = config,
+//            remoteMediator = remoteMediator
+//        )
+//
+//        pager.collectEvents {
+//            // Resolve initial load.
+//            awaitIdle()
+//            retry()
+//            awaitIdle()
+//            retry()
+//            awaitIdle()
+//            assertThat(
+//                remoteMediator.loadEventCounts()
+//            ).containsOnly(
+//                PREPEND to 1,
+//                APPEND to 3,
+//                REFRESH to 0
+//            )
+//        }
+//    }
 
     @Test
     fun disablePlaceholders_refresh() = testScope.runTest {
@@ -2500,77 +2500,77 @@ class PageFetcherSnapshotTest {
         state.job.cancel()
     }
 
-    @Suppress("DEPRECATION") // b/220884819
-    @Test
-    fun remoteMediator_endOfPaginationNotReachedLoadStatePrepend() = runBlockingTest {
-        @OptIn(ExperimentalPagingApi::class)
-        val remoteMediator = object : RemoteMediatorMock() {
-            override suspend fun load(
-                loadType: LoadType,
-                state: PagingState<Int, Int>
-            ): MediatorResult {
-                super.load(loadType, state)
-                currentPagingSource!!.invalidate()
-                return MediatorResult.Success(endOfPaginationReached = false)
-            }
-        }
-
-        val config = PagingConfig(
-            pageSize = 1,
-            prefetchDistance = 2,
-            enablePlaceholders = true,
-            initialLoadSize = 1,
-            maxSize = 5
-        )
-        val pager = PageFetcher(
-            initialKey = 0,
-            pagingSourceFactory = pagingSourceFactory,
-            config = config,
-            remoteMediator = remoteMediator
-        )
-
-        val expected: List<List<PageEvent<Int>>> = listOf(
-            listOf(
-                remoteLoadStateUpdate(refreshLocal = Loading),
-                remoteRefresh(
-                    pages = listOf(
-                        TransformablePage(
-                            originalPageOffset = 0,
-                            data = listOf(0)
-                        )
-                    ),
-                    placeholdersAfter = 99,
-                    source = loadStates(prepend = NotLoading.Complete)
-                ),
-                remoteLoadStateUpdate(
-                    prependLocal = NotLoading.Complete,
-                    prependRemote = Loading,
-                ),
-            ),
-            listOf(
-                remoteLoadStateUpdate(
-                    refreshLocal = Loading,
-                    prependRemote = Loading,
-                ),
-                remoteLoadStateUpdate(
-                    refreshLocal = Loading,
-                    prependRemote = NotLoading.Incomplete,
-                ),
-                remoteRefresh(
-                    pages = listOf(
-                        TransformablePage(
-                            originalPageOffset = 0,
-                            data = listOf(0)
-                        )
-                    ),
-                    placeholdersAfter = 99,
-                    source = loadStates(prepend = NotLoading.Complete)
-                )
-            )
-        )
-
-        pager.assertEventByGeneration(expected)
-    }
+//    @Suppress("DEPRECATION") // b/220884819
+//    @Test
+//    fun remoteMediator_endOfPaginationNotReachedLoadStatePrepend() = runBlockingTest {
+//        @OptIn(ExperimentalPagingApi::class)
+//        val remoteMediator = object : RemoteMediatorMock() {
+//            override suspend fun load(
+//                loadType: LoadType,
+//                state: PagingState<Int, Int>
+//            ): MediatorResult {
+//                super.load(loadType, state)
+//                currentPagingSource!!.invalidate()
+//                return MediatorResult.Success(endOfPaginationReached = false)
+//            }
+//        }
+//
+//        val config = PagingConfig(
+//            pageSize = 1,
+//            prefetchDistance = 2,
+//            enablePlaceholders = true,
+//            initialLoadSize = 1,
+//            maxSize = 5
+//        )
+//        val pager = PageFetcher(
+//            initialKey = 0,
+//            pagingSourceFactory = pagingSourceFactory,
+//            config = config,
+//            remoteMediator = remoteMediator
+//        )
+//
+//        val expected: List<List<PageEvent<Int>>> = listOf(
+//            listOf(
+//                remoteLoadStateUpdate(refreshLocal = Loading),
+//                remoteRefresh(
+//                    pages = listOf(
+//                        TransformablePage(
+//                            originalPageOffset = 0,
+//                            data = listOf(0)
+//                        )
+//                    ),
+//                    placeholdersAfter = 99,
+//                    source = loadStates(prepend = NotLoading.Complete)
+//                ),
+//                remoteLoadStateUpdate(
+//                    prependLocal = NotLoading.Complete,
+//                    prependRemote = Loading,
+//                ),
+//            ),
+//            listOf(
+//                remoteLoadStateUpdate(
+//                    refreshLocal = Loading,
+//                    prependRemote = Loading,
+//                ),
+//                remoteLoadStateUpdate(
+//                    refreshLocal = Loading,
+//                    prependRemote = NotLoading.Incomplete,
+//                ),
+//                remoteRefresh(
+//                    pages = listOf(
+//                        TransformablePage(
+//                            originalPageOffset = 0,
+//                            data = listOf(0)
+//                        )
+//                    ),
+//                    placeholdersAfter = 99,
+//                    source = loadStates(prepend = NotLoading.Complete)
+//                )
+//            )
+//        )
+//
+//        pager.assertEventByGeneration(expected)
+//    }
 
     @Test
     fun remoteMediator_endOfPaginationReachedLoadStatePrepend() = testScope.runTest {
@@ -2708,76 +2708,76 @@ class PageFetcherSnapshotTest {
         }
     }
 
-    @Suppress("DEPRECATION") // b/220884819
-    @Test
-    fun remoteMediator_endOfPaginationNotReachedLoadStateAppend() = runBlockingTest {
-        @OptIn(ExperimentalPagingApi::class)
-        val remoteMediator = object : RemoteMediatorMock() {
-            override suspend fun load(
-                loadType: LoadType,
-                state: PagingState<Int, Int>
-            ): MediatorResult {
-                super.load(loadType, state)
-                currentPagingSource!!.invalidate()
-                return MediatorResult.Success(endOfPaginationReached = false)
-            }
-        }
-
-        val config = PagingConfig(
-            pageSize = 1,
-            prefetchDistance = 2,
-            enablePlaceholders = true,
-            initialLoadSize = 1,
-            maxSize = 5
-        )
-        val fetcher = PageFetcher(
-            initialKey = 99,
-            pagingSourceFactory = pagingSourceFactory,
-            config = config,
-            remoteMediator = remoteMediator
-        )
-        fetcher.assertEventByGeneration(
-            listOf(
-                listOf(
-                    remoteLoadStateUpdate(refreshLocal = Loading),
-                    remoteRefresh(
-                        pages = listOf(
-                            TransformablePage(
-                                originalPageOffset = 0,
-                                data = listOf(99)
-                            )
-                        ),
-                        placeholdersBefore = 99,
-                        source = loadStates(append = NotLoading.Complete)
-                    ),
-                    remoteLoadStateUpdate(
-                        appendLocal = NotLoading.Complete,
-                        appendRemote = Loading
-                    ),
-                ),
-                listOf(
-                    remoteLoadStateUpdate(
-                        refreshLocal = Loading,
-                        appendRemote = Loading,
-                    ),
-                    remoteLoadStateUpdate(
-                        refreshLocal = Loading,
-                        appendRemote = NotLoading.Incomplete,
-                    ),
-                    remoteRefresh(
-                        pages = listOf(
-                            TransformablePage(
-                                originalPageOffset = 0,
-                                data = listOf(99)
-                            )
-                        ),
-                        placeholdersBefore = 99,
-                        source = loadStates(append = NotLoading.Complete)
-                    ),
-                )
-            )
-        )
-    }
+//    @Suppress("DEPRECATION") // b/220884819
+//    @Test
+//    fun remoteMediator_endOfPaginationNotReachedLoadStateAppend() = runBlockingTest {
+//        @OptIn(ExperimentalPagingApi::class)
+//        val remoteMediator = object : RemoteMediatorMock() {
+//            override suspend fun load(
+//                loadType: LoadType,
+//                state: PagingState<Int, Int>
+//            ): MediatorResult {
+//                super.load(loadType, state)
+//                currentPagingSource!!.invalidate()
+//                return MediatorResult.Success(endOfPaginationReached = false)
+//            }
+//        }
+//
+//        val config = PagingConfig(
+//            pageSize = 1,
+//            prefetchDistance = 2,
+//            enablePlaceholders = true,
+//            initialLoadSize = 1,
+//            maxSize = 5
+//        )
+//        val fetcher = PageFetcher(
+//            initialKey = 99,
+//            pagingSourceFactory = pagingSourceFactory,
+//            config = config,
+//            remoteMediator = remoteMediator
+//        )
+//        fetcher.assertEventByGeneration(
+//            listOf(
+//                listOf(
+//                    remoteLoadStateUpdate(refreshLocal = Loading),
+//                    remoteRefresh(
+//                        pages = listOf(
+//                            TransformablePage(
+//                                originalPageOffset = 0,
+//                                data = listOf(99)
+//                            )
+//                        ),
+//                        placeholdersBefore = 99,
+//                        source = loadStates(append = NotLoading.Complete)
+//                    ),
+//                    remoteLoadStateUpdate(
+//                        appendLocal = NotLoading.Complete,
+//                        appendRemote = Loading
+//                    ),
+//                ),
+//                listOf(
+//                    remoteLoadStateUpdate(
+//                        refreshLocal = Loading,
+//                        appendRemote = Loading,
+//                    ),
+//                    remoteLoadStateUpdate(
+//                        refreshLocal = Loading,
+//                        appendRemote = NotLoading.Incomplete,
+//                    ),
+//                    remoteRefresh(
+//                        pages = listOf(
+//                            TransformablePage(
+//                                originalPageOffset = 0,
+//                                data = listOf(99)
+//                            )
+//                        ),
+//                        placeholdersBefore = 99,
+//                        source = loadStates(append = NotLoading.Complete)
+//                    ),
+//                )
+//            )
+//        )
+//    }
 
     @Test
     fun remoteMediator_endOfPaginationReachedLoadStateAppend() = testScope.runTest {
@@ -2910,72 +2910,73 @@ class PageFetcherSnapshotTest {
         }
     }
 
-    @Suppress("DEPRECATION") // b/220884819
-    @Test
-    fun remoteMediator_immediateInvalidation() = runBlockingTest {
-        @OptIn(ExperimentalPagingApi::class)
-        val remoteMediator = object : RemoteMediatorMock() {
-            override suspend fun initialize(): InitializeAction {
-                super.initialize()
-                return InitializeAction.LAUNCH_INITIAL_REFRESH
-            }
-
-            override suspend fun load(
-                loadType: LoadType,
-                state: PagingState<Int, Int>
-            ): MediatorResult {
-                super.load(loadType, state)
-                currentPagingSource!!.invalidate()
-                return MediatorResult.Success(endOfPaginationReached = false)
-            }
-        }
-
-        val config = PagingConfig(
-            pageSize = 1,
-            prefetchDistance = 2,
-            enablePlaceholders = true,
-            initialLoadSize = 1,
-            maxSize = 5
-        )
-        val pager = PageFetcher(
-            initialKey = 50,
-            pagingSourceFactory = pagingSourceFactory,
-            config = config,
-            remoteMediator = remoteMediator
-        )
-        val fetcherState = collectFetcherState(pager)
-        advanceUntilIdle()
-        runCurrent()
-        assertThat(fetcherState.pageEventLists).hasSize(2)
-        assertThat(fetcherState.pageEventLists[0]).containsExactly(
-            remoteLoadStateUpdate<Int>(
-                refreshLocal = Loading,
-            ),
-            remoteLoadStateUpdate<Int>(
-                refreshLocal = Loading,
-                refreshRemote = Loading,
-            ),
-        )
-        assertThat(fetcherState.pageEventLists[1]).containsExactly(
-            remoteLoadStateUpdate<Int>(
-                refreshLocal = Loading,
-                refreshRemote = Loading,
-            ),
-            remoteLoadStateUpdate<Int>(refreshLocal = Loading),
-            remoteRefresh(
-                pages = listOf(
-                    TransformablePage(
-                        originalPageOffset = 0,
-                        data = listOf(50)
-                    )
-                ),
-                placeholdersBefore = 50,
-                placeholdersAfter = 49,
-            ),
-        )
-
-        fetcherState.job.cancel()
-    }
+// TODO Commented out during rebase. Just uncomment this.
+//    @Suppress("DEPRECATION") // b/220884819
+//    @Test
+//    fun remoteMediator_immediateInvalidation() = runBlockingTest {
+//        @OptIn(ExperimentalPagingApi::class)
+//        val remoteMediator = object : RemoteMediatorMock() {
+//            override suspend fun initialize(): InitializeAction {
+//                super.initialize()
+//                return InitializeAction.LAUNCH_INITIAL_REFRESH
+//            }
+//
+//            override suspend fun load(
+//                loadType: LoadType,
+//                state: PagingState<Int, Int>
+//            ): MediatorResult {
+//                super.load(loadType, state)
+//                currentPagingSource!!.invalidate()
+//                return MediatorResult.Success(endOfPaginationReached = false)
+//            }
+//        }
+//
+//        val config = PagingConfig(
+//            pageSize = 1,
+//            prefetchDistance = 2,
+//            enablePlaceholders = true,
+//            initialLoadSize = 1,
+//            maxSize = 5
+//        )
+//        val pager = PageFetcher(
+//            initialKey = 50,
+//            pagingSourceFactory = pagingSourceFactory,
+//            config = config,
+//            remoteMediator = remoteMediator
+//        )
+//        val fetcherState = collectFetcherState(pager)
+//        advanceUntilIdle()
+//        runCurrent()
+//        assertThat(fetcherState.pageEventLists).hasSize(2)
+//        assertThat(fetcherState.pageEventLists[0]).containsExactly(
+//            remoteLoadStateUpdate<Int>(
+//                refreshLocal = Loading,
+//            ),
+//            remoteLoadStateUpdate<Int>(
+//                refreshLocal = Loading,
+//                refreshRemote = Loading,
+//            ),
+//        )
+//        assertThat(fetcherState.pageEventLists[1]).containsExactly(
+//            remoteLoadStateUpdate<Int>(
+//                refreshLocal = Loading,
+//                refreshRemote = Loading,
+//            ),
+//            remoteLoadStateUpdate<Int>(refreshLocal = Loading),
+//            remoteRefresh(
+//                pages = listOf(
+//                    TransformablePage(
+//                        originalPageOffset = 0,
+//                        data = listOf(50)
+//                    )
+//                ),
+//                placeholdersBefore = 50,
+//                placeholdersAfter = 49,
+//            ),
+//        )
+//
+//        fetcherState.job.cancel()
+//    }
 
     @Test
     fun remoteMediator_initialRefreshSuccess() = testScope.runTest {
@@ -3730,11 +3731,11 @@ class PageFetcherSnapshotTest {
             uiReceiver!!.retry()
         }
 
-        @Suppress("DEPRECATION") // b/220884819
-        suspend fun TestCoroutineScope.awaitIdle() {
-            yield()
-            advanceUntilIdle()
-        }
+//        @Suppress("DEPRECATION") // b/220884819
+//        suspend fun TestCoroutineScope.awaitIdle() {
+//            yield()
+//            advanceUntilIdle()
+//        }
 
         suspend fun awaitEventCount(limit: Int) {
             eventCount.takeWhile {

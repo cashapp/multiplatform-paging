@@ -49,6 +49,7 @@ import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.runCurrent
 
+// TODO Move to commonTest once https://issuetracker.google.com/issues/220884818 is implemented.
 @OptIn(ExperimentalCoroutinesApi::class)
 class CachingTest {
     private val testScope = createTestCoroutineScope()

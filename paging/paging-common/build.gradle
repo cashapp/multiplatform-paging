@@ -32,6 +32,13 @@ kotlin {
     jvm()
 
     sourceSets {
+        all {
+            languageSettings {
+                progressiveMode = true
+                optIn("kotlin.RequiresOptIn")
+                optIn("kotlin.ExperimentalPagingApi")
+            }
+        }
         commonMain {
             dependencies {
                 api(libs.kotlinStdlibCommon)
@@ -42,6 +49,8 @@ kotlin {
         }
         commonTest {
             dependencies {
+                implementation(project(":internal-testutils-ktx"))
+                implementation(project(":internal-testutils-paging"))
                 implementation(libs.kotlinTest)
                 implementation(libs.kotlinCoroutinesTest)
                 implementation("com.willowtreeapps.assertk:assertk:0.25")
@@ -49,6 +58,9 @@ kotlin {
         }
         nonJsMain {
             dependsOn(commonMain)
+        }
+        nonJsTest {
+            dependsOn(commonTest)
         }
         iosMain {
             dependsOn(nonJsMain)
@@ -58,8 +70,7 @@ kotlin {
         }
         jvmTest {
             dependencies {
-                implementation(project(":internal-testutils-ktx"))
-                implementation(project(":internal-testutils-paging"))
+                implementation(libs.kotlinTestJunit)
             }
         }
     }
@@ -81,4 +92,9 @@ tasks.withType(KotlinCompileCommon).configureEach {
     kotlinOptions {
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
+}
+
+// TODO Remove when upgraded to Kotlin 1.6.20
+rootProject.plugins.withType(Class.forName("org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin")) {
+    rootProject.extensions.getByType(org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension.class).nodeVersion = "16.0.0"
 }
