@@ -38,18 +38,17 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(Parameterized::class)
-class CachedPageEventFlowTest(
-    private val terminationType: TerminationType
-) {
+class CachedPageEventFlowTest {
     private val testScope = TestScope(UnconfinedTestDispatcher())
 
     @Test
     fun slowFastCollectors() = testScope.runTest {
+        params().forEach { slowFastCollectors(it) }
+    }
+
+    private suspend fun slowFastCollectors(terminationType: TerminationType) {
         val upstream = Channel<PageEvent<String>>(Channel.UNLIMITED)
         val subject = CachedPageEventFlow(
             src = upstream.consumeAsFlow(),
@@ -71,7 +70,7 @@ class CachedPageEventFlowTest(
             ),
         )
         upstream.send(refreshEvent)
-        runCurrent()
+        testScope.runCurrent()
         assertThat(fastCollector.items()).containsExactly(
             refreshEvent
         )
@@ -85,13 +84,13 @@ class CachedPageEventFlowTest(
             ),
         )
         upstream.send(appendEvent)
-        runCurrent()
+        testScope.runCurrent()
         assertThat(fastCollector.items()).containsExactly(
             refreshEvent,
             appendEvent
         )
         assertThat(slowCollector.items()).isEmpty()
-        advanceTimeBy(3_000)
+        testScope.advanceTimeBy(3_000)
         assertThat(slowCollector.items()).containsExactly(
             refreshEvent,
             appendEvent
@@ -126,12 +125,12 @@ class CachedPageEventFlowTest(
             refreshEvent,
             appendEvent
         ) + manyNewAppendEvents + finalAppendEvent
-        runCurrent()
+        testScope.runCurrent()
         assertThat(fastCollector.items()).isEqualTo(fullList)
         assertThat(fastCollector.isActive()).isFalse()
         assertThat(slowCollector.isActive()).isTrue()
         assertThat(lateSlowCollector.isActive()).isTrue()
-        advanceUntilIdle()
+        testScope.advanceUntilIdle()
         assertThat(slowCollector.items()).isEqualTo(fullList)
         assertThat(slowCollector.isActive()).isFalse()
 
@@ -150,6 +149,10 @@ class CachedPageEventFlowTest(
 
     @Test
     fun ensureSharing() = testScope.runTest {
+        params().forEach { ensureSharing(it) }
+    }
+
+    private suspend fun ensureSharing(terminationType: TerminationType) {
         val refreshEvent = localRefresh(
             listOf(
                 TransformablePage(
@@ -174,13 +177,13 @@ class CachedPageEventFlowTest(
         upstream.send(refreshEvent)
         upstream.send(appendEvent)
         collector1.collectIn(testScope)
-        runCurrent()
+        testScope.runCurrent()
         assertThat(collector1.items()).isEqualTo(
             listOf(refreshEvent, appendEvent)
         )
         val collector2 = PageCollector(subject.downstreamFlow)
         collector2.collectIn(testScope)
-        runCurrent()
+        testScope.runCurrent()
         val firstSnapshotRefreshEvent = localRefresh(
             listOf(
                 TransformablePage(
@@ -237,14 +240,14 @@ class CachedPageEventFlowTest(
             TerminationType.CLOSE_UPSTREAM -> upstream.close()
             TerminationType.CLOSE_CACHED_EVENT_FLOW -> subject.close()
         }
-        runCurrent()
+        testScope.runCurrent()
         assertThat(collector1.isActive()).isFalse()
         assertThat(collector2.isActive()).isFalse()
         assertThat(collector3.isActive()).isFalse()
         val collector4 = PageCollector(subject.downstreamFlow).also {
             it.collectIn(testScope)
         }
-        runCurrent()
+        testScope.runCurrent()
         // since upstream is closed, this should just close
         assertThat(collector4.isActive()).isFalse()
         assertThat(collector4.items()).containsExactly(
@@ -350,8 +353,6 @@ class CachedPageEventFlowTest(
     }
 
     companion object {
-        @JvmStatic
-        @Parameterized.Parameters(name = "{0}")
         fun params() = TerminationType.values()
     }
 
