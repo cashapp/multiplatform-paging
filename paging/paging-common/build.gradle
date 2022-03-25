@@ -43,6 +43,11 @@ kotlin {
     watchosSimulatorArm64()
 
     sourceSets {
+        all {
+            languageSettings {
+                progressiveMode = true
+            }
+        }
         commonMain {
             dependencies {
                 api(libs.kotlinStdlib)
@@ -53,6 +58,7 @@ kotlin {
         }
         commonTest {
             dependencies {
+                implementation(project(":internal-testutils-paging"))
                 implementation(libs.kotlinTest)
                 implementation(libs.kotlinCoroutinesTest)
                 implementation(project(":internal-testutils-kmp"))
@@ -62,12 +68,16 @@ kotlin {
         nonJsMain {
             dependsOn(commonMain)
         }
+        nonJsTest {
+            dependsOn(commonTest)
+        }
         jvmTest {
             dependencies {
                 implementation(libs.junit)
                 implementation(libs.mockitoCore4)
                 implementation(libs.mockitoKotlin4)
                 implementation(project(":internal-testutils-paging"))
+                implementation(libs.kotlinTestJunit)
             }
         }
 
@@ -75,6 +85,7 @@ kotlin {
             if (target.platformType == KotlinPlatformType.common) return
             if (target.platformType != KotlinPlatformType.js) {
                 target.compilations.main.defaultSourceSet.dependsOn(sourceSets.nonJsMain)
+                target.compilations.test.defaultSourceSet.dependsOn(sourceSets.nonJsTest)
             }
         }
     }

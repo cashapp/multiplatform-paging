@@ -271,3 +271,83 @@ class PageEventTest {
         )
     }
 }
+
+//  class StaticPagingData {
+//    companion object {
+//        fun initParameters() = listOf(
+//            PagingData.from(listOf("a", "b", "c")),
+//            PagingData.empty(),
+//        )
+//    }
+//
+//    private val differ = TestPagingDataDiffer<String>(DirectDispatcher)
+//
+//    @Test
+//    fun map() = initParameters().forEach { map(it) }
+//
+//    private fun map(original: PagingData<String>) = runTest(UnconfinedTestDispatcher()) {
+//        val transform = { it: String -> it + it }
+//        differ.collectFrom(original)
+//        val originalItems = differ.snapshot().items
+//        val expectedItems = originalItems.map(transform)
+//        val transformedPagingData = original.map { transform(it) }
+//        differ.collectFrom(transformedPagingData)
+//        assertEquals(expectedItems, differ.snapshot().items)
+//    }
+//
+//    @Test
+//    fun flatMap() = initParameters().forEach { flatMap(it) }
+//
+//    private fun flatMap(original: PagingData<String>) = runTest(UnconfinedTestDispatcher()) {
+//        val transform = { it: String -> listOf(it, it) }
+//        differ.collectFrom(original)
+//        val originalItems = differ.snapshot().items
+//        val expectedItems = originalItems.flatMap(transform)
+//        val transformedPagingData = original.flatMap { transform(it) }
+//        differ.collectFrom(transformedPagingData)
+//        assertEquals(expectedItems, differ.snapshot().items)
+//    }
+//
+//    @Test
+//    fun filter() = initParameters().forEach { filter(it) }
+//
+//    private fun filter(original: PagingData<String>) = runTest(UnconfinedTestDispatcher()) {
+//        val predicate = { it: String -> it != "b" }
+//        differ.collectFrom(original)
+//        val originalItems = differ.snapshot().items
+//        val expectedItems = originalItems.filter(predicate)
+//        val transformedPagingData = original.filter { predicate(it) }
+//        differ.collectFrom(transformedPagingData)
+//        assertEquals(expectedItems, differ.snapshot().items)
+//    }
+//
+//    @Test
+//    fun insertSeparators() = initParameters().forEach { insertSeparators(it) }
+//
+//    private fun insertSeparators(
+//        original: PagingData<String>,
+//    ) = runTest(UnconfinedTestDispatcher()) {
+//        val transform = { left: String?, right: String? ->
+//            if (left == null || right == null) null else "|"
+//        }
+//        differ.collectFrom(original)
+//        val originalItems = differ.snapshot().items
+//        val expectedItems = originalItems.flatMapIndexed { index, s ->
+//            val result = mutableListOf<String>()
+//            if (index == 0) {
+//                transform(null, s)?.let(result::add)
+//            }
+//            result.add(s)
+//            transform(s, originalItems.getOrNull(index + 1))?.let(result::add)
+//            if (index == originalItems.lastIndex) {
+//                transform(s, null)?.let(result::add)
+//            }
+//            result
+//        }
+//        val transformedPagingData = original.insertSeparators { left, right ->
+//            transform(left, right)
+//        }
+//        differ.collectFrom(transformedPagingData)
+//        assertEquals(expectedItems, differ.snapshot().items)
+//    }
+//  }

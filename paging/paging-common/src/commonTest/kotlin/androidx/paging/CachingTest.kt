@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -362,15 +361,13 @@ class CachingTest {
     }
 
     @Test
-    fun pagesAreClosedProperty() {
+    fun pagesAreClosedProperty() = testScope.runTest {
         val job = SupervisorJob()
         val subScope = CoroutineScope(job + Dispatchers.Default)
         val pageFlow = buildPageFlow().cachedIn(subScope, tracker)
         assertThat(tracker.pageEventFlowCount()).isEqualTo(0)
         assertThat(tracker.pageDataFlowCount()).isEqualTo(0)
-        val items = runBlocking {
-            pageFlow.collectItemsUntilSize(9)
-        }
+        val items = pageFlow.collectItemsUntilSize(9)
         val firstList = buildItems(
             version = 0,
             generation = 0,
@@ -378,9 +375,7 @@ class CachingTest {
             size = 9
         )
         assertThat(tracker.pageDataFlowCount()).isEqualTo(1)
-        val items2 = runBlocking {
-            pageFlow.collectItemsUntilSize(21)
-        }
+        val items2 = pageFlow.collectItemsUntilSize(21)
         assertThat(items2).isEqualTo(
             buildItems(
                 version = 0,
@@ -392,9 +387,7 @@ class CachingTest {
         assertThat(tracker.pageEventFlowCount()).isEqualTo(0)
         assertThat(tracker.pageDataFlowCount()).isEqualTo(1)
         assertThat(items).isEqualTo(firstList)
-        runBlocking {
-            job.cancelAndJoin()
-        }
+        job.cancelAndJoin()
         assertThat(tracker.pageEventFlowCount()).isEqualTo(0)
         assertThat(tracker.pageDataFlowCount()).isEqualTo(0)
     }
@@ -449,7 +442,7 @@ class CachingTest {
      * invalidations create new PagingData BUT a new collector only sees the latest one.
      */
     @Test
-    public fun unusedPagingDataIsNeverCollectedByNewDownstream(): Unit = testScope.runTest {
+    public fun unusedPagingDataIsNeverCollectedByNewDownstream() = testScope.runTest {
         val factory = StringPagingSource.VersionedFactory()
         val flow = buildPageFlow(factory).cachedIn(backgroundScope, tracker)
         val collector = ItemCollector(flow)
@@ -514,7 +507,7 @@ class CachingTest {
     }
 
     @Test
-    public fun unusedPagingDataIsNeverCached(): Unit = testScope.runTest {
+    public fun unusedPagingDataIsNeverCached() = testScope.runTest {
         val factory = StringPagingSource.VersionedFactory()
         val flow = buildPageFlow(factory).cachedIn(backgroundScope, tracker)
         val collector = ItemCollector(flow)
