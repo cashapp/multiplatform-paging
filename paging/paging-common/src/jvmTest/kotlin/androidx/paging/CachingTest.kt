@@ -44,13 +44,14 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
+import kotlinx.coroutines.test.createTestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CachingTest {
-    private val testScope = TestCoroutineScope()
+    private val testScope = createTestCoroutineScope()
 
     private val tracker = ActiveFlowTrackerImpl()
 
