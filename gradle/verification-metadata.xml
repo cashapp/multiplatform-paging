@@ -8,9 +8,11 @@
          <trust group="org.nodejs" name="node"/>
          <trust group="com.yarnpkg" name="yarn"/>
          <trust group="com.willowtreeapps.assertk" name="assertk"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-iosx64"/>
          <trust group="com.willowtreeapps.assertk" name="assertk-js"/>
          <trust group="com.willowtreeapps.assertk" name="assertk-jvm"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-iosx64"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-js"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-jvm"/>
          <trust group="gradle" name="gradle"/>
