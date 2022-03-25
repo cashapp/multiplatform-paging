@@ -18,6 +18,7 @@ package androidx.paging
 
 import assertk.assertThat
 import assertk.assertions.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,7 +41,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
-import java.util.concurrent.CancellationException
 import kotlin.test.Test
 import kotlin.test.fail
 
