@@ -29,22 +29,21 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(Parameterized::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class SimpleTransformLatestTest(
-    val impl: Impl
-) {
+class SimpleTransformLatestTest {
     private val testScope = TestScope()
 
     @Test
     fun delayed() = testScope.runTest {
+        params().forEach { delayed(it) }
+    }
+
+    private suspend fun delayed(impl: Impl) {
         assertThat(
             flowOf(1, 2, 3)
                 .onEach { delay(100) }
-                .testTransformLatest<Int, String> { value ->
+                .testTransformLatest<Int, String>(impl) { value ->
                     repeat(3) {
                         emit("$value - $it")
                         delay(75)
@@ -59,10 +58,14 @@ class SimpleTransformLatestTest(
 
     @Test
     fun allValues() = testScope.runTest {
+        params().forEach { allValues(it) }
+    }
+
+    private suspend fun allValues(impl: Impl) {
         assertThat(
             flowOf(1, 2, 3)
                 .onEach { delay(1) }
-                .testTransformLatest<Int, String> { value ->
+                .testTransformLatest<Int, String>(impl) { value ->
                     repeat(3) { emit("$value - $it") }
                 }.toList()
         ).containsExactly(
@@ -74,11 +77,15 @@ class SimpleTransformLatestTest(
 
     @Test
     fun reusePreviousCollector() = testScope.runTest {
+        params().forEach { reusePreviousCollector(it) }
+    }
+
+    private suspend fun reusePreviousCollector(impl: Impl) {
         var prevCollector: FlowCollector<String>? = null
         assertThat(
             flowOf(1, 2, 3)
                 .onEach { delay(1) }
-                .testTransformLatest<Int, String> { value ->
+                .testTransformLatest<Int, String>(impl) { value ->
                     if (prevCollector == null) {
                         prevCollector = this
                         awaitCancellation()
@@ -90,6 +97,7 @@ class SimpleTransformLatestTest(
     }
 
     private fun <T, R> Flow<T>.testTransformLatest(
+        impl: Impl,
         transform: suspend FlowCollector<R>.(value: T) -> Unit
     ): Flow<R> {
         return when (impl) {
@@ -101,8 +109,6 @@ class SimpleTransformLatestTest(
     }
 
     companion object {
-        @Parameterized.Parameters(name = "impl={0}")
-        @JvmStatic
         fun params() = Impl.values()
     }
 

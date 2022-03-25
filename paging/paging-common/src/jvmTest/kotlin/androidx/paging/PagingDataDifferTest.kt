@@ -60,18 +60,9 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Before
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalPagingApi::class, ExperimentalStdlibApi::class)
-@RunWith(Parameterized::class)
-class PagingDataDifferTest(
-    /**
-     * run some tests with cached-in to ensure caching does not change behavior in the single
-     * consumer cases.
-     */
-    private val collectWithCachedIn: Boolean
-) {
+class PagingDataDifferTest {
     private val testScope = TestScope(UnconfinedTestDispatcher())
 
     @Before
@@ -270,7 +261,15 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refreshOnLatestGenerationReceiver() = runTest { differ, loadDispatcher, _,
+    fun refreshOnLatestGenerationReceiver() = refreshOnLatestGenerationReceiver(false)
+
+    @Test
+    fun refreshOnLatestGenerationReceiverAndCollectWithCachedIn() =
+        refreshOnLatestGenerationReceiver(true)
+
+    private fun refreshOnLatestGenerationReceiver(
+        collectWithCachedIn: Boolean,
+    ) = runTest(collectWithCachedIn = collectWithCachedIn) { differ, loadDispatcher, _,
         uiReceivers, hintReceivers ->
         // first gen
         loadDispatcher.scheduler.advanceUntilIdle()
@@ -309,7 +308,15 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun retryOnLatestGenerationReceiver() = runTest { differ, loadDispatcher, pagingSources,
+    fun retryOnLatestGenerationReceiver() = retryOnLatestGenerationReceiver(false)
+
+    @Test
+    fun retryOnLatestGenerationReceiverAndCollectWithCachedIn() =
+        retryOnLatestGenerationReceiver(true)
+
+    private fun retryOnLatestGenerationReceiver(
+        collectWithCachedIn: Boolean,
+    ) = runTest(collectWithCachedIn = collectWithCachedIn) { differ, loadDispatcher, pagingSources,
         uiReceivers, hintReceivers ->
 
         // first gen
@@ -1473,8 +1480,15 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refresh_loadStates() = runTest(initialKey = 50) { differ, loadDispatcher,
-        pagingSources, _, _ ->
+    fun refresh_loadStates() = refresh_loadStates(false)
+
+    @Test
+    fun refresh_loadStatesAndCollectWithCachedIn() = refresh_loadStates(true)
+
+    private fun refresh_loadStates(collectWithCachedIn: Boolean) = runTest(
+        initialKey = 50,
+        collectWithCachedIn = collectWithCachedIn
+    ) { differ, loadDispatcher, pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
         // execute queued initial REFRESH
@@ -1503,7 +1517,15 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refresh_loadStates_afterEndOfPagination() = runTest { differ, loadDispatcher, _, _, _ ->
+    fun refresh_loadStates_afterEndOfPagination() = refresh_loadStates_afterEndOfPagination(false)
+
+    @Test
+    fun refresh_loadStates_afterEndOfPaginationAndCollectWithCachedIn() =
+        refresh_loadStates_afterEndOfPagination(true)
+
+    private fun refresh_loadStates_afterEndOfPagination(
+        collectWithCachedIn: Boolean,
+    ) = runTest(collectWithCachedIn = collectWithCachedIn) { differ, loadDispatcher, _, _, _ ->
         val loadStateCallbacks = mutableListOf<CombinedLoadStates>()
         differ.addLoadStateListener {
             loadStateCallbacks.add(it)
@@ -1554,7 +1576,16 @@ class PagingDataDifferTest(
     //  LoadStateUpdate event
 
     @Test
-    fun appendInvalid_loadStates() = runTest { differ, loadDispatcher, pagingSources, _, _ ->
+    fun appendInvalid_loadStates() = appendInvalid_loadStates(false)
+
+    @Test
+    fun appendInvalid_loadStatesAndCollectWithCachedIn() = appendInvalid_loadStates(true)
+
+    private fun appendInvalid_loadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher, pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
         // initial REFRESH
@@ -1615,7 +1646,17 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun prependInvalid_loadStates() = runTest(initialKey = 50) { differ, loadDispatcher,
+    fun prependInvalid_loadStates() = prependInvalid_loadStates(false)
+
+    @Test
+    fun prependInvalid_loadStatesAndCollectWithCachedIn() = prependInvalid_loadStates(true)
+
+    private fun prependInvalid_loadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        initialKey = 50,
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher,
         pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
@@ -1669,7 +1710,17 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refreshInvalid_loadStates() = runTest(initialKey = 50) { differ, loadDispatcher,
+    fun refreshInvalid_loadStates() = refreshInvalid_loadStates(false)
+
+    @Test
+    fun refreshInvalid_loadStatesAndCollectWithCachedIn() = refreshInvalid_loadStates(true)
+
+    private fun refreshInvalid_loadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        initialKey = 50,
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher,
         pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
@@ -1700,7 +1751,16 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun appendError_retryLoadStates() = runTest { differ, loadDispatcher, pagingSources, _, _ ->
+    fun appendError_retryLoadStates() = appendError_retryLoadStates(false)
+
+    @Test
+    fun appendError_retryLoadStatesAndCollectWithCachedIn() = appendError_retryLoadStates(true)
+
+    private fun appendError_retryLoadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher, pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
         // initial REFRESH
@@ -1750,7 +1810,17 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun prependError_retryLoadStates() = runTest(initialKey = 50) { differ, loadDispatcher,
+    fun prependError_retryLoadStates() = prependError_retryLoadStates(false)
+
+    @Test
+    fun prependError_retryLoadStatesAndCollectWithCachedIn() = prependError_retryLoadStates(true)
+
+    private fun prependError_retryLoadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        initialKey = 50,
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher,
         pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
@@ -1793,7 +1863,16 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refreshError_retryLoadStates() = runTest { differ, loadDispatcher, pagingSources, _, _ ->
+    fun refreshError_retryLoadStates() = refreshError_retryLoadStates(false)
+
+    @Test
+    fun refreshError_retryLoadStatesAndCollectWithCachedIn() = refreshError_retryLoadStates(true)
+
+    private fun refreshError_retryLoadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher, pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
         // initial load returns LoadResult.Error
@@ -1825,7 +1904,18 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun prependError_refreshLoadStates() = runTest(initialKey = 50) { differ, loadDispatcher,
+    fun prependError_refreshLoadStates() = prependError_refreshLoadStates(false)
+
+    @Test
+    fun prependError_refreshLoadStatesAndCollectWithCachedIn() =
+        prependError_refreshLoadStates(true)
+
+    private fun prependError_refreshLoadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        initialKey = 50,
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher,
         pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
@@ -1869,8 +1959,17 @@ class PagingDataDifferTest(
     }
 
     @Test
-    fun refreshError_refreshLoadStates() = runTest { differ, loadDispatcher, pagingSources,
-        _, _ ->
+    fun refreshError_refreshLoadStates() = refreshError_refreshLoadStates(false)
+
+    @Test
+    fun refreshError_refreshLoadStatesAndCollectWithCachedIn() =
+        refreshError_refreshLoadStates(true)
+
+    private fun refreshError_refreshLoadStates(
+        collectWithCachedIn: Boolean,
+    ) = runTest(
+        collectWithCachedIn = collectWithCachedIn,
+    ) { differ, loadDispatcher, pagingSources, _, _ ->
         val collectLoadStates = differ.collectLoadStates()
 
         // the initial load will return LoadResult.Error
@@ -2209,6 +2308,7 @@ class PagingDataDifferTest(
                     ).also { pagingSources.add(it) }
                 }
             ),
+        collectWithCachedIn: Boolean,
         block: (
             differ: SimpleDiffer,
             loadDispatcher: TestDispatcher,
@@ -2226,23 +2326,23 @@ class PagingDataDifferTest(
 
         val collection = launch {
             pager.flow
-            .map { pagingData ->
-                PagingData(
-                    flow = pagingData.flow,
-                    uiReceiver = TrackableUiReceiverWrapper(pagingData.uiReceiver)
-                        .also { uiReceivers.add(it) },
-                    hintReceiver = TrackableHintReceiverWrapper(pagingData.hintReceiver)
-                        .also { hintReceivers.add(it) }
-                )
-            }.let {
-                if (collectWithCachedIn) {
-                    it.cachedIn(this)
-                } else {
-                    it
+                .map { pagingData ->
+                    PagingData(
+                        flow = pagingData.flow,
+                        uiReceiver = TrackableUiReceiverWrapper(pagingData.uiReceiver)
+                            .also { uiReceivers.add(it) },
+                        hintReceiver = TrackableHintReceiverWrapper(pagingData.hintReceiver)
+                            .also { hintReceivers.add(it) }
+                    )
+                }.let {
+                    if (collectWithCachedIn) {
+                        it.cachedIn(this)
+                    } else {
+                        it
+                    }
+                }.collect {
+                    differ.collectFrom(it)
                 }
-            }.collect {
-                differ.collectFrom(it)
-            }
         }
 
         try {
@@ -2250,12 +2350,6 @@ class PagingDataDifferTest(
         } finally {
             collection.cancel()
         }
-    }
-
-    companion object {
-        @JvmStatic
-        @Parameterized.Parameters(name = "useCachedIn_{0}")
-        fun params() = arrayOf(true, false)
     }
 }
 

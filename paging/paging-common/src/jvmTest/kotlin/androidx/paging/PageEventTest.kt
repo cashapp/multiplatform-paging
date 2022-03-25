@@ -19,17 +19,13 @@ package androidx.paging
 import androidx.paging.LoadType.PREPEND
 import androidx.paging.LoadType.REFRESH
 import androidx.paging.PageEvent.Drop
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
-import org.junit.Before
 
 internal fun <T : Any> adjacentInsertEvent(
     isPrepend: Boolean,
@@ -273,90 +269,5 @@ class PageEventTest {
             ),
             flatMappedAgain
         )
-    }
-
-    @RunWith(Parameterized::class)
-    class StaticPagingData(
-        private val data: List<String>
-    ) {
-        companion object {
-            @JvmStatic
-            @Parameterized.Parameters(name = "data = {0}")
-            fun initParameters() = listOf(
-                listOf("a", "b", "c"),
-                emptyList(),
-            )
-        }
-
-        private val differ = TestPagingDataDiffer<String>(EmptyCoroutineContext)
-        private lateinit var pagingData: PagingData<String>
-
-        @Before
-        fun init() {
-            pagingData = if (data.isNotEmpty()) {
-                PagingData.from(data)
-            } else {
-                PagingData.empty()
-            }
-        }
-
-        @Test
-        fun map() = runTest(UnconfinedTestDispatcher()) {
-            val transform = { it: String -> it + it }
-            differ.collectFrom(pagingData)
-            val originalItems = differ.snapshot().items
-            val expectedItems = originalItems.map(transform)
-            val transformedPagingData = pagingData.map { transform(it) }
-            differ.collectFrom(transformedPagingData)
-            assertEquals(expectedItems, differ.snapshot().items)
-        }
-
-        @Test
-        fun flatMap() = runTest(UnconfinedTestDispatcher()) {
-            val transform = { it: String -> listOf(it, it) }
-            differ.collectFrom(pagingData)
-            val originalItems = differ.snapshot().items
-            val expectedItems = originalItems.flatMap(transform)
-            val transformedPagingData = pagingData.flatMap { transform(it) }
-            differ.collectFrom(transformedPagingData)
-            assertEquals(expectedItems, differ.snapshot().items)
-        }
-
-        @Test
-        fun filter() = runTest(UnconfinedTestDispatcher()) {
-            val predicate = { it: String -> it != "b" }
-            differ.collectFrom(pagingData)
-            val originalItems = differ.snapshot().items
-            val expectedItems = originalItems.filter(predicate)
-            val transformedPagingData = pagingData.filter { predicate(it) }
-            differ.collectFrom(transformedPagingData)
-            assertEquals(expectedItems, differ.snapshot().items)
-        }
-
-        @Test
-        fun insertSeparators() = runTest(UnconfinedTestDispatcher()) {
-            val transform = { left: String?, right: String? ->
-                if (left == null || right == null) null else "|"
-            }
-            differ.collectFrom(pagingData)
-            val originalItems = differ.snapshot().items
-            val expectedItems = originalItems.flatMapIndexed { index, s ->
-                val result = mutableListOf<String>()
-                if (index == 0) {
-                    transform(null, s)?.let(result::add)
-                }
-                result.add(s)
-                transform(s, originalItems.getOrNull(index + 1))?.let(result::add)
-                if (index == originalItems.lastIndex) {
-                    transform(s, null)?.let(result::add)
-                }
-                result
-            }
-            val transformedPagingData = pagingData.insertSeparators { left, right ->
-                transform(left, right)
-            }
-            differ.collectFrom(transformedPagingData)
-            assertEquals(expectedItems, differ.snapshot().items)
-        }
     }
 }
