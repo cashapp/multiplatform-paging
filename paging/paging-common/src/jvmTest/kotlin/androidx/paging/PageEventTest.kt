@@ -24,11 +24,11 @@ import kotlin.test.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 internal fun <T : Any> adjacentInsertEvent(
     isPrepend: Boolean,
