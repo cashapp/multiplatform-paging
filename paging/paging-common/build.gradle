@@ -30,6 +30,11 @@ kotlin {
     jvm()
 
     sourceSets {
+        all {
+            languageSettings {
+                progressiveMode = true
+            }
+        }
         commonMain {
             dependencies {
                 api(libs.kotlinStdlibCommon)
@@ -40,6 +45,8 @@ kotlin {
         }
         commonTest {
             dependencies {
+                implementation(project(":internal-testutils-ktx"))
+                implementation(project(":internal-testutils-paging"))
                 implementation(libs.kotlinTest)
                 implementation(libs.kotlinCoroutinesTest)
                 implementation("com.willowtreeapps.assertk:assertk:0.25")
@@ -47,6 +54,9 @@ kotlin {
         }
         nonJsMain {
             dependsOn(commonMain)
+        }
+        nonJsTest {
+            dependsOn(commonTest)
         }
         iosMain {
             dependsOn(nonJsMain)
@@ -66,6 +76,7 @@ kotlin {
                 implementation(libs.mockitoKotlin4)
                 implementation(project(":internal-testutils-ktx"))
                 implementation(project(":internal-testutils-paging"))
+                implementation(libs.kotlinTestJunit)
             }
         }
     }

@@ -46,6 +46,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 
+// TODO Move to commonTest once https://issuetracker.google.com/issues/220884818 is implemented.
 @OptIn(ExperimentalCoroutinesApi::class)
 class CachingTest {
     private val tracker = ActiveFlowTrackerImpl()
