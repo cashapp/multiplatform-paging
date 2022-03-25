@@ -21,13 +21,11 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED
 import assertk.assertThat
 import assertk.assertions.*
-import kotlinx.coroutines.runBlocking
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class PagingSourceTest {
 
@@ -50,7 +48,7 @@ class PagingSourceTest {
 
     @Test
     fun loadInitial() {
-        runBlocking {
+        runTest {
             val pagingSource = ItemDataSource()
             val key = ITEMS_BY_NAME_ID[49].key()
             val result = loadInitial(pagingSource, key, 10, true) as LoadResult.Page
@@ -72,7 +70,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_keyMatchesSingleItem() = runBlocking {
+    fun loadInitial_keyMatchesSingleItem() = runTest {
         val pagingSource = ItemDataSource(items = ITEMS_BY_NAME_ID.subList(0, 1))
 
         // this is tricky, since load after and load before with the passed key will fail
@@ -85,7 +83,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_keyMatchesLastItem() = runBlocking {
+    fun loadInitial_keyMatchesLastItem() = runTest {
         val pagingSource = ItemDataSource()
 
         // tricky, because load after key is empty, so another load before and load after required
@@ -98,7 +96,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_nullKey() = runBlocking {
+    fun loadInitial_nullKey() = runTest {
         val dataSource = ItemDataSource()
 
         val result = loadInitial(dataSource, null, 10, true) as LoadResult.Page
@@ -109,7 +107,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_keyPastEndOfList() = runBlocking {
+    fun loadInitial_keyPastEndOfList() = runTest {
         val dataSource = ItemDataSource()
 
         // if key is past entire data set, should return last items in data set
@@ -127,7 +125,7 @@ class PagingSourceTest {
     // ----- UNCOUNTED -----
 
     @Test
-    fun loadInitial_disablePlaceholders() = runBlocking {
+    fun loadInitial_disablePlaceholders() = runTest {
         val dataSource = ItemDataSource()
 
         // dispatchLoadInitial(key, count) == null padding, loadAfter(key, count), null padding
@@ -140,7 +138,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_uncounted() = runBlocking {
+    fun loadInitial_uncounted() = runTest {
         val dataSource = ItemDataSource(counted = false)
 
         // dispatchLoadInitial(key, count) == null padding, loadAfter(key, count), null padding
@@ -153,7 +151,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_nullKey_uncounted() = runBlocking {
+    fun loadInitial_nullKey_uncounted() = runTest {
         val dataSource = ItemDataSource(counted = false)
 
         val result = loadInitial(dataSource, null, 10, true) as LoadResult.Page
@@ -166,7 +164,7 @@ class PagingSourceTest {
     // ----- EMPTY -----
 
     @Test
-    fun loadInitial_empty() = runBlocking {
+    fun loadInitial_empty() = runTest {
         val dataSource = ItemDataSource(items = ArrayList())
 
         // dispatchLoadInitial(key, count) == null padding, loadAfter(key, count), null padding
@@ -179,7 +177,7 @@ class PagingSourceTest {
     }
 
     @Test
-    fun loadInitial_nullKey_empty() = runBlocking {
+    fun loadInitial_nullKey_empty() = runTest {
         val dataSource = ItemDataSource(items = ArrayList())
         val result = loadInitial(dataSource, null, 10, true) as LoadResult.Page
 
@@ -194,7 +192,7 @@ class PagingSourceTest {
     fun loadBefore() {
         val dataSource = ItemDataSource()
 
-        runBlocking {
+        runTest {
             val key = ITEMS_BY_NAME_ID[5].key()
             val params = LoadParams.Prepend(key, 5, false)
             val observed = (dataSource.load(params) as LoadResult.Page).data
@@ -217,7 +215,7 @@ class PagingSourceTest {
     fun loadAfter() {
         val dataSource = ItemDataSource()
 
-        runBlocking {
+        runTest {
             val key = ITEMS_BY_NAME_ID[5].key()
             val params = LoadParams.Append(key, 5, false)
             val observed = (dataSource.load(params) as LoadResult.Page).data

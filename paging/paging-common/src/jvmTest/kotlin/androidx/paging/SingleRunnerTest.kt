@@ -24,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -42,7 +41,7 @@ class SingleRunnerTest {
     private val testScope = TestScope()
 
     @Test
-    fun cancelsPreviousRun() = runBlocking {
+    fun cancelsPreviousRun() = runTest {
         val runner = SingleRunner()
         val job = launch(Dispatchers.Unconfined) {
             runner.runInIsolation {
@@ -59,7 +58,7 @@ class SingleRunnerTest {
     }
 
     @Test
-    fun previousRunCanCancelItself() = runBlocking {
+    fun previousRunCanCancelItself() = runTest {
         val runner = SingleRunner()
         val job = launch(Dispatchers.Unconfined) {
             runner.runInIsolation {
@@ -173,7 +172,7 @@ class SingleRunnerTest {
 //                }
 //            }
 //        }
-//        runBlocking {
+//        runTest {
 //            withTimeout(10.seconds) {
 //                job2.join()
 //            }
