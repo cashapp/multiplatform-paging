@@ -65,6 +65,16 @@ kotlin {
         iosMain {
             dependsOn(nonJsMain)
         }
+        jsMain {
+            dependencies {
+                implementation(libs.kotlinStdlibJs)
+            }
+        }
+        jsTest {
+            dependencies {
+                implementation(libs.kotlinTestJs)
+            }
+        }
         jvmMain {
             dependsOn(nonJsMain)
         }
