@@ -63,7 +63,12 @@ kotlin {
         }
         jsMain {
             dependencies {
-                api(libs.kotlinStdlibJs)
+                implementation(libs.kotlinStdlibJs)
+            }
+        }
+        jsTest {
+            dependencies {
+                implementation(libs.kotlinTestJs)
             }
         }
         jvmMain {
