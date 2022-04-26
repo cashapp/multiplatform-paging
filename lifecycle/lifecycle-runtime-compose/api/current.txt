@@ -1,8 +1,0 @@
-// Signature format: 4.0
-package androidx.lifecycle.compose {
-
-  public final class FlowExtKt {
-  }
-
-}
-

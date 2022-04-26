@@ -1,3 +1,0 @@
-// Baseline format: 1.0
-AddedAbstractMethod: androidx.wear.watchface.client.WatchFaceMetadataClient#getUserStyleFlavors():
-    Added method androidx.wear.watchface.client.WatchFaceMetadataClient.getUserStyleFlavors()

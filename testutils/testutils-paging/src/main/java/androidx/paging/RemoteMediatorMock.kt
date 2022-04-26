@@ -24,6 +24,7 @@ import kotlinx.coroutines.delay
 typealias LoadCallback = suspend (loadType: LoadType, state: PagingState<Int, Int>) ->
 RemoteMediator.MediatorResult?
 
+@Suppress("NullAnnotationGroup")
 @OptIn(ExperimentalPagingApi::class)
 open class RemoteMediatorMock(private val loadDelay: Long = 0) : RemoteMediator<Int, Int>() {
     val loadEvents = mutableListOf<LoadEvent<Int, Int>>()

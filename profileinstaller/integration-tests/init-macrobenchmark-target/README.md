@@ -1,1 +1,0 @@
-Benchmark startup overhead introduced by profileinstaller's use of startup library
