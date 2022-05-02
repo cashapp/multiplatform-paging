@@ -1,5 +1,15 @@
 [versions]
+androidx-paging = "3.1.1"
 kotlin = "1.6.21"
+kotlinx-coroutines = "1.6.0"
+stately = "1.2.0"
+
+[libraries]
+androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
+kotlin-stdlib-common = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+stately-concurrency = { module = "co.touchlab:stately-concurrency", version.ref = "stately" }
+stately-iso-collections = { module = "co.touchlab:stately-iso-collections", version.ref = "stately" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

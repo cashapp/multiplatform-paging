@@ -1,3 +1,3 @@
 rootProject.name = "paging-root"
 
-include(":paging")
+include(":paging-common")
