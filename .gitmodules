@@ -1,0 +1,4 @@
+[submodule "upstreams/androidx-main-mpp"]
+	path = upstreams/androidx-main-mpp
+	url = ./
+	branch = androidx-main-mpp
