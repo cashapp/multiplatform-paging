@@ -62,8 +62,9 @@ internal class PageFetcher<Key : Any, Value : Any>(
             }
             .simpleScan(null) { previousGeneration: GenerationInfo<Key, Value>?,
                 triggerRemoteRefresh: Boolean ->
-                val pagingSource = generateNewPagingSource(
-                    previousPagingSource = previousGeneration?.snapshot?.pagingSource
+                val (pagingSource, invalidatedCallback) = generateNewPagingSource(
+                    previousPagingSource = previousGeneration?.snapshot?.pagingSource,
+                    previousInvalidatedCallback = previousGeneration?.invalidatedCallback,
                 )
 
                 var previousPagingState = previousGeneration?.snapshot?.currentPagingState()
@@ -108,6 +109,7 @@ internal class PageFetcher<Key : Any, Value : Any>(
                     ),
                     state = previousPagingState,
                     job = Job(),
+                    invalidatedCallback = invalidatedCallback,
                 )
             }
             .filterNotNull()
@@ -182,8 +184,9 @@ internal class PageFetcher<Key : Any, Value : Any>(
     }
 
     private suspend fun generateNewPagingSource(
-        previousPagingSource: PagingSource<Key, Value>?
-    ): PagingSource<Key, Value> {
+        previousPagingSource: PagingSource<Key, Value>?,
+        previousInvalidatedCallback: (() -> Unit)?,
+    ): Pair<PagingSource<Key, Value>, () -> Unit> {
         val pagingSource = pagingSourceFactory()
         // Ensure pagingSourceFactory produces a new instance of PagingSource.
         check(pagingSource !== previousPagingSource) {
@@ -195,11 +198,12 @@ internal class PageFetcher<Key : Any, Value : Any>(
         }
 
         // Hook up refresh signals from PagingSource.
-        pagingSource.registerInvalidatedCallback(::invalidate)
-        previousPagingSource?.unregisterInvalidatedCallback(::invalidate)
+        val invalidatedCallback = ::invalidate
+        pagingSource.registerInvalidatedCallback(invalidatedCallback)
+        previousInvalidatedCallback?.let { previousPagingSource?.unregisterInvalidatedCallback(it) }
         previousPagingSource?.invalidate() // Note: Invalidate is idempotent.
 
-        return pagingSource
+        return pagingSource to invalidatedCallback
     }
 
     inner class PagerUiReceiver<Key : Any, Value : Any> constructor(
@@ -221,5 +225,6 @@ internal class PageFetcher<Key : Any, Value : Any>(
         val snapshot: PageFetcherSnapshot<Key, Value>,
         val state: PagingState<Key, Value>?,
         val job: Job,
+        val invalidatedCallback: () -> Unit,
     )
 }
