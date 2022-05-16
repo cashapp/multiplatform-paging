@@ -2,6 +2,7 @@
 androidx-paging = "3.1.1"
 kotlin = "1.6.21"
 kotlinx-coroutines = "1.6.0"
+maven-publish = "0.19.0"
 stately = "1.2.0"
 
 [libraries]
@@ -13,3 +14,4 @@ stately-iso-collections = { module = "co.touchlab:stately-iso-collections", vers
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

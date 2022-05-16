@@ -1,3 +1,10 @@
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import com.vanniktech.maven.publish.SonatypeHost
+
+plugins {
+  alias(libs.plugins.mavenPublish) apply false
+}
+
 allprojects {
   group = "app.cash.paging"
   version = "1.0.0-SNAPSHOT"
@@ -5,5 +12,44 @@ allprojects {
   repositories {
     mavenCentral()
     google()
+  }
+
+  plugins.withId("com.vanniktech.maven.publish.base") {
+    configure<PublishingExtension> {
+      repositories {
+        maven {
+          name = "testMaven"
+          url = file("${rootProject.buildDir}/testMaven").toURI()
+        }
+      }
+    }
+    @Suppress("UnstableApiUsage")
+    configure<MavenPublishBaseExtension> {
+      publishToMavenCentral(SonatypeHost.DEFAULT)
+      signAllPublications()
+      pom {
+        description.set("Packages Android Jetpack's Paging library for Kotlin/Multiplatform.")
+        name.set(project.name)
+        url.set("https://github.com/cashapp/multiplatform-paging/")
+        licenses {
+          license {
+            name.set("The Apache Software License, Version 2.0")
+            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            distribution.set("repo")
+          }
+        }
+        developers {
+          developer {
+            id.set("cashapp")
+            name.set("Cash App")
+          }
+        }
+        scm {
+          url.set("https://github.com/cashapp/multiplatform-paging/")
+          connection.set("scm:git:https://github.com/cashapp/multiplatform-paging.git")
+          developerConnection.set("scm:git:ssh://git@github.com/cashapp/multiplatform-paging.git")
+        }
+      }
+    }
   }
 }
