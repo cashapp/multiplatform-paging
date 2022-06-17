@@ -78,7 +78,7 @@ expect class CommonPagingSourceLoadResultError<Key : Any, Value : Any>(
   val throwable: Throwable
 }
 
-expect class CommonPagingSourceLoadResultInvalid<Key : Any, Value : Any>
+expect class CommonPagingSourceLoadResultInvalid<Key : Any, Value : Any>()
 
 expect class CommonPagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   data: List<Value>,
