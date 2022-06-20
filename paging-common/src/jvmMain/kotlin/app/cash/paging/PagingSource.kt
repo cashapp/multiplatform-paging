@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package androidx.paging
+package app.cash.paging
 
 actual typealias CommonPagingSource<Key, Value> = androidx.paging.PagingSource<Key, Value>
 

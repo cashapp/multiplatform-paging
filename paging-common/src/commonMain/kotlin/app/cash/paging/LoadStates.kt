@@ -16,8 +16,6 @@
 
 package app.cash.paging
 
-import androidx.paging.CommonLoadState
-
 expect class LoadStates(
   refresh: CommonLoadState,
   prepend: CommonLoadState,

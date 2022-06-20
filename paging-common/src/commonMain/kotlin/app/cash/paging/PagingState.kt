@@ -16,8 +16,6 @@
 
 package app.cash.paging
 
-import androidx.paging.CommonPagingSourceLoadResultPage
-
 expect class PagingState<Key : Any, Value : Any>(
   pages: List<CommonPagingSourceLoadResultPage<Key, Value>>,
   anchorPosition: Int?,

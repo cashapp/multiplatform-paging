@@ -18,7 +18,6 @@ package app.cash.paging
 
 import kotlinx.coroutines.flow.Flow
 import kotlin.jvm.JvmOverloads
-import androidx.paging.CommonPagingSource
 
 expect class Pager<Key : Any, Value : Any>(
   config: PagingConfig,

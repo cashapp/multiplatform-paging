@@ -16,7 +16,7 @@
 
 @file:JvmName("CommonPagingSource")
 
-package androidx.paging
+package app.cash.paging
 
 import app.cash.paging.PagingState
 import kotlin.jvm.JvmName

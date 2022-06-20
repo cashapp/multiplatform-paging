@@ -16,8 +16,6 @@
 
 package app.cash.paging
 
-import androidx.paging.CommonPagingSource
-
 expect class InvalidatingPagingSourceFactory<Key : Any, Value : Any>(
     pagingSourceFactory: () -> CommonPagingSource<Key, Value>
 ) : () -> CommonPagingSource<Key, Value> {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package androidx.paging
+package app.cash.paging
 
 // TODO We should be able to expect/actual the sealed class as a typealias as expected, but we're blocked until
 //  https://youtrack.jetbrains.com/issue/KT-34281 is fixed.

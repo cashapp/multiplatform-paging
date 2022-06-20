@@ -16,7 +16,5 @@
 
 package app.cash.paging
 
-import androidx.paging.CommonPagingSource
-
 // TODO This is the androidx-main-mpp definition. Not needed yet…
 //expect fun interface PagingSourceFactory<Key : Any, Value : Any>: Function0<CommonPagingSource<Key, Value>>

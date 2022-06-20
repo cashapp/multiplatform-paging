@@ -18,7 +18,6 @@
 
 package app.cash.paging
 
-import androidx.paging.COUNT_UNDEFINED
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmName
 import kotlin.jvm.JvmOverloads
