@@ -5,6 +5,7 @@ plugins {
 
 kotlin {
   ios()
+  iosSimulatorArm64()
   js(IR) {
     browser()
   }
@@ -43,6 +44,9 @@ kotlin {
       kotlin.srcDir("../upstreams/androidx-main-mpp/paging/paging-common/src/nonJsMain", )
       dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
+    }
+    val iosSimulatorArm64Main by getting {
+      dependsOn(iosMain)
     }
     val jsMain by getting {
       kotlin.srcDir("../upstreams/androidx-main-mpp/paging/paging-common/src/jsMain", )
