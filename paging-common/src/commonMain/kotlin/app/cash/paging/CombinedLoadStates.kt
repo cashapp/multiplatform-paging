@@ -17,15 +17,15 @@
 package app.cash.paging
 
 expect class CombinedLoadStates(
-  refresh: CommonLoadState,
-  prepend: CommonLoadState,
-  append: CommonLoadState,
+  refresh: LoadState,
+  prepend: LoadState,
+  append: LoadState,
   source: LoadStates,
   mediator: LoadStates? = null,
 ) {
-  val refresh: CommonLoadState
-  val prepend: CommonLoadState
-  val append: CommonLoadState
+  val refresh: LoadState
+  val prepend: LoadState
+  val append: LoadState
   val source: LoadStates
   val mediator: LoadStates?
 }

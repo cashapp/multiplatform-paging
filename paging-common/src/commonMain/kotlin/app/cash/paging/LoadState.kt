@@ -19,14 +19,14 @@ package app.cash.paging
 // TODO We should be able to expect/actual the sealed class as a typealias as expected, but we're blocked until
 //  https://youtrack.jetbrains.com/issue/KT-34281 is fixed.
 
-expect sealed class CommonLoadState(
+expect sealed class LoadState(
   endOfPaginationReached: Boolean
 ) {
   val endOfPaginationReached: Boolean
 }
 
-expect class CommonLoadStateNotLoading(endOfPaginationReached: Boolean)
-expect object CommonLoadStateLoading
-expect class CommonLoadStateError(error: Throwable) {
+expect class LoadStateNotLoading(endOfPaginationReached: Boolean)
+expect object LoadStateLoading
+expect class LoadStateError(error: Throwable) {
   val error: Throwable
 }

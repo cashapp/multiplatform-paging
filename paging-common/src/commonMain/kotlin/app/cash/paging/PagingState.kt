@@ -17,19 +17,19 @@
 package app.cash.paging
 
 expect class PagingState<Key : Any, Value : Any>(
-  pages: List<CommonPagingSourceLoadResultPage<Key, Value>>,
+  pages: List<PagingSourceLoadResultPage<Key, Value>>,
   anchorPosition: Int?,
   config: PagingConfig,
   leadingPlaceholderCount: Int
 ) {
 
-  val pages: List<CommonPagingSourceLoadResultPage<Key, Value>>
+  val pages: List<PagingSourceLoadResultPage<Key, Value>>
   val anchorPosition: Int?
   val config: PagingConfig
 
   fun closestItemToPosition(anchorPosition: Int): Value?
 
-  fun closestPageToPosition(anchorPosition: Int): CommonPagingSourceLoadResultPage<Key, Value>?
+  fun closestPageToPosition(anchorPosition: Int): PagingSourceLoadResultPage<Key, Value>?
 
   fun isEmpty(): Boolean
 

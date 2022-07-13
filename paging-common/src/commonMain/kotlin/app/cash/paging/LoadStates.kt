@@ -17,14 +17,14 @@
 package app.cash.paging
 
 expect class LoadStates(
-  refresh: CommonLoadState,
-  prepend: CommonLoadState,
-  append: CommonLoadState
+  refresh: LoadState,
+  prepend: LoadState,
+  append: LoadState
 ) {
-  val refresh: CommonLoadState
-  val prepend: CommonLoadState
-  val append: CommonLoadState
+  val refresh: LoadState
+  val prepend: LoadState
+  val append: LoadState
 
   /** @suppress */
-  inline fun forEach(op: (LoadType, CommonLoadState) -> Unit)
+  inline fun forEach(op: (LoadType, LoadState) -> Unit)
 }

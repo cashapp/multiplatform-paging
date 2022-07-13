@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-@file:JvmName("CommonPagingSource")
+@file:JvmName("PagingSource")
 
 package app.cash.paging
 
 import app.cash.paging.PagingState
 import kotlin.jvm.JvmName
 
-expect abstract class CommonPagingSource<Key : Any, Value : Any> {
+expect abstract class PagingSource<Key : Any, Value : Any> {
 
   open val jumpingSupported: Boolean
 
@@ -35,12 +35,12 @@ expect abstract class CommonPagingSource<Key : Any, Value : Any> {
 
   fun unregisterInvalidatedCallback(onInvalidatedCallback: () -> Unit)
 
-  abstract suspend fun load(params: CommonPagingSourceLoadParams<Key>): CommonPagingSourceLoadResult<Key, Value>
+  abstract suspend fun load(params: PagingSourceLoadParams<Key>): PagingSourceLoadResult<Key, Value>
 
   abstract fun getRefreshKey(state: PagingState<Key, Value>): Key?
 }
 
-expect sealed class CommonPagingSourceLoadParams<Key : Any> constructor(
+expect sealed class PagingSourceLoadParams<Key : Any> constructor(
   loadSize: Int,
   placeholdersEnabled: Boolean,
 ) {
@@ -52,35 +52,35 @@ expect sealed class CommonPagingSourceLoadParams<Key : Any> constructor(
 // TODO Alec's solution to not have the sealed class be extended by it's subclasses might work with jvmMain (through
 //  typealiases) but I'm not too sure how it's going to work on nonJvmMain. Could I just do typealiases there too???
 
-expect class CommonPagingSourceLoadParamsRefresh<Key : Any> constructor(
+expect class PagingSourceLoadParamsRefresh<Key : Any> constructor(
   key: Key?,
   loadSize: Int,
   placeholdersEnabled: Boolean,
 )
 
-expect class CommonPagingSourceLoadParamsAppend<Key : Any> constructor(
+expect class PagingSourceLoadParamsAppend<Key : Any> constructor(
   key: Key,
   loadSize: Int,
   placeholdersEnabled: Boolean,
 )
 
-expect class CommonPagingSourceLoadParamsPrepend<Key : Any> constructor(
+expect class PagingSourceLoadParamsPrepend<Key : Any> constructor(
   key: Key,
   loadSize: Int,
   placeholdersEnabled: Boolean,
 )
 
-expect sealed class CommonPagingSourceLoadResult<Key : Any, Value : Any>
+expect sealed class PagingSourceLoadResult<Key : Any, Value : Any>
 
-expect class CommonPagingSourceLoadResultError<Key : Any, Value : Any>(
+expect class PagingSourceLoadResultError<Key : Any, Value : Any>(
   throwable: Throwable
 ) {
   val throwable: Throwable
 }
 
-expect class CommonPagingSourceLoadResultInvalid<Key : Any, Value : Any>()
+expect class PagingSourceLoadResultInvalid<Key : Any, Value : Any>()
 
-expect class CommonPagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
+expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   data: List<Value>,
   prevKey: Key?,
   nextKey: Key?,

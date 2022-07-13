@@ -23,13 +23,13 @@ expect class Pager<Key : Any, Value : Any>(
   config: PagingConfig,
   initialKey: Key? = null,
   remoteMediator: RemoteMediator<Key, Value>?,
-  pagingSourceFactory: () -> CommonPagingSource<Key, Value>
+  pagingSourceFactory: () -> PagingSource<Key, Value>
 ) {
   @JvmOverloads
   constructor(
     config: PagingConfig,
     initialKey: Key? = null,
-    pagingSourceFactory: () -> CommonPagingSource<Key, Value>
+    pagingSourceFactory: () -> PagingSource<Key, Value>
   )
 
   val flow: Flow<PagingData<Value>>

@@ -16,8 +16,8 @@
 
 package app.cash.paging
 
-actual typealias CommonLoadState = androidx.paging.LoadState
+actual typealias LoadState = androidx.paging.LoadState
 
-actual typealias CommonLoadStateNotLoading = androidx.paging.LoadState.NotLoading
-actual typealias CommonLoadStateLoading = androidx.paging.LoadState.Loading
-actual typealias CommonLoadStateError = androidx.paging.LoadState.Error
+actual typealias LoadStateNotLoading = androidx.paging.LoadState.NotLoading
+actual typealias LoadStateLoading = androidx.paging.LoadState.Loading
+actual typealias LoadStateError = androidx.paging.LoadState.Error
