@@ -23,7 +23,6 @@ expect class Pager<Key : Any, Value : Any>(
   config: PagingConfig,
   initialKey: Key? = null,
   remoteMediator: RemoteMediator<Key, Value>?,
-//  pagingSourceFactory: PagingSourceFactory<Key, Value> TODO This is the androidx-main-mpp definition. Will need to change soon…
   pagingSourceFactory: () -> CommonPagingSource<Key, Value>
 ) {
   @JvmOverloads
@@ -32,14 +31,6 @@ expect class Pager<Key : Any, Value : Any>(
     initialKey: Key? = null,
     pagingSourceFactory: () -> CommonPagingSource<Key, Value>
   )
-
-  // TODO NEEDED?
-//  constructor(
-//    config: PagingConfig,
-//    initialKey: Key? = null,
-//    remoteMediator: RemoteMediator<Key, Value>?,
-//    pagingSourceFactory: () -> CommonPagingSource<Key, Value>
-//  )
 
   val flow: Flow<PagingData<Value>>
 }
