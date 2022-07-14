@@ -29,7 +29,7 @@ kotlin {
     val jvmMain by getting {
       dependsOn(nonJsMain)
       dependencies {
-        implementation(libs.androidx.paging.common)
+        api(libs.androidx.paging.common)
       }
     }
     val nonJvmMain by creating {
