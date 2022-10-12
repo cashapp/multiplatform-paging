@@ -1,0 +1,14 @@
+<resources>
+
+  <style name="Theme.RepoSearch" parent="Theme.AppCompat.Light.DarkActionBar">
+    <item name="colorPrimary">@color/purple_500</item>
+    <item name="colorPrimaryDark">@color/purple_700</item>
+    <item name="colorAccent">@color/teal_200</item>
+  </style>
+
+  <style name="Theme.RepoSearch.NoActionBar">
+    <item name="windowActionBar">false</item>
+    <item name="windowNoTitle">true</item>
+  </style>
+
+</resources>

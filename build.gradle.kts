@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
+  alias(libs.plugins.kotlin.serialization) apply false
   alias(libs.plugins.mavenPublish) apply false
 }
 

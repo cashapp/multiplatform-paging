@@ -1,0 +1,9 @@
+<resources>
+
+  <style name="Theme.RepoSearch" parent="Theme.AppCompat.Light.DarkActionBar">
+    <item name="colorPrimary">@color/purple_200</item>
+    <item name="colorPrimaryDark">@color/purple_700</item>
+    <item name="colorAccent">@color/teal_200</item>
+  </style>
+
+</resources>
