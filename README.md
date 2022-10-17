@@ -5,38 +5,6 @@ This library packages [Jetpack Paging] for Kotlin/Multiplatform.
 Our multiplatform APIs use `app.cash.paging`.
 This library delegates to the stock Jetpack Paging artifact on the Android platform.
 
-## Building This Project
-
-This project uses Git submodules to build our branch of Jetpack paging alongside our common API declarations.
-
-You'll need to run these commands before you can build:
-
-```
-$ git submodule init
-```
-
-## Directory structure
-
-- paging/src/commonMain
-  - Defines the common multiplatform API.
-    This is the paging3 subset of `androidx.paging`.
-  - Exclusively `expect` types with package name `app.cash.paging`.
-
-- paging/src/jvmMain
-  - Only `typealias` declarations from `app.cash.paging` to `androidx.paging`.
-  - This has a library dependency on androidx.paging.
-    We depend on Google's official releases on Android.
-
-- paging/src/nonJvmMain
-  - Only `typealias` declarations from `app.cash.paging` to `androidx.paging`.
-  - Includes sources from our branch of androidx.paging in the `upstreams/androidx-main` directory.
-
-- upstreams/androidx-main
-  - the androidx repo, branched to work on non-JVM platforms
-  - our branch does this:
-    - prunes everything that isn't paging-related
-    - changes paging internals to support non-JVM platforms
-
 Note that commonMain includes only the Paging 3 APIs from `androidx.paging`.
 We don't plan to offer multiplatform APIs for Paging 2.
 
