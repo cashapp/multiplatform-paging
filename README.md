@@ -47,22 +47,24 @@ All types in `app.cash.paging` typealias to `androidx.paging` on all platforms.
 
 Unfortunately, there are a few exceptions, due to limitations in the Kotlin compiler.
 
-| `androidx.paging` API                       | `app.cash.paging` API                     | Issue reference |
-|---------------------------------------------|-------------------------------------------|-----------------|
-| LoadState.NotLoading                        | LoadStateNotLoading                       |                 |
-| LoadState.Loading                           | LoadStateLoading                          |                 |
-| LoadState.Error                             | LoadStateError                            |                 |
-| PagingSource.LoadParams<Key>                | PagingSourceLoadParams<Key>               |                 |
-| PagingSource.LoadParams.Refresh<Key>        | PagingSourceLoadParamsRefresh<Key>        |                 |
-| PagingSource.LoadParams.Append<Key>         | PagingSourceLoadParamsAppend<Key>         |                 |
-| PagingSource.LoadParams.Prepend<Key>        | PagingSourceLoadParamsPrepend<Key>        |                 |
-| PagingSource.LoadResult.Error<Key, Value>   | PagingSourceLoadResultError<Key, Value>   |                 |
-| PagingSource.LoadResult.Invalid<Key, Value> | PagingSourceLoadResultInvalid<Key, Value> |                 |
-| PagingSource.LoadResult.Page<Key, Value>    | PagingSourceLoadResultPage<Key, Value>    |                 |
-| RemoteMediator.MediatorResult               | MediatorResult                            |                 |
-| RemoteMediator.MediatorResult.Error         | MediatorResultError                       |                 |
-| RemoteMediator.MediatorResult.Success       | MediatorResultSuccess                     |                 |
-| RemoteMediator.InitializeAction             | InitializeAction                          |                 |
+| `androidx.paging`                                      | `app.cash.paging`                         | Issue reference                               |
+|--------------------------------------------------------|-------------------------------------------|-----------------------------------------------|
+| LoadState.NotLoading                                   | LoadStateNotLoading                       | https://youtrack.jetbrains.com/issue/KT-34281 |
+| LoadState.Loading                                      | LoadStateLoading                          | https://youtrack.jetbrains.com/issue/KT-34281 |
+| LoadState.Error                                        | LoadStateError                            | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingConfig.Companion.MAX_SIZE_UNBOUNDED              | MAX_SIZE_UNBOUNDED                        | https://youtrack.jetbrains.com/issue/KT-18856 |
+| PagingSource.LoadParams<Key>                           | PagingSourceLoadParams<Key>               | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadParams.Refresh<Key>                   | PagingSourceLoadParamsRefresh<Key>        | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadParams.Append<Key>                    | PagingSourceLoadParamsAppend<Key>         | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadParams.Prepend<Key>                   | PagingSourceLoadParamsPrepend<Key>        | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadResult.Error<Key, Value>              | PagingSourceLoadResultError<Key, Value>   | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadResult.Invalid<Key, Value>            | PagingSourceLoadResultInvalid<Key, Value> | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadResult.Page<Key, Value>               | PagingSourceLoadResultPage<Key, Value>    | https://youtrack.jetbrains.com/issue/KT-34281 |
+| PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED | COUNT_UNDEFINED                           | https://youtrack.jetbrains.com/issue/KT-18856 |
+| RemoteMediator.MediatorResult                          | MediatorResult                            | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.MediatorResult.Error                    | MediatorResultError                       | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.MediatorResult.Success                  | MediatorResultSuccess                     | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.InitializeAction                        | InitializeAction                          | https://youtrack.jetbrains.com/issue/KT-34281 |
 
 ## Versioning
 

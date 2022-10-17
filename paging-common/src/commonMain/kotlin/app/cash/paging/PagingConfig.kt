@@ -52,8 +52,6 @@ expect class PagingConfig @JvmOverloads constructor(
   companion object
 }
 
-// TODO expect/actual const isn't supported yet. Moved to a top-level const for now.
-//  https://youtrack.jetbrains.com/issue/KT-18856
 const val MAX_SIZE_UNBOUNDED: Int = Int.MAX_VALUE
 
 private const val DEFAULT_INITIAL_PAGE_MULTIPLIER = 3

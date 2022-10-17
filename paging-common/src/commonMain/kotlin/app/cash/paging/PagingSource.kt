@@ -49,9 +49,6 @@ expect sealed class PagingSourceLoadParams<Key : Any> constructor(
   abstract val key: Key?
 }
 
-// TODO Alec's solution to not have the sealed class be extended by it's subclasses might work with jvmMain (through
-//  typealiases) but I'm not too sure how it's going to work on nonJvmMain. Could I just do typealiases there too???
-
 expect class PagingSourceLoadParamsRefresh<Key : Any> constructor(
   key: Key?,
   loadSize: Int,
@@ -103,6 +100,4 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   companion object
 }
 
-// TODO expect/actual const isn't supported yet. Moved to a top-level const for now.
-//  https://youtrack.jetbrains.com/issue/KT-18856
 const val COUNT_UNDEFINED: Int = Int.MIN_VALUE
