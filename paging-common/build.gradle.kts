@@ -33,7 +33,7 @@ kotlin {
       }
     }
     val nonJvmMain by creating {
-      kotlin.srcDir("../upstreams/androidx-main-mpp/paging/paging-common/src/commonMain")
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/commonMain")
       dependsOn(commonMain)
       dependencies {
         implementation(libs.stately.concurrency)
@@ -41,7 +41,7 @@ kotlin {
       }
     }
     val iosMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main-mpp/paging/paging-common/src/nonJsMain", )
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain", )
       dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
     }
@@ -49,7 +49,7 @@ kotlin {
       dependsOn(iosMain)
     }
     val jsMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main-mpp/paging/paging-common/src/jsMain", )
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain", )
       dependsOn(nonJvmMain)
     }
   }

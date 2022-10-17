@@ -29,9 +29,9 @@ $ git submodule init
 
 - paging/src/nonJvmMain
   - Only `typealias` declarations from `app.cash.paging` to `androidx.paging`.
-  - Includes sources from our branch of androidx.paging in the `upstreams/androidx-main-mpp` directory.
+  - Includes sources from our branch of androidx.paging in the `upstreams/androidx-main` directory.
 
-- upstreams/androidx-main-mpp
+- upstreams/androidx-main
   - the androidx repo, branched to work on non-JVM platforms
   - our branch does this:
     - prunes everything that isn't paging-related
