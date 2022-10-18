@@ -18,9 +18,9 @@ package app.cash.paging
 
 actual typealias RemoteMediator<Key, Value> = androidx.paging.RemoteMediator<Key, Value>
 
-actual typealias MediatorResult = androidx.paging.RemoteMediator.MediatorResult
+actual typealias RemoteMediatorMediatorResult = androidx.paging.RemoteMediator.MediatorResult
 
-actual typealias MediatorResultError = androidx.paging.RemoteMediator.MediatorResult.Error
-actual typealias MediatorResultSuccess = androidx.paging.RemoteMediator.MediatorResult.Success
+actual typealias RemoteMediatorMediatorResultError = androidx.paging.RemoteMediator.MediatorResult.Error
+actual typealias RemoteMediatorMediatorResultSuccess = androidx.paging.RemoteMediator.MediatorResult.Success
 
-actual typealias InitializeAction = androidx.paging.RemoteMediator.InitializeAction
+actual typealias RemoteMediatorInitializeAction = androidx.paging.RemoteMediator.InitializeAction

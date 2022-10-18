@@ -29,10 +29,10 @@ Unfortunately, there are a few exceptions, due to limitations in the Kotlin comp
 | PagingSource.LoadResult.Invalid<Key, Value>            | PagingSourceLoadResultInvalid<Key, Value> | https://youtrack.jetbrains.com/issue/KT-34281 |
 | PagingSource.LoadResult.Page<Key, Value>               | PagingSourceLoadResultPage<Key, Value>    | https://youtrack.jetbrains.com/issue/KT-34281 |
 | PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED | COUNT_UNDEFINED                           | https://youtrack.jetbrains.com/issue/KT-18856 |
-| RemoteMediator.MediatorResult                          | MediatorResult                            | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.MediatorResult.Error                    | MediatorResultError                       | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.MediatorResult.Success                  | MediatorResultSuccess                     | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.InitializeAction                        | InitializeAction                          | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.MediatorResult                          | RemoteMediatorMediatorResult              | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.MediatorResult.Error                    | RemoteMediatorMediatorResultError         | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.MediatorResult.Success                  | RemoteMediatorMediatorResultSuccess       | https://youtrack.jetbrains.com/issue/KT-34281 |
+| RemoteMediator.InitializeAction                        | RemoteMediatorInitializeAction            | https://youtrack.jetbrains.com/issue/KT-34281 |
 
 ## Versioning
 

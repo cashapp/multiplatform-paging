@@ -22,25 +22,25 @@ expect abstract class RemoteMediator<Key : Any, Value : Any> {
   abstract suspend fun load(
     loadType: LoadType,
     state: PagingState<Key, Value>
-  ): MediatorResult
+  ): RemoteMediatorMediatorResult
 
-  open suspend fun initialize(): InitializeAction
+  open suspend fun initialize(): RemoteMediatorInitializeAction
 }
 
-expect sealed class MediatorResult
+expect sealed class RemoteMediatorMediatorResult
 
-expect class MediatorResultError(throwable: Throwable) {
+expect class RemoteMediatorMediatorResultError(throwable: Throwable) {
   val throwable: Throwable
 }
 
-expect class MediatorResultSuccess(
+expect class RemoteMediatorMediatorResultSuccess(
   endOfPaginationReached: Boolean
 ) {
   @get:JvmName("endOfPaginationReached")
   val endOfPaginationReached: Boolean
 }
 
-expect enum class InitializeAction {
+expect enum class RemoteMediatorInitializeAction {
   LAUNCH_INITIAL_REFRESH,
 
   SKIP_INITIAL_REFRESH
