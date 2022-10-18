@@ -18,6 +18,7 @@ package app.cash.paging
 
 import kotlin.jvm.JvmName
 
+@ExperimentalPagingApi
 expect abstract class RemoteMediator<Key : Any, Value : Any> {
   abstract suspend fun load(
     loadType: LoadType,

@@ -16,21 +16,5 @@
 
 package app.cash.paging
 
-import kotlinx.coroutines.flow.Flow
-import kotlin.jvm.JvmOverloads
-
-expect class Pager<Key : Any, Value : Any> @ExperimentalPagingApi constructor(
-  config: PagingConfig,
-  initialKey: Key? = null,
-  remoteMediator: RemoteMediator<Key, Value>?,
-  pagingSourceFactory: () -> PagingSource<Key, Value>
-) {
-  @JvmOverloads
-  constructor(
-    config: PagingConfig,
-    initialKey: Key? = null,
-    pagingSourceFactory: () -> PagingSource<Key, Value>
-  )
-
-  val flow: Flow<PagingData<Value>>
-}
+@RequiresOptIn
+annotation class ExperimentalPagingApi
