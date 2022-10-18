@@ -16,14 +16,13 @@
 
 package app.cash.paging
 
-import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 expect class PagingData<T : Any> {
-    companion object {
+  companion object {
 
-        @JvmStatic // Convenience for Java developers.
-        fun <T : Any> empty(): PagingData<T>
+    @JvmStatic // Convenience for Java developers.
+    fun <T : Any> empty(): PagingData<T>
 
 //        @JvmOverloads
 //        @JvmStatic // Convenience for Java developers.
@@ -32,10 +31,10 @@ expect class PagingData<T : Any> {
 //            mediatorLoadStates: LoadStates? = null,
 //        ): PagingData<T>
 
-        @JvmStatic // Convenience for Java developers.
-        fun <T : Any> from(
-            data: List<T>,
-        ): PagingData<T>
+    @JvmStatic // Convenience for Java developers.
+    fun <T : Any> from(
+      data: List<T>,
+    ): PagingData<T>
 
 //        @JvmOverloads
 //        @JvmStatic // Convenience for Java developers.
@@ -44,5 +43,5 @@ expect class PagingData<T : Any> {
 //            sourceLoadStates: LoadStates,
 //            mediatorLoadStates: LoadStates? = null,
 //        ): PagingData<T>
-    }
+  }
 }

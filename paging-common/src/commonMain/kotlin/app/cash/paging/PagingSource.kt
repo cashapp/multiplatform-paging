@@ -18,7 +18,6 @@
 
 package app.cash.paging
 
-import app.cash.paging.PagingState
 import kotlin.jvm.JvmName
 
 expect abstract class PagingSource<Key : Any, Value : Any> {

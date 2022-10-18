@@ -17,6 +17,6 @@
 package app.cash.paging
 
 expect enum class TerminalSeparatorType {
-    FULLY_COMPLETE,
-    SOURCE_COMPLETE,
+  FULLY_COMPLETE,
+  SOURCE_COMPLETE,
 }

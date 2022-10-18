@@ -17,10 +17,10 @@
 package app.cash.paging
 
 expect class InvalidatingPagingSourceFactory<Key : Any, Value : Any>(
-    pagingSourceFactory: () -> PagingSource<Key, Value>
+  pagingSourceFactory: () -> PagingSource<Key, Value>
 ) : () -> PagingSource<Key, Value> {
 
-    override fun invoke(): PagingSource<Key, Value>
+  override fun invoke(): PagingSource<Key, Value>
 
-    fun invalidate()
+  fun invalidate()
 }

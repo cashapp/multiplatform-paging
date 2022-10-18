@@ -25,33 +25,33 @@ import kotlin.jvm.JvmSynthetic
 
 @JvmSynthetic
 expect fun <T : Any, R : Any> PagingData<T>.map(
-    transform: suspend (T) -> R
+  transform: suspend (T) -> R
 ): PagingData<R>
 
 @JvmSynthetic
 expect fun <T : Any, R : Any> PagingData<T>.flatMap(
-    transform: suspend (T) -> Iterable<R>
+  transform: suspend (T) -> Iterable<R>
 ): PagingData<R>
 
 @JvmSynthetic
 expect fun <T : Any> PagingData<T>.filter(
-    predicate: suspend (T) -> Boolean
+  predicate: suspend (T) -> Boolean
 ): PagingData<T>
 
 @JvmSynthetic
 expect fun <T : R, R : Any> PagingData<T>.insertSeparators(
-    terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
-    generator: suspend (T?, T?) -> R?,
+  terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
+  generator: suspend (T?, T?) -> R?,
 ): PagingData<R>
 
 @JvmOverloads
 expect fun <T : Any> PagingData<T>.insertHeaderItem(
-    terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
-    item: T,
+  terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
+  item: T,
 ): PagingData<T>
 
 @JvmOverloads
 expect fun <T : Any> PagingData<T>.insertFooterItem(
-    terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
-    item: T,
+  terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
+  item: T,
 ): PagingData<T>

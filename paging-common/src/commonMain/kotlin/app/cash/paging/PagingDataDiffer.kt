@@ -22,55 +22,55 @@ import kotlinx.coroutines.flow.Flow
 
 /** @suppress */
 expect abstract class PagingDataDiffer<T : Any>(
-    differCallback: DifferCallback,
-    mainDispatcher: CoroutineDispatcher = Dispatchers.Main
+  differCallback: DifferCallback,
+  mainDispatcher: CoroutineDispatcher = Dispatchers.Main
 ) {
 
-    abstract suspend fun presentNewList(
-        previousList: NullPaddedList<T>,
-        newList: NullPaddedList<T>,
-        lastAccessedIndex: Int,
-        onListPresentable: () -> Unit,
-    ): Int?
+  abstract suspend fun presentNewList(
+    previousList: NullPaddedList<T>,
+    newList: NullPaddedList<T>,
+    lastAccessedIndex: Int,
+    onListPresentable: () -> Unit,
+  ): Int?
 
-    open fun postEvents(): Boolean
+  open fun postEvents(): Boolean
 
-    suspend fun collectFrom(pagingData: PagingData<T>)
+  suspend fun collectFrom(pagingData: PagingData<T>)
 
-    operator fun get(index: Int): T?
+  operator fun get(index: Int): T?
 
-    fun peek(index: Int): T?
+  fun peek(index: Int): T?
 
-    fun snapshot(): ItemSnapshotList<T>
+  fun snapshot(): ItemSnapshotList<T>
 
-    fun retry()
+  fun retry()
 
-    fun refresh()
+  fun refresh()
 
-    val size: Int
+  val size: Int
 
-    val loadStateFlow: Flow<CombinedLoadStates>
+  val loadStateFlow: Flow<CombinedLoadStates>
 
-    val onPagesUpdatedFlow: Flow<Unit>
+  val onPagesUpdatedFlow: Flow<Unit>
 
-    fun addOnPagesUpdatedListener(listener: () -> Unit)
+  fun addOnPagesUpdatedListener(listener: () -> Unit)
 
-    fun removeOnPagesUpdatedListener(listener: () -> Unit)
+  fun removeOnPagesUpdatedListener(listener: () -> Unit)
 
-    fun addLoadStateListener(listener: (CombinedLoadStates) -> Unit)
+  fun addLoadStateListener(listener: (CombinedLoadStates) -> Unit)
 
-    fun removeLoadStateListener(listener: (CombinedLoadStates) -> Unit)
+  fun removeLoadStateListener(listener: (CombinedLoadStates) -> Unit)
 }
 
 /** @suppress */
 expect interface DifferCallback {
-    fun onChanged(position: Int, count: Int)
-    fun onInserted(position: Int, count: Int)
-    fun onRemoved(position: Int, count: Int)
+  fun onChanged(position: Int, count: Int)
+  fun onInserted(position: Int, count: Int)
+  fun onRemoved(position: Int, count: Int)
 }
 
 expect enum class DiffingChangePayload {
-    ITEM_TO_PLACEHOLDER,
-    PLACEHOLDER_TO_ITEM,
-    PLACEHOLDER_POSITION_CHANGE
+  ITEM_TO_PLACEHOLDER,
+  PLACEHOLDER_TO_ITEM,
+  PLACEHOLDER_POSITION_CHANGE
 }
