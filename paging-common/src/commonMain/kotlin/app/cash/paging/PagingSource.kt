@@ -52,19 +52,31 @@ expect class PagingSourceLoadParamsRefresh<Key : Any> constructor(
   key: Key?,
   loadSize: Int,
   placeholdersEnabled: Boolean,
-)
+) {
+  val loadSize: Int
+  val placeholdersEnabled: Boolean
+  val key: Key?
+}
 
 expect class PagingSourceLoadParamsAppend<Key : Any> constructor(
   key: Key,
   loadSize: Int,
   placeholdersEnabled: Boolean,
-)
+) {
+  val loadSize: Int
+  val placeholdersEnabled: Boolean
+  val key: Key
+}
 
 expect class PagingSourceLoadParamsPrepend<Key : Any> constructor(
   key: Key,
   loadSize: Int,
   placeholdersEnabled: Boolean,
-)
+) {
+  val loadSize: Int
+  val placeholdersEnabled: Boolean
+  val key: Key
+}
 
 expect sealed class PagingSourceLoadResult<Key : Any, Value : Any>
 

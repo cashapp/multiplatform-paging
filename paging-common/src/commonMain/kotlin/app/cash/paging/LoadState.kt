@@ -22,8 +22,15 @@ expect sealed class LoadState(
   val endOfPaginationReached: Boolean
 }
 
-expect class LoadStateNotLoading(endOfPaginationReached: Boolean)
-expect object LoadStateLoading
+expect class LoadStateNotLoading(endOfPaginationReached: Boolean) {
+  val endOfPaginationReached: Boolean
+}
+
+expect object LoadStateLoading {
+  val endOfPaginationReached: Boolean
+}
+
 expect class LoadStateError(error: Throwable) {
+  val endOfPaginationReached: Boolean
   val error: Throwable
 }
