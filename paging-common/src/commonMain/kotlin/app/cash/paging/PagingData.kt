@@ -21,27 +21,12 @@ import kotlin.jvm.JvmStatic
 expect class PagingData<T : Any> {
   companion object {
 
-    @JvmStatic // Convenience for Java developers.
+    @JvmStatic
     fun <T : Any> empty(): PagingData<T>
 
-//        @JvmOverloads
-//        @JvmStatic // Convenience for Java developers.
-//        fun <T : Any> empty(
-//            sourceLoadStates: LoadStates,
-//            mediatorLoadStates: LoadStates? = null,
-//        ): PagingData<T>
-
-    @JvmStatic // Convenience for Java developers.
+    @JvmStatic
     fun <T : Any> from(
       data: List<T>,
     ): PagingData<T>
-
-//        @JvmOverloads
-//        @JvmStatic // Convenience for Java developers.
-//        fun <T : Any> from(
-//            data: List<T>,
-//            sourceLoadStates: LoadStates,
-//            mediatorLoadStates: LoadStates? = null,
-//        ): PagingData<T>
   }
 }
