@@ -20,7 +20,7 @@ package app.cash.paging
 
 import kotlin.jvm.JvmName
 
-expect abstract class PagingSource<Key : Any, Value : Any> {
+expect abstract class PagingSource<Key : Any, Value : Any>() {
 
   open val jumpingSupported: Boolean
 
