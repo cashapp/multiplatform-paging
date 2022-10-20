@@ -26,7 +26,7 @@ expect class PagingConfig @JvmOverloads constructor(
   pageSize: Int,
   prefetchDistance: Int = pageSize,
   enablePlaceholders: Boolean = true,
-  initialLoadSize: Int = pageSize * DEFAULT_INITIAL_PAGE_MULTIPLIER,
+  initialLoadSize: Int = pageSize * 3,
   maxSize: Int = MAX_SIZE_UNBOUNDED,
   jumpThreshold: Int = COUNT_UNDEFINED
 ) {
@@ -53,5 +53,3 @@ expect class PagingConfig @JvmOverloads constructor(
 }
 
 const val MAX_SIZE_UNBOUNDED: Int = Int.MAX_VALUE
-
-private const val DEFAULT_INITIAL_PAGE_MULTIPLIER = 3

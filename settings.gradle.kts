@@ -11,5 +11,6 @@ pluginManagement {
 }
 
 include(":paging-common")
+include(":paging-runtime")
 include(":samples:repo-search:shared")
 include(":samples:repo-search:androidApp")
