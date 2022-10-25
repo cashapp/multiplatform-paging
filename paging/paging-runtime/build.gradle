@@ -19,28 +19,38 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("AndroidXPlugin")
-    id("kotlin")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-dependencies {
-    api(project(":paging:paging-common"))
-    // Ensure that the -ktx dependency graph mirrors the Java dependency graph
-    api(project(":paging:paging-common-ktx"))
+kotlin {
+    ios()
+    jvm()
 
-    api(libs.kotlinStdlib)
-    api(libs.kotlinCoroutinesAndroid)
+    sourceSets {
+        jvmMain {
+            dependencies {
+                api(project(":paging:paging-common"))
+                // Ensure that the -ktx dependency graph mirrors the Java dependency graph
+                api(project(":paging:paging-common-ktx"))
 
-    testImplementation(project(":internal-testutils-ktx"))
-    testImplementation(project(":internal-testutils-paging"))
-    testImplementation("androidx.arch.core:core-testing:2.1.0")
-    testImplementation(libs.truth)
-    testImplementation(libs.kotlinTest)
-    testImplementation(libs.kotlinCoroutinesTest)
-    testImplementation(libs.junit)
-    testImplementation(libs.mockitoCore)
-    testImplementation(libs.kotlinStdlib)
-
-    samples(project(":paging:paging-samples"))
+                api(libs.kotlinStdlib)
+                api(libs.kotlinCoroutinesAndroid)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(project(":internal-testutils-ktx"))
+                implementation(project(":internal-testutils-paging"))
+                implementation("androidx.arch.core:core-testing:2.1.0")
+                implementation(libs.truth)
+                implementation(libs.kotlinTest)
+                implementation(libs.kotlinCoroutinesTest)
+                implementation(libs.junit)
+                implementation(libs.mockitoCore)
+                implementation(libs.kotlinStdlib)
+            }
+        }
+    }
 }
 
 androidx {
