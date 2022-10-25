@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package androidx.recyclerview.test;
+package androidx.kruth
 
-import android.app.Activity;
+internal actual interface PlatformStandardSubjectBuilder
 
-public class RecyclerViewTestActivity extends Activity {
-
-}
+internal actual class PlatformStandardSubjectBuilderImpl actual constructor(
+    metadata: FailureMetadata,
+) : PlatformStandardSubjectBuilder

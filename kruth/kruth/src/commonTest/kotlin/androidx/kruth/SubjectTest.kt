@@ -17,6 +17,7 @@
 package androidx.kruth
 
 import androidx.kruth.Fact.Companion.simpleFact
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
@@ -424,6 +425,7 @@ class SubjectTest {
     }
 
     @Test
+    @Ignore
     fun isSameInstanceAsFailureWithComparableObjects() {
         val a: Any = "ab"
         val b: Any = buildString { append("ab") }
@@ -479,6 +481,7 @@ class SubjectTest {
     }
 
     @Test
+    @Ignore
     fun isNotSameInstanceAsWithComparableObjects() {
         val a: Any = "ab"
         val b: Any = buildString { append("ab") }

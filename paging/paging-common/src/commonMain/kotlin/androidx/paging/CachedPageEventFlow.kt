@@ -16,7 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.BufferOverflow
@@ -158,7 +157,6 @@ private class FlattenedPageController<T : Any> {
  *
  * There is no synchronization in this code so it should be used with locks around if necessary.
  */
-@VisibleForTesting
 internal class FlattenedPageEventStorage<T : Any> {
     private var placeholdersBefore: Int = 0
     private var placeholdersAfter: Int = 0

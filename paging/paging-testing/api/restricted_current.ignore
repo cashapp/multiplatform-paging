@@ -3,3 +3,7 @@ DefaultValueChange: androidx.paging.testing.PagerFlowSnapshotKt#asSnapshot(kotli
     Attempted to remove default value from parameter arg4 in androidx.paging.testing.PagerFlowSnapshotKt.asSnapshot
 DefaultValueChange: androidx.paging.testing.TestPager#refresh(Key, kotlin.coroutines.Continuation<androidx.paging.PagingSource.LoadResult<Key,Value>>) parameter #1:
     Attempted to remove default value from parameter arg2 in androidx.paging.testing.TestPager.refresh
+
+
+RemovedClass: androidx.paging.testing.StaticListPagingSourceFactoryKt:
+    Removed class androidx.paging.testing.StaticListPagingSourceFactoryKt

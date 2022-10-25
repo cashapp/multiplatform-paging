@@ -1025,8 +1025,8 @@ class PagerFlowSnapshotTest {
             val snapshot1 = pager.asSnapshot()
             assertWithMessage("Only the last generation should be loaded without LoadStates")
                 .that(snapshot1).containsExactlyElementsIn(
-                listOf(30, 31, 32, 33, 34, 35, 36, 37, 38, 39)
-            )
+                    listOf(30, 31, 32, 33, 34, 35, 36, 37, 38, 39)
+                )
         }
     }
 
@@ -1691,7 +1691,7 @@ class PagerFlowSnapshotTest {
         }
     }
 
-        @Test
+    @Test
     fun consecutiveAppendScroll_loadDelay0() = consecutiveAppendScroll(0)
 
     @Test
@@ -1711,12 +1711,12 @@ class PagerFlowSnapshotTest {
             // prefetched [20-22]
             assertThat(snapshot).containsExactlyElementsIn(
                 listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                21, 22)
+                    21, 22)
             )
         }
     }
 
-        @Test
+    @Test
     fun consecutiveAppendScroll_multiSnapshots_loadDelay0() =
         consecutiveAppendScroll_multiSnapshots(0)
 
@@ -1922,7 +1922,7 @@ class PagerFlowSnapshotTest {
             // prefetched [19-22]
             assertThat(snapshot).containsExactlyElementsIn(
                 listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                21, 22)
+                    21, 22)
             )
         }
     }
@@ -3148,10 +3148,10 @@ class PagerFlowSnapshotTest {
         loadDelay: Long,
         initialKey: Int = 0,
     ) = Pager(
-            config = config,
-            initialKey = initialKey,
-            pagingSourceFactory = createFactory(dataFlow, loadDelay),
-        ).flow
+        config = config,
+        initialKey = initialKey,
+        pagingSourceFactory = createFactory(dataFlow, loadDelay),
+    ).flow
 }
 
 private class WrappedPagingSourceFactory(

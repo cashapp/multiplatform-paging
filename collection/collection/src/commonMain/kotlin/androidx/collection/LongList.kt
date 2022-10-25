@@ -59,14 +59,12 @@ public sealed class LongList(initialCapacity: Int) {
     /**
      * The number of elements in the [LongList].
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public val size: Int
         get() = _size
 
     /**
      * Returns the last valid index in the [LongList]. This can be `-1` when the list is empty.
      */
-    @get:androidx.annotation.IntRange(from = -1)
     public inline val lastIndex: Int get() = _size - 1
 
     /**
@@ -301,7 +299,7 @@ public sealed class LongList(initialCapacity: Int) {
      * Returns the element at the given [index] or throws [IndexOutOfBoundsException] if
      * the [index] is out of bounds of this collection.
      */
-    public operator fun get(@androidx.annotation.IntRange(from = 0) index: Int): Long {
+    public operator fun get(index: Int): Long {
         if (index !in 0 until _size) {
             throw IndexOutOfBoundsException("Index $index must be in 0..$lastIndex")
         }
@@ -312,7 +310,7 @@ public sealed class LongList(initialCapacity: Int) {
      * Returns the element at the given [index] or throws [IndexOutOfBoundsException] if
      * the [index] is out of bounds of this collection.
      */
-    public fun elementAt(@androidx.annotation.IntRange(from = 0) index: Int): Long {
+    public fun elementAt(index: Int): Long {
         if (index !in 0 until _size) {
             throw IndexOutOfBoundsException("Index $index must be in 0..$lastIndex")
         }
@@ -327,7 +325,7 @@ public sealed class LongList(initialCapacity: Int) {
      * an index not in the list.
      */
     public inline fun elementAtOrElse(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         defaultValue: (index: Int) -> Long
     ): Long {
         if (index !in 0 until _size) {
@@ -563,7 +561,7 @@ public class MutableLongList(
      * elements at [index] and after, if any.
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive
      */
-    public fun add(@androidx.annotation.IntRange(from = 0) index: Int, element: Long) {
+    public fun add(index: Int, element: Long) {
         if (index !in 0.._size) {
             throw IndexOutOfBoundsException("Index $index must be in 0..$_size")
         }
@@ -588,7 +586,7 @@ public class MutableLongList(
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive.
      */
     public fun addAll(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         elements: LongArray
     ): Boolean {
         if (index !in 0.._size) {
@@ -617,7 +615,7 @@ public class MutableLongList(
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive
      */
     public fun addAll(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         elements: LongList
     ): Boolean {
         if (index !in 0.._size) {
@@ -778,7 +776,7 @@ public class MutableLongList(
      * Removes the element at the given [index] and returns it.
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [lastIndex], inclusive
      */
-    public fun removeAt(@androidx.annotation.IntRange(from = 0) index: Int): Long {
+    public fun removeAt(index: Int): Long {
         if (index !in 0 until _size) {
             throw IndexOutOfBoundsException("Index $index must be in 0..$lastIndex")
         }
@@ -802,8 +800,8 @@ public class MutableLongList(
      * @throws IllegalArgumentException if [start] is greater than [end]
      */
     public fun removeRange(
-        @androidx.annotation.IntRange(from = 0) start: Int,
-        @androidx.annotation.IntRange(from = 0) end: Int
+        start: Int,
+        end: Int
     ) {
         if (start !in 0.._size || end !in 0.._size) {
             throw IndexOutOfBoundsException("Start ($start) and end ($end) must be in 0..$_size")
@@ -862,7 +860,7 @@ public class MutableLongList(
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [lastIndex], inclusive
      */
     public operator fun set(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         element: Long
     ): Long {
         if (index !in 0 until _size) {

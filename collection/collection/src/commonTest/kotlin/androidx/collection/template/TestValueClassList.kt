@@ -62,13 +62,11 @@ internal value class TestValueClassList(val list: LongList) {
     /**
      * The number of elements in the [TestValueClassList].
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val size: Int get() = list.size
 
     /**
      * Returns the last valid index in the [TestValueClassList]. This can be `-1` when the list is empty.
      */
-    @get:androidx.annotation.IntRange(from = -1)
     public inline val lastIndex: Int get() = list.lastIndex
 
     /**
@@ -261,14 +259,14 @@ internal value class TestValueClassList(val list: LongList) {
      * the [index] is out of bounds of this collection.
      */
     public inline operator fun get(
-        @androidx.annotation.IntRange(from = 0) index: Int
+        index: Int
     ): TestValueClass = TestValueClass(list[index].toULong())
 
     /**
      * Returns the element at the given [index] or throws [IndexOutOfBoundsException] if
      * the [index] is out of bounds of this collection.
      */
-    public inline fun elementAt(@androidx.annotation.IntRange(from = 0) index: Int): TestValueClass =
+    public inline fun elementAt(index: Int): TestValueClass =
         TestValueClass(list[index].toULong())
 
     /**
@@ -279,7 +277,7 @@ internal value class TestValueClassList(val list: LongList) {
      * an index not in the list.
      */
     public inline fun elementAtOrElse(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         defaultValue: (index: Int) -> TestValueClass
     ): TestValueClass =
         TestValueClass(list.elementAtOrElse(index) { defaultValue(it).value.toLong() }.toULong())
@@ -384,13 +382,11 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
     /**
      * The number of elements in the [TestValueClassList].
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val size: Int get() = list.size
 
     /**
      * Returns the last valid index in the [TestValueClassList]. This can be `-1` when the list is empty.
      */
-    @get:androidx.annotation.IntRange(from = -1)
     public inline val lastIndex: Int get() = list.lastIndex
 
     /**
@@ -583,14 +579,14 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * the [index] is out of bounds of this collection.
      */
     public inline operator fun get(
-        @androidx.annotation.IntRange(from = 0) index: Int
+        index: Int
     ): TestValueClass = TestValueClass(list[index].toULong())
 
     /**
      * Returns the element at the given [index] or throws [IndexOutOfBoundsException] if
      * the [index] is out of bounds of this collection.
      */
-    public inline fun elementAt(@androidx.annotation.IntRange(from = 0) index: Int): TestValueClass =
+    public inline fun elementAt(index: Int): TestValueClass =
         TestValueClass(list[index].toULong())
 
     /**
@@ -601,7 +597,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * an index not in the list.
      */
     public inline fun elementAtOrElse(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         defaultValue: (index: Int) -> TestValueClass
     ): TestValueClass =
         TestValueClass(list.elementAtOrElse(index) { defaultValue(it).value.toLong() }.toULong())
@@ -695,7 +691,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive
      */
     public inline fun add(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         element: TestValueClass
     ) = list.add(index, element.value.toLong())
 
@@ -706,7 +702,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive
      */
     public inline fun addAll(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         elements: TestValueClassList
     ): Boolean = list.addAll(index, elements.list)
 
@@ -717,7 +713,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [size], inclusive
      */
     public inline fun addAll(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         elements: MutableTestValueClassList
     ): Boolean = list.addAll(index, elements.list)
 
@@ -812,7 +808,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * Removes the element at the given [index] and returns it.
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [lastIndex], inclusive
      */
-    public inline fun removeAt(@androidx.annotation.IntRange(from = 0) index: Int): TestValueClass =
+    public inline fun removeAt(index: Int): TestValueClass =
         TestValueClass(list.removeAt(index).toULong())
 
     /**
@@ -821,8 +817,8 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * @throws IllegalArgumentException if [start] is greater than [end]
      */
     public inline fun removeRange(
-        @androidx.annotation.IntRange(from = 0) start: Int,
-        @androidx.annotation.IntRange(from = 0) end: Int
+        start: Int,
+        end: Int
     ) = list.removeRange(start, end)
 
     /**
@@ -845,7 +841,7 @@ internal value class MutableTestValueClassList(val list: MutableLongList) {
      * @throws IndexOutOfBoundsException if [index] isn't between 0 and [lastIndex], inclusive
      */
     public inline operator fun set(
-        @androidx.annotation.IntRange(from = 0) index: Int,
+        index: Int,
         element: TestValueClass
     ): TestValueClass = TestValueClass(list.set(index, element.value.toLong()).toULong())
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package androidx.paging.samples.shared
+package androidx.kruth
 
-import androidx.room.Entity
+import kotlin.reflect.KClass
 
-@Entity(tableName = "users")
-data class User(val id: String, val label: String)
+internal actual val <T : Any> KClass<T>.qualifiedNamePlatform: String? get() = toString()

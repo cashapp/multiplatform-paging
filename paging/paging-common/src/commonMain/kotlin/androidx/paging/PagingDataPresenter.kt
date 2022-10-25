@@ -16,8 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.IntRange
-import androidx.annotation.RestrictTo
 import androidx.paging.LoadType.APPEND
 import androidx.paging.LoadType.PREPEND
 import androidx.paging.LoadType.REFRESH
@@ -255,8 +253,7 @@ public abstract class PagingDataPresenter<T : Any> (
      * @param index Index of the presented item to return, including placeholders.
      * @return The presented item at position [index], `null` if it is a placeholder.
      */
-    @MainThread
-    public operator fun get(@IntRange(from = 0) index: Int): T? {
+    public operator fun get(index: Int): T? {
         lastAccessedIndexUnfulfilled = true
         lastAccessedIndex = index
 
@@ -273,7 +270,7 @@ public abstract class PagingDataPresenter<T : Any> (
      * @return The presented item at position [index], `null` if it is a placeholder
      */
     @MainThread
-    public fun peek(@IntRange(from = 0) index: Int): T? {
+    public fun peek(index: Int): T? {
         return pageStore.get(index)
     }
 
@@ -504,7 +501,6 @@ public abstract class PagingDataPresenter<T : Any> (
  * Sending these change payloads is critical for the common case where DefaultItemAnimator won't
  * animate them and re-use the same view holder if possible.
  */
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public enum class DiffingChangePayload {
     ITEM_TO_PLACEHOLDER,
     PLACEHOLDER_TO_ITEM,

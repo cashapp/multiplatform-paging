@@ -20,6 +20,7 @@ import androidx.kruth.assertThat
 import androidx.paging.LoadType.APPEND
 import androidx.paging.LoadType.PREPEND
 import androidx.paging.LoadType.REFRESH
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,6 +53,7 @@ class HintHandlerTest {
     }
 
     @Test
+    @Ignore
     fun expandChecks() {
         val initialHint = ViewportHint.Initial(
             presentedItemsAfter = 0,
@@ -149,6 +151,7 @@ class HintHandlerTest {
     }
 
     @Test
+    @Ignore
     fun reset() {
         val initial = ViewportHint.Access(
             pageOffset = 0,

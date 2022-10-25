@@ -16,7 +16,6 @@
 
 package androidx.paging.compose.samples
 
-import androidx.annotation.Sampled
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.Flow
 
 private val DATA = (0..60).toList().map { "[Item $it is from backend]" }
 
-@Sampled
 @Composable
 fun PagingBackendSample() {
     val myBackend = remember { TestBackend(DATA) }

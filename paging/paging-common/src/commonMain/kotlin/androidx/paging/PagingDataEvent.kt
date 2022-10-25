@@ -16,9 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.RestrictTo
-import androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP
-
 /**
  * Events captured from a [PagingData] that was submitted to the [PagingDataPresenter]
  */
@@ -32,7 +29,7 @@ public sealed class PagingDataEvent<T : Any> {
      * @param [oldPlaceholdersBefore] The count of null items leading the list of loaded data prior
      * to new data being prepended
      */
-    public class Prepend<T : Any> @RestrictTo(LIBRARY_GROUP) constructor(
+    public class Prepend<T : Any> constructor(
         val inserted: List<T>,
         val newPlaceholdersBefore: Int,
         val oldPlaceholdersBefore: Int,
@@ -73,7 +70,7 @@ public sealed class PagingDataEvent<T : Any> {
      * @param [oldPlaceholdersAfter] The count of null items trailing the list of loaded data prior
      * to new data being appended.
      */
-    public class Append<T : Any> @RestrictTo(LIBRARY_GROUP) constructor(
+    public class Append<T : Any> constructor(
         val startIndex: Int,
         val inserted: List<T>,
         val newPlaceholdersAfter: Int,
@@ -112,7 +109,7 @@ public sealed class PagingDataEvent<T : Any> {
      * @param [previousList] A [PlaceholderPaddedList] that contains the metadata of the list
      * presented prior to this refresh load event
      */
-    public class Refresh<T : Any> @RestrictTo(LIBRARY_GROUP) constructor(
+    public class Refresh<T : Any> constructor(
         val newList: PlaceholderPaddedList<T>,
         val previousList: PlaceholderPaddedList<T>,
     ) : PagingDataEvent<T>() {
@@ -159,7 +156,7 @@ public sealed class PagingDataEvent<T : Any> {
      * @param [oldPlaceholdersBefore] The count of null items leading the list of loaded data prior
      * to items being dropped.
      */
-    public class DropPrepend<T : Any> @RestrictTo(LIBRARY_GROUP) constructor(
+    public class DropPrepend<T : Any> constructor(
         val dropCount: Int,
         val newPlaceholdersBefore: Int,
         val oldPlaceholdersBefore: Int,
@@ -199,7 +196,7 @@ public sealed class PagingDataEvent<T : Any> {
      * @param [oldPlaceholdersAfter] The count of null items trailing the list of loaded data prior
      * to items being dropped.
      */
-    public class DropAppend<T : Any> @RestrictTo(LIBRARY_GROUP) constructor(
+    public class DropAppend<T : Any> constructor(
         val startIndex: Int,
         val dropCount: Int,
         val newPlaceholdersAfter: Int,

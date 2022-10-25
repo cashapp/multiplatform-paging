@@ -16,7 +16,6 @@
 
 package androidx.paging.testing
 
-import androidx.annotation.VisibleForTesting
 import androidx.paging.LoadType.APPEND
 import androidx.paging.LoadType.PREPEND
 import androidx.paging.PagingConfig
@@ -40,7 +39,6 @@ import kotlinx.coroutines.launch
  * Tracks generational information and provides the listener to [LoaderCallback] on
  * [PagingDataPresenter] operations.
  */
-@VisibleForTesting
 public class SnapshotLoader<Value : Any> internal constructor(
     private val presenter: CompletablePagingDataPresenter<Value>,
     private val errorHandler: LoadErrorHandler,

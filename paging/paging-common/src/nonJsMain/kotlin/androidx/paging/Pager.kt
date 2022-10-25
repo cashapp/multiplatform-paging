@@ -16,21 +16,16 @@
 
 package androidx.paging
 
-@Suppress("DEPRECATION")
-class PagedListListenerFake<T : Any> : AsyncPagedListDiffer.PagedListListener<T> {
-    val onCurrentListChangedEvents = mutableListOf<OnCurrentListChangedEvent<T>>()
-
-    override fun onCurrentListChanged(previousList: PagedList<T>?, currentList: PagedList<T>?) {
-        onCurrentListChangedEvents.add(
-            OnCurrentListChangedEvent(
-                previousList,
-                currentList
-            )
-        )
+internal actual inline fun <Key : Any, Value : Any> Pager<Key, Value>.suspendingPagingSourceFactoryAdapter( // ktlint-disable max-line-length
+    noinline pagingSourceFactory: () -> PagingSource<Key, Value>
+): suspend () -> PagingSource<Key, Value> {
+    return if (pagingSourceFactory is SuspendingPagingSourceFactory<Key, Value>) {
+        pagingSourceFactory::create
+    } else {
+        // cannot pass it as is since it is not a suspend function. Hence, we wrap it in {}
+        // which means we are calling the original factory inside a suspend function
+        {
+            pagingSourceFactory()
+        }
     }
-
-    data class OnCurrentListChangedEvent<T : Any>(
-        val previousList: PagedList<T>?,
-        val currentList: PagedList<T>?
-    )
 }

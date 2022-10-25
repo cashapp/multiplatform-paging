@@ -16,7 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.VisibleForTesting
 import androidx.paging.CombineSource.RECEIVER
 import androidx.paging.PageEvent.Drop
 import androidx.paging.PageEvent.Insert
@@ -70,8 +69,9 @@ internal class PageFetcher<Key : Any, Value : Any>(
                     remoteMediatorAccessor?.allowRefresh()
                 }
 
-                val pagingSource = generateNewPagingSource(
-                    previousPagingSource = previousGeneration?.snapshot?.pagingSource
+                val (pagingSource, invalidatedCallback) = generateNewPagingSource(
+                    previousPagingSource = previousGeneration?.snapshot?.pagingSource,
+                    previousInvalidatedCallback = previousGeneration?.invalidatedCallback,
                 )
 
                 var previousPagingState = previousGeneration?.snapshot?.currentPagingState()
@@ -119,6 +119,7 @@ internal class PageFetcher<Key : Any, Value : Any>(
                     ),
                     state = previousPagingState,
                     job = Job(),
+                    invalidatedCallback = invalidatedCallback,
                 )
             }
             .filterNotNull()
@@ -205,8 +206,9 @@ internal class PageFetcher<Key : Any, Value : Any>(
     }
 
     private suspend fun generateNewPagingSource(
-        previousPagingSource: PagingSource<Key, Value>?
-    ): PagingSource<Key, Value> {
+        previousPagingSource: PagingSource<Key, Value>?,
+        previousInvalidatedCallback: (() -> Unit)?,
+    ): Pair<PagingSource<Key, Value>, () -> Unit> {
         val pagingSource = pagingSourceFactory()
         if (pagingSource is CompatLegacyPagingSource) {
             pagingSource.setPageSize(config.pageSize)
@@ -221,12 +223,13 @@ internal class PageFetcher<Key : Any, Value : Any>(
         }
 
         // Hook up refresh signals from PagingSource.
-        pagingSource.registerInvalidatedCallback(::invalidate)
-        previousPagingSource?.unregisterInvalidatedCallback(::invalidate)
+        val invalidatedCallback = ::invalidate
+        pagingSource.registerInvalidatedCallback(invalidatedCallback)
+        previousInvalidatedCallback?.let { previousPagingSource?.unregisterInvalidatedCallback(it) }
         previousPagingSource?.invalidate() // Note: Invalidate is idempotent.
         log(DEBUG) { "Generated new PagingSource $pagingSource" }
 
-        return pagingSource
+        return pagingSource to invalidatedCallback
     }
 
     inner class PagerUiReceiver(private val retryEventBus: ConflatedEventBus<Unit>) : UiReceiver {
@@ -238,7 +241,6 @@ internal class PageFetcher<Key : Any, Value : Any>(
     }
 
     inner class PagerHintReceiver<Key : Any, Value : Any> constructor(
-        @get:VisibleForTesting
         internal val pageFetcherSnapshot: PageFetcherSnapshot<Key, Value>,
     ) : HintReceiver {
 
@@ -251,5 +253,6 @@ internal class PageFetcher<Key : Any, Value : Any>(
         val snapshot: PageFetcherSnapshot<Key, Value>,
         val state: PagingState<Key, Value>?,
         val job: Job,
+        val invalidatedCallback: () -> Unit,
     )
 }

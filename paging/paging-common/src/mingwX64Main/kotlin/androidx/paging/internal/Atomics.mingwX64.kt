@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package androidx.paging.samples.shared
+package androidx.paging.internal
 
-interface ExampleBackendService {
-    suspend fun searchUsers(query: String, after: String?): SearchUserResponse
+import kotlinx.atomicfu.locks.ReentrantLock as AtomicFuReentrantLock
+
+internal actual class ReentrantLock actual constructor() {
+
+    private val delegate = AtomicFuReentrantLock()
+
+    actual fun lock() {
+        delegate.lock()
+    }
+
+    actual fun unlock() {
+        delegate.unlock()
+    }
 }
-
-class SearchUserResponse(
-    val users: List<User>,
-    val nextKey: String?,
-    val nextPageNumber: Int?,
-)

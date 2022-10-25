@@ -16,7 +16,6 @@
 
 package androidx.paging.testing
 
-import androidx.annotation.VisibleForTesting
 import androidx.paging.CombinedLoadStates
 import androidx.paging.ItemSnapshotList
 import androidx.paging.LoadState
@@ -49,7 +48,6 @@ import kotlinx.coroutines.launch
  *
  * @param loadOperations The block containing [SnapshotLoader] load operations.
  */
-@VisibleForTesting
 public suspend fun <Value : Any> Flow<PagingData<Value>>.asSnapshot(
     onError: LoadErrorHandler = LoadErrorHandler { THROW },
     loadOperations: suspend SnapshotLoader<Value>.() -> @JvmSuppressWildcards Unit = { }

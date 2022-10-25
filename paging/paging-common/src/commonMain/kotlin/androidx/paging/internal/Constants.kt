@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-@file:RestrictTo(RestrictTo.Scope.LIBRARY)
-
 package androidx.paging.internal
-
-import androidx.annotation.RestrictTo
 
 internal const val BUGANIZER_URL = "https://issuetracker.google.com/issues/new?component=413106"

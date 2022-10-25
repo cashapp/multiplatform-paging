@@ -16,8 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.CheckResult
-import androidx.annotation.VisibleForTesting
 import androidx.paging.ActiveFlowTracker.FlowType.PAGED_DATA_FLOW
 import androidx.paging.ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW
 import kotlinx.coroutines.CoroutineScope
@@ -84,7 +82,6 @@ private class MulticastedPagingData<T : Any>(
  *
  * @param scope The coroutine scope where this page cache will be kept alive.
  */
-@CheckResult
 public fun <T : Any> Flow<PagingData<T>>.cachedIn(
     scope: CoroutineScope
 ): Flow<PagingData<T>> = cachedIn(scope, null)
@@ -120,7 +117,6 @@ internal fun <T : Any> Flow<PagingData<T>>.cachedIn(
 /**
  * This is only used for testing to ensure we don't leak resources
  */
-@VisibleForTesting
 internal interface ActiveFlowTracker {
     fun onNewCachedEventFlow(cachedPageEventFlow: CachedPageEventFlow<*>)
     suspend fun onStart(flowType: FlowType)

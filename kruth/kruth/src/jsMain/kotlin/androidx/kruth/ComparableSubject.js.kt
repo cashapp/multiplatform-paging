@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package androidx.paging.samples.shared
+package androidx.kruth
 
-import androidx.room.Entity
+/**
+ * Platform-specific propositions for [Comparable] typed subjects.
+ *
+ * @param T the type of the object being tested by this [ComparableSubject]
+ */
+internal actual interface PlatformComparableSubject<T : Comparable<T>>
 
-@Entity(tableName = "remote_keys")
-data class RemoteKey(val label: String, val nextKey: String?)
+internal actual class PlatformComparableSubjectImpl<T : Comparable<T>> actual constructor(
+    actual: T?,
+    metadata: FailureMetadata,
+) : Subject<T>(actual, metadata), PlatformComparableSubject<T>

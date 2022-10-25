@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-@file:RestrictTo(RestrictTo.Scope.LIBRARY)
-
 package androidx.collection.internal
-
-import androidx.annotation.RestrictTo
 
 internal actual class Lock {
 

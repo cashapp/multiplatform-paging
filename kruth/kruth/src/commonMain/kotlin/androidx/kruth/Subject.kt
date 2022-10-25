@@ -20,6 +20,8 @@ import androidx.kruth.Fact.Companion.fact
 import androidx.kruth.Fact.Companion.simpleFact
 import androidx.kruth.OldAndNewValuesAreSimilar.DIFFERENT
 import androidx.kruth.OldAndNewValuesAreSimilar.SIMILAR
+import kotlin.jvm.JvmOverloads
+import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
 // As opposed to Truth, which limits visibility on `actual` and the generic type, we purposely make
@@ -333,7 +335,7 @@ open class Subject<out T> protected constructor(
 
     private fun Any?.toStringForAssert(): String = when {
         this == null -> toString()
-        isIntegralBoxedPrimitive() -> "${this::class.qualifiedName}<$this>"
+        isIntegralBoxedPrimitive() -> "${this::class.qualifiedNamePlatform}<$this>"
         else -> toString()
     }
 
@@ -443,3 +445,5 @@ private fun lenientFormat(template: String, vararg args: Any?): String {
         else -> "$formattedString [${argsToLenientStrings.subList(i, argsToLenientStrings.size)}]"
     }
 }
+
+internal expect val <T : Any> KClass<T>.qualifiedNamePlatform: String?

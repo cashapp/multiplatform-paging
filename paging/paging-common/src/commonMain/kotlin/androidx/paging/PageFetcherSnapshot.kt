@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-@file:RestrictTo(RestrictTo.Scope.LIBRARY)
-
 package androidx.paging
 
-import androidx.annotation.RestrictTo
-import androidx.annotation.VisibleForTesting
 import androidx.paging.LoadState.Error
 import androidx.paging.LoadState.Loading
 import androidx.paging.LoadState.NotLoading
@@ -611,7 +607,6 @@ internal class PageFetcherSnapshot<Key : Any, Value : Any>(
  * Generation of cancel token not [PageFetcherSnapshot]. [generationId] is used to differentiate
  * between loads from jobs that have been cancelled, but continued to run to completion.
  */
-@VisibleForTesting
 internal data class GenerationalViewportHint(val generationId: Int, val hint: ViewportHint)
 
 /**

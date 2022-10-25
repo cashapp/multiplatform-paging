@@ -16,8 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.IntRange
-import androidx.annotation.VisibleForTesting
 import androidx.paging.LoadType.REFRESH
 
 /**
@@ -73,7 +71,6 @@ public abstract class PagingSource<Key : Any, Value : Any> {
     )
 
     internal val invalidateCallbackCount: Int
-        @VisibleForTesting
         get() = invalidateCallbackTracker.callbackCount()
 
     /**
@@ -251,13 +248,11 @@ public abstract class PagingSource<Key : Any, Value : Any> {
              * Count of items before the loaded data. Must be implemented if
              * [jumping][PagingSource.jumpingSupported] is enabled. Optional otherwise.
              */
-            @IntRange(from = COUNT_UNDEFINED.toLong())
             val itemsBefore: Int = COUNT_UNDEFINED,
             /**
              * Count of items after the loaded data. Must be implemented if
              * [jumping][PagingSource.jumpingSupported] is enabled. Optional otherwise.
              */
-            @IntRange(from = COUNT_UNDEFINED.toLong())
             val itemsAfter: Int = COUNT_UNDEFINED
         ) : LoadResult<Key, Value>(), Iterable<Value> {
 

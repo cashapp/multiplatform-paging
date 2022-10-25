@@ -16,10 +16,9 @@
 
 package androidx.paging
 
-class RunnableFake : Runnable {
-    val runEvents = mutableListOf<Unit>()
-
-    override fun run() {
-        runEvents.add(Unit)
+public actual object PagingLogger {
+    public actual fun isLoggable(level: Int): Boolean {
+        return false
     }
+    public actual fun log(level: Int, message: String, tr: Throwable?) { }
 }
