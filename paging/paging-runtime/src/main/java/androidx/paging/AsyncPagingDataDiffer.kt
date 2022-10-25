@@ -19,8 +19,6 @@ package androidx.paging
 import android.util.Log
 import androidx.annotation.IntRange
 import androidx.annotation.MainThread
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.coroutineScope
 import androidx.paging.LoadType.REFRESH
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
@@ -30,7 +28,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -227,29 +224,6 @@ constructor(
     suspend fun submitData(pagingData: PagingData<T>) {
         submitDataId.incrementAndGet()
         differBase.collectFrom(pagingData)
-    }
-
-    /**
-     * Present a [PagingData] until it is either invalidated or another call to [submitData] is
-     * made.
-     *
-     * This method is typically used when observing a RxJava or LiveData stream produced by [Pager].
-     * For [Flow][kotlinx.coroutines.flow.Flow] support, use the suspending overload of
-     * [submitData], which automates cancellation via
-     * [CoroutineScope][kotlinx.coroutines.CoroutineScope] instead of relying of [Lifecycle].
-     *
-     * @see submitData
-     * @see [Pager]
-     */
-    fun submitData(lifecycle: Lifecycle, pagingData: PagingData<T>) {
-        val id = submitDataId.incrementAndGet()
-        lifecycle.coroutineScope.launch {
-            // Check id when this job runs to ensure the last synchronous call submitData always
-            // wins.
-            if (submitDataId.get() == id) {
-                differBase.collectFrom(pagingData)
-            }
-        }
     }
 
     /**
