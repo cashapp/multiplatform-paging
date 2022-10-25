@@ -33,9 +33,6 @@ android {
 dependencies {
     api(project(":paging:paging-common"))
 
-    api("androidx.lifecycle:lifecycle-livedata-ktx:2.2.0")
-    api("androidx.lifecycle:lifecycle-runtime-ktx:2.2.0")
-    api("androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0")
     api("androidx.recyclerview:recyclerview:1.2.0")
     api(libs.kotlinStdlib)
     api(libs.kotlinCoroutinesAndroid)
@@ -43,7 +40,6 @@ dependencies {
 
     androidTestImplementation(project(":internal-testutils-ktx"))
     androidTestImplementation(project(":internal-testutils-paging"))
-    androidTestImplementation(projectOrArtifact(":lifecycle:lifecycle-runtime-testing"))
     androidTestImplementation(libs.testCore)
     androidTestImplementation(libs.testExtJunit)
     androidTestImplementation(libs.testRunner)
