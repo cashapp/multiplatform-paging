@@ -36,19 +36,26 @@ def linuxEnabled = KmpPlatformsKt.enableLinux(project)
 def nativeEnabled = KmpPlatformsKt.enableNative(project)
 
 androidXMultiplatform {
+    js {
+        nodejs()
+        binaries.executable()
+    }
     jvm {}
     mac()
     linux()
     ios()
     androidNative()
+    mingw()
+    tvos()
+    watchos()
 
     defaultPlatform(PlatformIdentifier.JVM)
 
     sourceSets {
         commonMain {
             dependencies {
-                api(libs.kotlinStdlibCommon)
-                api(libs.kotlinTestCommon)
+                api(libs.kotlinStdlib)
+                api(libs.kotlinTest)
             }
         }
 
@@ -58,11 +65,13 @@ androidXMultiplatform {
             }
         }
 
+        nonJsMain {
+            dependsOn(commonMain)
+        }
+
         jvmMain {
             dependsOn(commonMain)
             dependencies {
-                api(libs.kotlinStdlib)
-                api(libs.kotlinTest)
                 implementation(libs.guavaAndroid)
             }
         }
@@ -78,6 +87,10 @@ androidXMultiplatform {
         }
 
         targets.all { target ->
+            if (target.platformType == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.common) return
+            if (target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.js) {
+                target.compilations.main.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsMain)
+            }
             if (target.platformType == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native) {
                 target.compilations["main"].defaultSourceSet {
                     dependsOn(nativeMain)

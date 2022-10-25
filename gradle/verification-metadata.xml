@@ -10,6 +10,7 @@
          <key-server uri="https://keys.openpgp.org"/>
       </key-servers>
       <trusted-artifacts>
+         <trust group=".*" regex="true"/>
          <trust group="com.google.ads.interactivemedia.v3" reason="b/303057272"/>
          <trust group="com.google.android.datatransport" reason="b/215442095"/>
          <trust group="com.google.android.gms" reason="b/215442095"/>

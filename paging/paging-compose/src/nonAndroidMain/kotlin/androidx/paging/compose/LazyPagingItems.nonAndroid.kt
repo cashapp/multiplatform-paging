@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package androidx.paging.samples.shared
+package androidx.paging.compose
 
-import androidx.room.Entity
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers
 
-@Entity(tableName = "users")
-data class User(val id: String, val label: String)
+internal actual val mainDispatcher: CoroutineContext
+    get() = Dispatchers.Main

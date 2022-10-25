@@ -16,8 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.IntRange
-
 /**
  * Snapshot of data being presented by a
  * [AsyncPagingDataDiffer][androidx.pagingAsyncPagingDataDiffer] or a
@@ -28,13 +26,11 @@ public class ItemSnapshotList<T>(
      * Number of placeholders before the presented [items], 0 if
      * [enablePlaceholders][androidx.paging.PagingConfig.enablePlaceholders] is `false`.
      */
-    @IntRange(from = 0)
     public val placeholdersBefore: Int,
     /**
      * Number of placeholders after the presented [items], 0 if
      * [enablePlaceholders][androidx.paging.PagingConfig.enablePlaceholders] is `false`.
      */
-    @IntRange(from = 0)
     public val placeholdersAfter: Int,
     /**
      * The presented data, excluding placeholders.

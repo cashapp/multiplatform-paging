@@ -16,8 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.RestrictTo
-
 /**
  * Backwards compatible interface for Paging2 LegacyPagingSource
  *
@@ -25,6 +23,5 @@ import androidx.annotation.RestrictTo
  */
 internal interface CompatLegacyPagingSource {
 
-    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public fun setPageSize(pageSize: Int)
 }

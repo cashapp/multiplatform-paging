@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package androidx.paging.samples.shared
+package androidx.kruth
 
-interface ExampleBackendService {
-    suspend fun searchUsers(query: String, after: String?): SearchUserResponse
-}
+import kotlin.reflect.KClass
 
-class SearchUserResponse(
-    val users: List<User>,
-    val nextKey: String?,
-    val nextPageNumber: Int?,
-)
+internal actual val <T : Any> KClass<T>.qualifiedNamePlatform: String? get() = toString()

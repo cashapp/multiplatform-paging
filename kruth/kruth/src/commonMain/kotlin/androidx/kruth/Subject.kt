@@ -18,6 +18,7 @@ package androidx.kruth
 
 import androidx.kruth.Fact.Companion.fact
 import kotlin.jvm.JvmOverloads
+import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
 // As opposed to Truth, which limits visibility on `actual` and the generic type, we purposely make
@@ -254,7 +255,7 @@ open class Subject<out T>(
 
     private fun Any?.toStringForAssert(): String = when {
         this == null -> toString()
-        isIntegralBoxedPrimitive() -> "${this::class.qualifiedName}<$this>"
+        isIntegralBoxedPrimitive() -> "${this::class.qualifiedNamePlatform}<$this>"
         else -> toString()
     }
 
@@ -275,3 +276,5 @@ open class Subject<out T>(
         fun createSubject(metadata: FailureMetadata, actual: ActualT): SubjectT
     }
 }
+
+internal expect val <T : Any> KClass<T>.qualifiedNamePlatform: String?

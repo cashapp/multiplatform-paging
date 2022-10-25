@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Android Open Source Project
+ * Copyright 2020 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package androidx.recyclerview.test;
+package androidx.paging
 
-import android.app.Activity;
-
-public class RecyclerViewTestActivity extends Activity {
-
+internal actual inline fun <Key : Any, Value : Any> Pager<Key, Value>.suspendingPagingSourceFactoryAdapter( // ktlint-disable max-line-length
+    noinline pagingSourceFactory: () -> PagingSource<Key, Value>
+): suspend () -> PagingSource<Key, Value> {
+    // cannot pass it as is since it is not a suspend function. Hence, we wrap it in {}
+    // which means we are calling the original factory inside a suspend function
+    return {
+        pagingSourceFactory()
+    }
 }

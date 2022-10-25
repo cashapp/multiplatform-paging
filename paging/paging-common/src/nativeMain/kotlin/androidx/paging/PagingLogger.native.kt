@@ -16,9 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.RestrictTo
-
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public actual object PagingLogger {
     public actual fun isLoggable(level: Int): Boolean {
         return false
