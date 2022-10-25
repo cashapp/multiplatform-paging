@@ -35,7 +35,6 @@ dependencies {
     // Ensure that the -ktx dependency graph mirrors the Java dependency graph
     api(project(":paging:paging-common-ktx"))
 
-    api("androidx.recyclerview:recyclerview:1.2.1")
     api(libs.kotlinStdlib)
     api(libs.kotlinCoroutinesAndroid)
     implementation("androidx.core:core-ktx:1.7.0")
@@ -51,6 +50,10 @@ dependencies {
     androidTestImplementation(libs.kotlinCoroutinesTest)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.multidex)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.mockitoCore)
+    testImplementation(libs.kotlinStdlib)
 
     samples(project(":paging:paging-samples"))
 }
