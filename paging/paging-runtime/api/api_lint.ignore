@@ -1,19 +1,27 @@
 // Baseline format: 1.0
-MissingGetterMatchingBuilder: androidx.paging.LivePagedListBuilder#setBoundaryCallback(androidx.paging.PagedList.BoundaryCallback<Value>):
-    androidx.lifecycle.LiveData does not declare a `getBoundaryCallback()` method matching method androidx.paging.LivePagedListBuilder.setBoundaryCallback(androidx.paging.PagedList.BoundaryCallback<Value>)
-MissingGetterMatchingBuilder: androidx.paging.LivePagedListBuilder#setCoroutineScope(kotlinx.coroutines.CoroutineScope):
-    androidx.lifecycle.LiveData does not declare a `getCoroutineScope()` method matching method androidx.paging.LivePagedListBuilder.setCoroutineScope(kotlinx.coroutines.CoroutineScope)
-MissingGetterMatchingBuilder: androidx.paging.LivePagedListBuilder#setFetchExecutor(java.util.concurrent.Executor):
-    androidx.lifecycle.LiveData does not declare a `getFetchExecutor()` method matching method androidx.paging.LivePagedListBuilder.setFetchExecutor(java.util.concurrent.Executor)
-MissingGetterMatchingBuilder: androidx.paging.LivePagedListBuilder#setInitialLoadKey(Key):
-    androidx.lifecycle.LiveData does not declare a `getInitialLoadKey()` method matching method androidx.paging.LivePagedListBuilder.setInitialLoadKey(Key)
+CallbackMethodName: androidx.recyclerview.widget.BatchingListUpdateCallback#dispatchLastEvent():
+    Callback method names must follow the on<Something> style: dispatchLastEvent
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.Callback#areContentsTheSame(int, int):
+    Callback method names must follow the on<Something> style: areContentsTheSame
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.Callback#areItemsTheSame(int, int):
+    Callback method names must follow the on<Something> style: areItemsTheSame
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.Callback#getChangePayload(int, int):
+    Callback method names must follow the on<Something> style: getChangePayload
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.Callback#getNewListSize():
+    Callback method names must follow the on<Something> style: getNewListSize
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.Callback#getOldListSize():
+    Callback method names must follow the on<Something> style: getOldListSize
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.ItemCallback#areContentsTheSame(T, T):
+    Callback method names must follow the on<Something> style: areContentsTheSame
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.ItemCallback#areItemsTheSame(T, T):
+    Callback method names must follow the on<Something> style: areItemsTheSame
+CallbackMethodName: androidx.recyclerview.widget.DiffUtil.ItemCallback#getChangePayload(T, T):
+    Callback method names must follow the on<Something> style: getChangePayload
 
 
-NullableCollection: androidx.paging.AsyncPagedListDiffer#getCurrentList():
-    Return type of method androidx.paging.AsyncPagedListDiffer.getCurrentList() is a nullable collection (`androidx.paging.PagedList`); must be non-null
-NullableCollection: androidx.paging.AsyncPagedListDiffer.PagedListListener#onCurrentListChanged(androidx.paging.PagedList<T>, androidx.paging.PagedList<T>) parameter #0:
-    Type of parameter previousList in androidx.paging.AsyncPagedListDiffer.PagedListListener.onCurrentListChanged(androidx.paging.PagedList<T> previousList, androidx.paging.PagedList<T> currentList) is a nullable collection (`androidx.paging.PagedList`); must be non-null
-NullableCollection: androidx.paging.AsyncPagedListDiffer.PagedListListener#onCurrentListChanged(androidx.paging.PagedList<T>, androidx.paging.PagedList<T>) parameter #1:
-    Type of parameter currentList in androidx.paging.AsyncPagedListDiffer.PagedListListener.onCurrentListChanged(androidx.paging.PagedList<T> previousList, androidx.paging.PagedList<T> currentList) is a nullable collection (`androidx.paging.PagedList`); must be non-null
-NullableCollection: androidx.paging.PagedListAdapter#getCurrentList():
-    Return type of method androidx.paging.PagedListAdapter.getCurrentList() is a nullable collection (`androidx.paging.PagedList`); must be non-null
+ListenerLast: androidx.recyclerview.widget.DiffUtil#calculateDiff(androidx.recyclerview.widget.DiffUtil.Callback, boolean) parameter #1:
+    Listeners should always be at end of argument list (method `calculateDiff`)
+
+
+MissingNullability: androidx.recyclerview.widget.BatchingListUpdateCallback#onChanged(int, int, Object) parameter #2:
+    Missing nullability on parameter `payload` in method `onChanged`

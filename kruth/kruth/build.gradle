@@ -18,45 +18,49 @@ import androidx.build.LibraryType
 import androidx.build.PlatformIdentifier
 import androidx.build.Publish
 import androidx.build.RunApiTasks
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     id("AndroidXPlugin")
 }
 
 androidXMultiplatform {
+    js {
+        nodejs()
+        binaries.executable()
+    }
     jvm {}
     mac()
     linux()
     ios()
+    mingw()
+    tvos()
+    watchos()
 
     defaultPlatform(PlatformIdentifier.JVM)
 
     sourceSets {
         commonMain {
             dependencies {
-                api(libs.kotlinStdlibCommon)
-                api(libs.kotlinTestCommon)
-            }
-        }
-
-        commonTest {
-            dependencies {
-                implementation(libs.kotlinTestCommon)
-                implementation(libs.kotlinTestAnnotationsCommon)
-            }
-        }
-
-        jvmMain {
-            dependencies {
                 api(libs.kotlinStdlib)
                 api(libs.kotlinTest)
             }
         }
 
-        jvmTest {
+        commonTest {
             dependencies {
-                implementation(libs.kotlinStdlib)
-                implementation(libs.kotlinTest)
+                implementation(libs.kotlinTestAnnotationsCommon)
+            }
+        }
+
+        nonJsMain {
+            dependsOn(commonMain)
+        }
+
+        targets.each { target ->
+            if (target.platformType == KotlinPlatformType.common) return
+            if (target.platformType != KotlinPlatformType.js) {
+                target.compilations.main.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsMain)
             }
         }
     }

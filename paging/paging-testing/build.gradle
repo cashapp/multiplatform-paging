@@ -30,11 +30,18 @@ def macEnabled = KmpPlatformsKt.enableMac(project)
 def linuxEnabled = KmpPlatformsKt.enableLinux(project)
 
 androidXMultiplatform {
+    js {
+        nodejs()
+        binaries.executable()
+    }
     jvm()
     mac()
     linux()
     ios()
     android()
+    mingw()
+    tvos()
+    watchos()
 
     defaultPlatform(PlatformIdentifier.ANDROID)
 
@@ -44,6 +51,10 @@ androidXMultiplatform {
                 api(libs.kotlinStdlib)
                 implementation(project(":paging:paging-common"))
             }
+        }
+
+        nonJsMain {
+            dependsOn(commonMain)
         }
 
         androidMain {
@@ -59,8 +70,11 @@ androidXMultiplatform {
             }
         }
 
-        jvmTest {
+        nonJsTest {
             dependsOn(commonTest)
+        }
+
+        jvmTest {
             dependencies {
                 implementation(libs.junit)
             }
@@ -96,14 +110,25 @@ androidXMultiplatform {
             if (target.platformType == KotlinPlatformType.native) {
                 target.compilations["main"].defaultSourceSet {
                     def konanTargetFamily = target.konanTarget.family
-                    if (konanTargetFamily == Family.OSX || konanTargetFamily == Family.IOS) {
+                    if (konanTargetFamily == Family.OSX || konanTargetFamily == Family.IOS || konanTargetFamily == Family.TVOS || konanTargetFamily == Family.WATCHOS) {
                         dependsOn(darwinMain)
                     } else if (konanTargetFamily == Family.LINUX) {
                         dependsOn(linuxMain)
+                    } else if (konanTargetFamily == Family.MINGW) {
+                        dependsOn(nativeMain)
                     } else {
                         throw new GradleException("unknown native target ${target}")
                     }
                 }
+            }
+        }
+
+        targets.each { target ->
+            if (target.platformType == KotlinPlatformType.common) return
+            if (target.platformType == KotlinPlatformType.androidJvm) return
+            if (target.platformType != KotlinPlatformType.js) {
+                target.compilations.main.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsMain)
+                target.compilations.test.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsTest)
             }
         }
     }

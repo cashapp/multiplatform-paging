@@ -16,7 +16,6 @@
 
 package androidx.paging.testing
 
-import androidx.annotation.VisibleForTesting
 import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.paging.PagingDataDiffer
@@ -27,7 +26,6 @@ import androidx.paging.PagingSource.LoadResult
  * An interface to implement the error recovery strategy when [PagingSource]
  * returns a [LoadResult.Error].
  */
-@VisibleForTesting
 public fun interface LoadErrorHandler {
     /**
      * The lambda that should return an [ErrorRecovery] given the [CombinedLoadStates]
@@ -50,7 +48,6 @@ public fun interface LoadErrorHandler {
  * is indicated when [PagingDataDiffer.loadStateFlow] emits a [CombinedLoadStates] where one or
  * more of the [LoadState] is [LoadState.Error].
  */
-@VisibleForTesting
 public enum class ErrorRecovery {
     /**
      * Rethrow the original [Throwable][LoadState.Error.error] that was caught when loading from

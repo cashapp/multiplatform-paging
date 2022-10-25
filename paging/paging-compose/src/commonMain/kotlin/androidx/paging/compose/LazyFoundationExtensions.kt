@@ -16,7 +16,6 @@
 
 package androidx.paging.compose
 
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.paging.PagingConfig
 
 /**
@@ -40,7 +39,7 @@ import androidx.paging.PagingConfig
  */
 @Suppress("PrimitiveInLambda")
 public fun <T : Any> LazyPagingItems<T>.itemKey(
-    key: ((item: @JvmSuppressWildcards T) -> Any)? = null
+    key: ((item: T) -> Any)? = null
 ): (index: Int) -> Any {
     return { index ->
         if (key == null) {
@@ -71,7 +70,7 @@ public fun <T : Any> LazyPagingItems<T>.itemKey(
  */
 @Suppress("PrimitiveInLambda")
 public fun <T : Any> LazyPagingItems<T>.itemContentType(
-    contentType: ((item: @JvmSuppressWildcards T) -> Any?)? = null
+    contentType: ((item: T) -> Any?)? = null
 ): (index: Int) -> Any? {
     return { index ->
         if (contentType == null) {

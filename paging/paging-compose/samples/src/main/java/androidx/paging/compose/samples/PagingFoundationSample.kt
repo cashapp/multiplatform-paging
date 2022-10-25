@@ -16,7 +16,6 @@
 
 package androidx.paging.compose.samples
 
-import androidx.annotation.Sampled
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -55,7 +54,6 @@ private val pager = Pager(
 ).flow
 
 @OptIn(ExperimentalFoundationApi::class)
-@Sampled
 @Composable
 public fun PagingWithHorizontalPager() {
     val lazyPagingItems = pager.collectAsLazyPagingItems()
@@ -89,7 +87,6 @@ public fun PagingWithVerticalPager() {
     }
 }
 
-@Sampled
 @Composable
 public fun PagingWithLazyGrid() {
     val lazyPagingItems = pager.collectAsLazyPagingItems()
@@ -107,7 +104,6 @@ public fun PagingWithLazyGrid() {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-@Sampled
 @Composable
 public fun PagingWithLazyList() {
     val lazyPagingItems = pager.collectAsLazyPagingItems()

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+@file:Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @file:JvmName("PagingDataTransforms")
 @file:JvmMultifileClass
 
 package androidx.paging
 
-import androidx.annotation.CheckResult
 import androidx.paging.TerminalSeparatorType.FULLY_COMPLETE
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
@@ -39,7 +39,6 @@ internal inline fun <T : Any, R : Any> PagingData<T>.transform(
  * Returns a [PagingData] containing the result of applying the given [transform] to each
  * element, as it is loaded.
  */
-@CheckResult
 @JvmSynthetic
 public fun <T : Any, R : Any> PagingData<T>.map(
     transform: suspend (T) -> R
@@ -49,7 +48,6 @@ public fun <T : Any, R : Any> PagingData<T>.map(
  * Returns a [PagingData] of all elements returned from applying the given [transform]
  * to each element, as it is loaded.
  */
-@CheckResult
 @JvmSynthetic
 public fun <T : Any, R : Any> PagingData<T>.flatMap(
     transform: suspend (T) -> Iterable<R>
@@ -58,7 +56,6 @@ public fun <T : Any, R : Any> PagingData<T>.flatMap(
 /**
  * Returns a [PagingData] containing only elements matching the given [predicate]
  */
-@CheckResult
 @JvmSynthetic
 public fun <T : Any> PagingData<T>.filter(
     predicate: suspend (T) -> Boolean
@@ -83,7 +80,6 @@ public fun <T : Any> PagingData<T>.filter(
  * @sample androidx.paging.samples.insertSeparatorsSample
  * @sample androidx.paging.samples.insertSeparatorsUiModelSample
  */
-@CheckResult
 @JvmSynthetic
 public fun <T : R, R : Any> PagingData<T>.insertSeparators(
     terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
@@ -124,7 +120,6 @@ public fun <T : R, R : Any> PagingData<T>.insertSeparators(
  *
  * @see [insertFooterItem]
  */
-@CheckResult
 @JvmOverloads
 public fun <T : Any> PagingData<T>.insertHeaderItem(
     terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,
@@ -154,7 +149,6 @@ public fun <T : Any> PagingData<T>.insertHeaderItem(
  *
  * @see [insertHeaderItem]
  */
-@CheckResult
 @JvmOverloads
 public fun <T : Any> PagingData<T>.insertFooterItem(
     terminalSeparatorType: TerminalSeparatorType = FULLY_COMPLETE,

@@ -30,11 +30,18 @@ def macEnabled = KmpPlatformsKt.enableMac(project)
 def linuxEnabled = KmpPlatformsKt.enableLinux(project)
 
 androidXMultiplatform {
+    js {
+        nodejs()
+        binaries.executable()
+    }
     jvm()
     mac()
     linux()
     ios()
     android()
+    mingw()
+    tvos()
+    watchos()
 
     defaultPlatform(PlatformIdentifier.JVM)
 
@@ -43,12 +50,15 @@ androidXMultiplatform {
             dependencies {
                 api(libs.kotlinStdlib)
                 api(libs.kotlinCoroutinesCore)
-                api("androidx.annotation:annotation:1.7.0")
             }
         }
 
-        commonJvmAndroidMain {
+        nonJsMain {
             dependsOn(commonMain)
+        }
+
+        commonJvmAndroidMain {
+            dependsOn(nonJsMain)
 
             dependencies {
                 api("androidx.arch.core:core-common:2.2.0")
@@ -72,8 +82,12 @@ androidXMultiplatform {
             }
         }
 
-        commonJvmAndroidTest {
+        nonJsTest {
             dependsOn(commonTest)
+        }
+
+        commonJvmAndroidTest {
+            dependsOn(nonJsTest)
             dependencies {
                 implementation(libs.junit)
                 implementation(libs.mockitoCore4)
@@ -85,6 +99,11 @@ androidXMultiplatform {
 
         jvmTest {
             dependsOn(commonJvmAndroidTest)
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.mockitoCore4)
+                implementation(libs.mockitoKotlin4)
+            }
         }
 
         androidInstrumentedTest {
@@ -102,19 +121,25 @@ androidXMultiplatform {
                     implementation(libs.atomicFu)
                 }
             }
+            linuxAndDarwinMain {
+                dependsOn(nativeMain)
+            }
             nativeTest {
                 dependsOn(commonTest)
+            }
+            linuxAndDarwinTest {
+                dependsOn(nativeTest)
             }
         }
         if (macEnabled) {
             darwinMain {
-                dependsOn(nativeMain)
+                dependsOn(linuxAndDarwinMain)
             }
         }
 
         if (linuxEnabled) {
             linuxMain {
-                dependsOn(nativeMain)
+                dependsOn(linuxAndDarwinMain)
             }
         }
 
@@ -122,10 +147,12 @@ androidXMultiplatform {
             if (target.platformType == KotlinPlatformType.native) {
                 target.compilations["main"].defaultSourceSet {
                     def konanTargetFamily = target.konanTarget.family
-                    if (konanTargetFamily == Family.OSX || konanTargetFamily == Family.IOS) {
+                    if (konanTargetFamily == Family.OSX || konanTargetFamily == Family.IOS || konanTargetFamily == Family.TVOS || konanTargetFamily == Family.WATCHOS) {
                         dependsOn(darwinMain)
                     } else if (konanTargetFamily == Family.LINUX) {
                         dependsOn(linuxMain)
+                    } else if (konanTargetFamily == Family.MINGW) {
+                        dependsOn(nativeMain)
                     } else {
                         throw new GradleException("unknown native target ${target}")
                     }
@@ -133,6 +160,15 @@ androidXMultiplatform {
                 target.compilations["test"].defaultSourceSet {
                     dependsOn(nativeTest)
                 }
+            }
+        }
+
+        targets.each { target ->
+            if (target.platformType == KotlinPlatformType.common) return
+            if (target.platformType == KotlinPlatformType.androidJvm) return
+            if (target.platformType != KotlinPlatformType.js) {
+                target.compilations.main.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsMain)
+                target.compilations.test.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonJsTest)
             }
         }
     }

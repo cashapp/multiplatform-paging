@@ -14,48 +14,60 @@
  * limitations under the License.
  */
 
+import androidx.build.PlatformIdentifier
 import androidx.build.Publish
 import androidx.build.RunApiTasks
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     id("AndroidXPlugin")
     id("com.android.library")
     id("AndroidXComposePlugin")
+    id("org.jetbrains.compose") version "1.5.1"
 }
 
 androidXMultiplatform {
     android()
+    js {
+        nodejs()
+        binaries.executable()
+    }
+    jvm()
+    ios()
+    linuxX64() // TODO Replace with linux() once org.jetbrains.compose.runtime:runtime:1.5.1 has a linxArm64() target (https://github.com/JetBrains/compose-multiplatform/issues/3344).
+    mac()
+    mingw()
+    tvos()
+    watchos()
+
+    defaultPlatform(PlatformIdentifier.ANDROID)
 
     sourceSets {
         commonMain {
             dependencies {
                 implementation(libs.kotlinStdlib)
-                api("androidx.compose.foundation:foundation:1.5.0-beta03")
                 api(project(":paging:paging-common"))
-                api("androidx.compose.runtime:runtime:1.5.0-beta03")
+                api("org.jetbrains.compose.runtime:runtime:1.5.1")
             }
-        }
-
-        jvmMain {
-            dependsOn(commonMain)
         }
 
         androidMain {
-            dependsOn(jvmMain)
+            dependencies {
+                api("androidx.compose.foundation:foundation:1.5.0-beta03")
+            }
         }
 
-        commonTest {
-            dependencies {
-                implementation projectOrArtifact(":compose:ui:ui-tooling")
-                implementation(project(":compose:test-utils"))
-                implementation(projectOrArtifact(":internal-testutils-paging"))
-            }
+        nonAndroidMain {
+            dependsOn(commonMain)
+        }
+
+        nonAndroidTest {
+            dependsOn(commonTest)
         }
 
         jvmTest {
             dependsOn(commonTest)
             dependencies {
-                implementation(projectOrArtifact(":compose:ui:ui-test-junit4"))
             }
         }
 
@@ -65,6 +77,14 @@ androidXMultiplatform {
                 implementation(libs.testRunner)
                 implementation(libs.junit)
                 implementation(libs.truth)
+            }
+        }
+
+        targets.each { target ->
+            if (target.platformType == KotlinPlatformType.common) return
+            if (target.platformType != KotlinPlatformType.androidJvm) {
+                target.compilations.main.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonAndroidMain)
+                target.compilations.test.defaultSourceSet.dependsOn(kotlinExtension.sourceSets.nonAndroidTest)
             }
         }
     }

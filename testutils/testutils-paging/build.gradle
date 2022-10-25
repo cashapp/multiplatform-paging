@@ -21,10 +21,17 @@ plugins {
 }
 
 androidXMultiplatform {
+    js {
+        nodejs()
+        binaries.executable()
+    }
     jvm()
     mac()
     linux()
     ios()
+    mingw()
+    tvos()
+    watchos()
 
     sourceSets {
         commonMain {

@@ -16,14 +16,12 @@
 
 package androidx.paging.compose
 
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.AndroidUiDispatcher
 import androidx.paging.CombinedLoadStates
 import androidx.paging.DifferCallback
 import androidx.paging.ItemSnapshotList
@@ -39,6 +37,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withContext
+
+internal expect val mainDispatcher: CoroutineContext
 
 /**
  * The class responsible for accessing the data from a [Flow] of [PagingData].
@@ -60,8 +60,6 @@ public class LazyPagingItems<T : Any> internal constructor(
      */
     private val flow: Flow<PagingData<T>>
 ) {
-    private val mainDispatcher = AndroidUiDispatcher.Main
-
     private val differCallback: DifferCallback = object : DifferCallback {
         override fun onChanged(position: Int, count: Int) {
             if (count > 0) {

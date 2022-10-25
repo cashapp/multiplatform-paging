@@ -13,24 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-@file:RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-
 package androidx.paging
-
-import androidx.annotation.IntRange
-import androidx.annotation.RestrictTo
 
 public const val LOG_TAG: String = "Paging"
 
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public expect object PagingLogger {
     public fun isLoggable(level: Int): Boolean
     public fun log(level: Int, message: String, tr: Throwable? = null)
 }
 
 public inline fun log(
-    @IntRange(from = VERBOSE.toLong(), to = DEBUG.toLong()) level: Int,
+    level: Int,
     tr: Throwable? = null,
     block: () -> String
 ) {

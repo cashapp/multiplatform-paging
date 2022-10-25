@@ -47,7 +47,7 @@ enum class PlatformGroup {
          * Do *not* enable [JS] unless you have read and understand this:
          * https://blog.jetbrains.com/kotlin/2021/10/important-ua-parser-js-exploit-and-kotlin-js/
          */
-        val enabledByDefault = listOf(JVM, DESKTOP)
+        val enabledByDefault = enumValues<PlatformGroup>().toList()
     }
 }
 
@@ -61,11 +61,21 @@ enum class PlatformIdentifier(
     ANDROID("android", PlatformGroup.JVM),
     MAC_ARM_64("macosarm64", PlatformGroup.MAC),
     MAC_OSX_64("macosx64", PlatformGroup.MAC),
-    LINUX_64("linuxx64", PlatformGroup.LINUX),
+    LINUX_ARM_64("linuxx64", PlatformGroup.LINUX),
+    LINUX_X_64("linuxx64", PlatformGroup.LINUX),
     IOS_SIMULATOR_ARM_64("iossimulatorarm64", PlatformGroup.MAC),
     IOS_X_64("iosx64", PlatformGroup.MAC),
     IOS_ARM_64("iosarm64", PlatformGroup.MAC),
-    DESKTOP("desktop", PlatformGroup.JVM);
+    DESKTOP("desktop", PlatformGroup.JVM),
+    TVOS_ARM_64("tvosarm64", PlatformGroup.MAC),
+    TVOS_X_64("tvosx64", PlatformGroup.MAC),
+    TVOS_SIMULATOR_ARM_64("tvossimulatorarm64", PlatformGroup.MAC),
+    WATCHOS_ARM_32("watchosarm32", PlatformGroup.MAC),
+    WATCHOS_ARM_64("watchosarm64", PlatformGroup.MAC),
+    WATCHOS_X_64("watchosx64", PlatformGroup.MAC),
+    WATCHOS_SIMULATOR_ARM_64("watchossimulatorarm64", PlatformGroup.MAC),
+    MINGW_X_64("mingwx64", PlatformGroup.MAC),
+    ;
 
     companion object {
         private val byId = values().associateBy { it.id }

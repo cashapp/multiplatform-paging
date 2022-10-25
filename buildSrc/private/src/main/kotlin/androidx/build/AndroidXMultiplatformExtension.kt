@@ -47,7 +47,7 @@ open class AndroidXMultiplatformExtension(val project: Project) {
         project.plugins.apply(KotlinMultiplatformPluginWrapper::class.java)
         project.multiplatformExtension!!
     }
-    private val kotlinExtension: KotlinMultiplatformExtension by kotlinExtensionDelegate
+    val kotlinExtension: KotlinMultiplatformExtension by kotlinExtensionDelegate
 
     /**
      * The list of platforms that have been declared as supported in the build configuration.
@@ -244,13 +244,24 @@ open class AndroidXMultiplatformExtension(val project: Project) {
     @JvmOverloads
     fun linux(block: Action<KotlinNativeTarget>? = null): List<KotlinNativeTarget> {
         return listOfNotNull(
+            linuxArm64(block),
             linuxX64(block),
         )
     }
 
     @JvmOverloads
+    fun linuxArm64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.LINUX_ARM_64)
+        return if (project.enableLinux()) {
+            kotlinExtension.linuxArm64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
     fun linuxX64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTargetWithHostTests? {
-        supportedPlatforms.add(PlatformIdentifier.LINUX_64)
+        supportedPlatforms.add(PlatformIdentifier.LINUX_X_64)
         return if (project.enableLinux()) {
             kotlinExtension.linuxX64().also { block?.execute(it) }
         } else {
@@ -263,6 +274,116 @@ open class AndroidXMultiplatformExtension(val project: Project) {
         supportedPlatforms.add(PlatformIdentifier.JS)
         return if (project.enableJs()) {
             kotlinExtension.js().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    /** Configures all tvos targets supported by AndroidX. */
+    @JvmOverloads
+    fun tvos(block: Action<KotlinNativeTarget>? = null): List<KotlinNativeTarget> {
+        return listOfNotNull(
+            tvosArm64(block),
+            tvosX64(block),
+            tvosSimulatorArm64(block),
+        )
+    }
+
+    @JvmOverloads
+    fun tvosArm64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.TVOS_ARM_64)
+        return if (project.enableMac()) {
+            kotlinExtension.tvosArm64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
+    fun tvosX64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.TVOS_X_64)
+        return if (project.enableMac()) {
+            kotlinExtension.tvosX64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
+    fun tvosSimulatorArm64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.TVOS_SIMULATOR_ARM_64)
+        return if (project.enableMac()) {
+            kotlinExtension.tvosSimulatorArm64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+
+    /** Configures all watchos targets supported by AndroidX. */
+    @JvmOverloads
+    fun watchos(block: Action<KotlinNativeTarget>? = null): List<KotlinNativeTarget> {
+        return listOfNotNull(
+            watchosArm32(block),
+            watchosArm64(block),
+            watchosX64(block),
+            watchosSimulatorArm64(block),
+        )
+    }
+
+    @JvmOverloads
+    fun watchosArm32(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.WATCHOS_ARM_32)
+        return if (project.enableMac()) {
+            kotlinExtension.watchosArm32().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
+    fun watchosArm64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.WATCHOS_ARM_64)
+        return if (project.enableMac()) {
+            kotlinExtension.watchosArm64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
+    fun watchosX64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.WATCHOS_X_64)
+        return if (project.enableMac()) {
+            kotlinExtension.watchosX64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    @JvmOverloads
+    fun watchosSimulatorArm64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.WATCHOS_SIMULATOR_ARM_64)
+        return if (project.enableMac()) {
+            kotlinExtension.watchosSimulatorArm64().also { block?.execute(it) }
+        } else {
+            null
+        }
+    }
+
+    /** Configures all mingw targets supported by AndroidX. */
+    @JvmOverloads
+    fun mingw(block: Action<KotlinNativeTarget>? = null): List<KotlinNativeTarget> {
+        return listOfNotNull(
+            mingwX64(block),
+        )
+    }
+
+    @JvmOverloads
+    fun mingwX64(block: Action<KotlinNativeTarget>? = null): KotlinNativeTarget? {
+        supportedPlatforms.add(PlatformIdentifier.WATCHOS_ARM_32)
+        return if (project.enableMac()) {
+            kotlinExtension.mingwX64().also { block?.execute(it) }
         } else {
             null
         }

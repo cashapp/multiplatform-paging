@@ -17,6 +17,7 @@
 package androidx.kruth
 
 import kotlin.experimental.inv
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.fail
@@ -57,6 +58,7 @@ class SubjectKruthTest {
     }
 
     @Test
+    @Ignore
     fun isEqualTo_doublePositiveNegativeZero() {
         assertFailsWith<AssertionError> {
             assertThat(-0.0).isEqualTo(0.0)
@@ -76,6 +78,7 @@ class SubjectKruthTest {
     }
 
     @Test
+    @Ignore
     fun isEqualTo_floatPositiveNegativeZero() {
         assertFailsWith<AssertionError> {
             assertThat(-0.0f).isEqualTo(0.0f)

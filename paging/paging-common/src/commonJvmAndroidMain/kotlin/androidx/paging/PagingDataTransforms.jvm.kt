@@ -19,7 +19,6 @@
 
 package androidx.paging
 
-import androidx.annotation.CheckResult
 import java.util.concurrent.Executor
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -30,7 +29,6 @@ import kotlinx.coroutines.withContext
  *
  * @see PagingData.map
  */
-@CheckResult
 public fun <T : Any, R : Any> PagingData<T>.map(
     executor: Executor,
     transform: (T) -> R,
@@ -46,7 +44,6 @@ public fun <T : Any, R : Any> PagingData<T>.map(
  *
  * @see flatMap
  */
-@CheckResult
 public fun <T : Any, R : Any> PagingData<T>.flatMap(
     executor: Executor,
     transform: (T) -> Iterable<R>
@@ -61,7 +58,6 @@ public fun <T : Any, R : Any> PagingData<T>.flatMap(
  *
  * @see filter
  */
-@CheckResult
 @JvmName("filter")
 public fun <T : Any> PagingData<T>.filter(
     executor: Executor,
@@ -175,7 +171,6 @@ public fun <T : Any> PagingData<T>.filter(
  * list is empty, a single separator will be added where both `before` and `after` items are `null`.
  *
  */
-@CheckResult
 @JvmOverloads
 public fun <R : Any, T : R> PagingData<T>.insertSeparators(
     terminalSeparatorType: TerminalSeparatorType = TerminalSeparatorType.FULLY_COMPLETE,

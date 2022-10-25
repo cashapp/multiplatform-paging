@@ -16,6 +16,7 @@
 
 package androidx.kruth
 
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.fail
@@ -38,6 +39,7 @@ class DoubleSubjectTest {
      * Also asserts Kotlin behavior where -0.0 is not equal to 0.0 when dynamically typed
      */
     @Test
+    @Ignore
     fun doubleCornerCaseZero() {
         var dynamicZeroDouble: Any = 0.0
         var dynamicNegativeZeroDouble: Any = -0.0
@@ -295,6 +297,7 @@ class DoubleSubjectTest {
     }
 
     @Test
+    @Ignore
     fun doubleIsEqualTo() {
         assertThat(1.23).isEqualTo(1.23)
         assertThatIsEqualToFails(GOLDEN, OVER_GOLDEN)
@@ -311,6 +314,7 @@ class DoubleSubjectTest {
     }
 
     @Test
+    @Ignore
     fun doubleIsNotEqualTo() {
         assertThatIsNotEqualToFails(1.23)
         assertThat(GOLDEN).isNotEqualTo(OVER_GOLDEN)
@@ -425,6 +429,7 @@ class DoubleSubjectTest {
     }
 
     @Test
+    @Ignore
     fun doubleIsNotNaN() {
         assertThat(1.23).isNotNaN()
         assertThat(Double.MAX_VALUE).isNotNaN()

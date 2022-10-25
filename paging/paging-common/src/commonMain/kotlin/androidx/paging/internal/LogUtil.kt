@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:RestrictTo(RestrictTo.Scope.LIBRARY)
 
 package androidx.paging.internal
 
-import androidx.annotation.RestrictTo
 import androidx.paging.LoadStates
 
 internal inline fun appendMediatorStatesIfNotNull(
