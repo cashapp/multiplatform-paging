@@ -33,7 +33,6 @@ android {
 dependencies {
     api(project(":paging:paging-common"))
 
-    api("androidx.recyclerview:recyclerview:1.2.0")
     api(libs.kotlinStdlib)
     api(libs.kotlinCoroutinesAndroid)
     implementation("androidx.core:core-ktx:1.2.0")
@@ -49,6 +48,10 @@ dependencies {
     androidTestImplementation(libs.kotlinCoroutinesTest)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.multidex)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.mockitoCore)
+    testImplementation(libs.kotlinStdlib)
 
     samples(project(":paging:paging-samples"))
 }

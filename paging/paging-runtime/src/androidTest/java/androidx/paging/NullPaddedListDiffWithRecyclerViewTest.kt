@@ -20,11 +20,8 @@ import android.content.Context
 import android.view.View
 import android.view.View.MeasureSpec.EXACTLY
 import android.view.ViewGroup
-import androidx.recyclerview.widget.AdapterListUpdateCallback
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListUpdateCallback
-import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -43,248 +40,15 @@ import kotlin.random.Random
 @LargeTest
 class NullPaddedListDiffWithRecyclerViewTest {
     private lateinit var context: Context
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: NullPaddedListAdapter
 
     @Before
     fun init() {
         context = ApplicationProvider.getApplicationContext()
-        recyclerView = RecyclerView(
-            context
-        ).also {
-            it.layoutManager = LinearLayoutManager(context)
-            it.itemAnimator = null
-        }
-        adapter = NullPaddedListAdapter()
-        recyclerView.adapter = adapter
     }
 
     // this is no different that init but reads better in tests to have a reset method
     private fun reset() {
         init()
-    }
-
-    private fun measureAndLayout() {
-        recyclerView.measure(EXACTLY or 100, EXACTLY or RV_HEIGHT)
-        recyclerView.layout(0, 0, 100, RV_HEIGHT)
-    }
-
-    @Test
-    fun basic() {
-        val storage = NullPaddedStorage(
-            placeholdersBefore = 0,
-            data = createItems(0, 10),
-            placeholdersAfter = 0
-        )
-        adapter.setItems(storage)
-        measureAndLayout()
-        val snapshot = captureUISnapshot()
-        assertThat(snapshot).containsExactlyElementsIn(
-            createExpectedSnapshot(
-                firstItemTopOffset = 0,
-                startItemIndex = 0,
-                backingList = storage
-            )
-        )
-    }
-
-    @Test
-    fun distinctLists_fullyOverlappingRange() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 8),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 100, count = 8),
-            placeholdersAfter = 30
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_loadedBefore_or_After() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 10),
-            placeholdersAfter = 10
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 5,
-            data = createItems(startId = 5, count = 5),
-            placeholdersAfter = 20
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post
-        )
-    }
-
-    @Test
-    fun distinctLists_partiallyOverlapping() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 0, count = 8),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 15,
-            data = createItems(startId = 100, count = 8),
-            placeholdersAfter = 30
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_fewerItemsLoaded_withMorePlaceholdersBefore() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 8),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 15,
-            data = createItems(startId = 100, count = 3),
-            placeholdersAfter = 30
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_noPlaceholdersLeft() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 8),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 0,
-            data = createItems(startId = 100, count = 3),
-            placeholdersAfter = 0
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_moreItemsLoaded() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 3),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 100, count = 8),
-            placeholdersAfter = 30
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_moreItemsLoaded_andAlsoMoreOffset() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(startId = 10, count = 3),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 15,
-            data = createItems(startId = 100, count = 8),
-            placeholdersAfter = 30
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    @Test
-    fun distinctLists_expandShrink() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(10, 10),
-            placeholdersAfter = 20
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 0,
-            data = createItems(100, 1),
-            placeholdersAfter = 0
-        )
-        distinctListTest_withVariousInitialPositions(
-            pre = pre,
-            post = post,
-        )
-    }
-
-    /**
-     * Runs a state restoration test with various "current scroll positions".
-     */
-    private fun distinctListTest_withVariousInitialPositions(
-        pre: NullPaddedStorage,
-        post: NullPaddedStorage
-    ) {
-        // try restoring positions in different list states
-        val minSize = minOf(pre.size, post.size)
-        val lastTestablePosition = (minSize - (RV_HEIGHT / ITEM_HEIGHT)).coerceAtLeast(0)
-        (0..lastTestablePosition).forEach { initialPos ->
-            distinctListTest(
-                pre = pre,
-                post = post,
-                initialListPos = initialPos,
-            )
-            reset()
-            distinctListTest(
-                pre = post, // intentional, we are trying to test going in reverse direction
-                post = pre,
-                initialListPos = initialPos,
-            )
-            reset()
-        }
-    }
-
-    @Test
-    fun distinctLists_visibleRangeRemoved() {
-        val pre = NullPaddedStorage(
-            placeholdersBefore = 10,
-            data = createItems(10, 10),
-            placeholdersAfter = 30
-        )
-        val post = NullPaddedStorage(
-            placeholdersBefore = 0,
-            data = createItems(100, 4),
-            placeholdersAfter = 20
-        )
-        swapListTest(
-            pre = pre,
-            post = post,
-            preSwapAction = {
-                recyclerView.scrollBy(0, 30 * ITEM_HEIGHT)
-            },
-            validate = { _, newSnapshot ->
-                assertThat(newSnapshot).containsExactlyElementsIn(
-                    createExpectedSnapshot(
-                        startItemIndex = post.size - RV_HEIGHT / ITEM_HEIGHT,
-                        backingList = post
-                    )
-                )
-            }
-        )
     }
 
     @Test
@@ -444,129 +208,6 @@ class NullPaddedListDiffWithRecyclerViewTest {
         callback.validateRunningListAgainst()
     }
 
-    private fun distinctListTest(
-        pre: NullPaddedStorage,
-        post: NullPaddedStorage,
-        initialListPos: Int,
-        finalListPos: Int = initialListPos
-    ) {
-        // try with various initial list positioning.
-        // in every case, we should preserve our position
-        swapListTest(
-            pre = pre,
-            post = post,
-            preSwapAction = {
-                recyclerView.scrollBy(
-                    0,
-                    initialListPos * ITEM_HEIGHT
-                )
-            },
-            validate = { _, snapshot ->
-                assertWithMessage(
-                    """
-                    initial pos: $initialListPos
-                    expected final pos: $finalListPos
-                    pre: $pre
-                    post: $post
-                    """.trimIndent()
-                ).that(snapshot).containsExactlyElementsIn(
-                    createExpectedSnapshot(
-                        startItemIndex = finalListPos,
-                        backingList = post
-                    )
-                )
-            }
-        )
-    }
-
-    /**
-     * Helper function to run tests where we submit the [pre] list, run [preSwapAction] (where it
-     * can scroll etc) then submit [post] list, run [postSwapAction] and then call [validate]
-     * with UI snapshots.
-     */
-    private fun swapListTest(
-        pre: NullPaddedStorage,
-        post: NullPaddedStorage,
-        preSwapAction: () -> Unit = {},
-        postSwapAction: () -> Unit = {},
-        validate: (preCapture: List<UIItemSnapshot>, postCapture: List<UIItemSnapshot>) -> Unit
-    ) {
-        adapter.setItems(pre)
-        measureAndLayout()
-        preSwapAction()
-        val preSnapshot = captureUISnapshot()
-        adapter.setItems(post)
-        postSwapAction()
-        measureAndLayout()
-        val postSnapshot = captureUISnapshot()
-        validate(preSnapshot, postSnapshot)
-    }
-
-    /**
-     * Captures positions and data of each visible item in the RecyclerView.
-     */
-    private fun captureUISnapshot(): List<UIItemSnapshot> {
-        return (0 until recyclerView.childCount).mapNotNull { childPos ->
-            val view = recyclerView.getChildAt(childPos)!!
-            if (view.top < RV_HEIGHT && view.bottom > 0) {
-                val viewHolder = recyclerView.getChildViewHolder(view) as NullPaddedListViewHolder
-                UIItemSnapshot(
-                    top = view.top,
-                    boundItem = viewHolder.boundItem,
-                    boundPos = viewHolder.boundPos
-                )
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Custom adapter class that also validates its update events to ensure they are correct.
-     */
-    private class NullPaddedListAdapter : RecyclerView.Adapter<NullPaddedListViewHolder>() {
-        private var items: NullPaddedList<NullPaddedListItem>? = null
-
-        fun setItems(items: NullPaddedList<NullPaddedListItem>) {
-            val previousItems = this.items
-            val myItems = this.items
-            if (myItems == null) {
-                notifyItemRangeInserted(0, items.size)
-            } else {
-                val diff = myItems.computeDiff(items, NullPaddedListItem.CALLBACK)
-                val diffObserver = TrackingAdapterObserver(previousItems, items)
-                registerAdapterDataObserver(diffObserver)
-                val callback = AdapterListUpdateCallback(this)
-                myItems.dispatchDiff(callback, items, diff)
-                unregisterAdapterDataObserver(diffObserver)
-                diffObserver.validateRunningListAgainst()
-            }
-            this.items = items
-        }
-
-        override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
-        ): NullPaddedListViewHolder {
-            return NullPaddedListViewHolder(parent.context).also {
-                it.itemView.layoutParams = RecyclerView.LayoutParams(
-                    RecyclerView.LayoutParams.MATCH_PARENT,
-                    ITEM_HEIGHT
-                )
-            }
-        }
-
-        override fun onBindViewHolder(holder: NullPaddedListViewHolder, position: Int) {
-            val item = items?.get(position)
-            holder.boundItem = item
-            holder.boundPos = position
-        }
-
-        override fun getItemCount(): Int {
-            return items?.size ?: 0
-        }
-    }
-
     private data class NullPaddedListItem(
         val id: Int,
         val value: String
@@ -587,16 +228,6 @@ class NullPaddedListDiffWithRecyclerViewTest {
                     return oldItem == newItem
                 }
             }
-        }
-    }
-
-    private class NullPaddedListViewHolder(
-        context: Context
-    ) : RecyclerView.ViewHolder(View(context)) {
-        var boundItem: NullPaddedListItem? = null
-        var boundPos: Int = -1
-        override fun toString(): String {
-            return "VH[$boundPos , $boundItem]"
         }
     }
 
@@ -781,33 +412,6 @@ class NullPaddedListDiffWithRecyclerViewTest {
             }
             // now after this, each list must be exactly equal, if not, something is wrong
             assertWithMessage(msg).that(runningList).containsExactlyElementsIn(newListSnapshot)
-        }
-    }
-
-    private class TrackingAdapterObserver<T>(
-        previousList: NullPaddedList<T>?,
-        postList: NullPaddedList<T>
-    ) : RecyclerView.AdapterDataObserver() {
-        private val callback = ValidatingListUpdateCallback(previousList, postList)
-
-        override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
-            callback.onChanged(positionStart, itemCount, null)
-        }
-
-        override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
-            callback.onChanged(positionStart, itemCount, payload)
-        }
-
-        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            callback.onInserted(positionStart, itemCount)
-        }
-
-        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            callback.onRemoved(positionStart, itemCount)
-        }
-
-        fun validateRunningListAgainst() {
-            callback.validateRunningListAgainst()
         }
     }
 
