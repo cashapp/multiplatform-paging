@@ -36,8 +36,14 @@ class RepoSearchPresenter {
 
   private var latestSearchTerm = ""
 
-  private val pager: Pager<Int, Repository> = Pager(PagingConfig(pageSize = 20)) {
-    RepositoryPagingSource(httpClient, latestSearchTerm)
+  private val pager: Pager<Int, Repository> = run {
+    val pagingConfig = PagingConfig(pageSize = 20, initialLoadSize = 20)
+    check(pagingConfig.pageSize == pagingConfig.initialLoadSize) {
+      "As GitHub uses offset based pagination, an elegant PagingSource implementation requires each page to be of equal size."
+    }
+    Pager(pagingConfig) {
+        RepositoryPagingSource(httpClient, latestSearchTerm)
+    }
   }
 
   suspend fun produceViewModels(
