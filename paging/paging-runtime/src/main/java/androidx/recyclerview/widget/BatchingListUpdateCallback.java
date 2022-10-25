@@ -15,9 +15,8 @@
  */
 package androidx.recyclerview.widget;
 
-import android.annotation.SuppressLint;
-
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Wraps a {@link ListUpdateCallback} callback and batches operations that can be merged.
@@ -108,8 +107,7 @@ public class BatchingListUpdateCallback implements ListUpdateCallback {
     }
 
     @Override
-    @SuppressLint("UnknownNullness") // b/240775049: Cannot annotate properly
-    public void onChanged(int position, int count, Object payload) {
+    public void onChanged(int position, int count, @Nullable Object payload) {
         if (mLastEventType == TYPE_CHANGE &&
                 !(position > mLastEventPosition + mLastEventCount
                         || position + count < mLastEventPosition || mLastEventPayload != payload)) {
