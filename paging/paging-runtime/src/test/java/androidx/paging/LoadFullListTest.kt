@@ -17,7 +17,6 @@
 package androidx.paging
 
 import androidx.recyclerview.widget.DiffUtil
-import androidx.test.filters.MediumTest
 import androidx.testutils.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineDispatcher
@@ -36,7 +35,6 @@ import org.junit.runners.Parameterized
 import kotlin.coroutines.ContinuationInterceptor
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@MediumTest
 @RunWith(Parameterized::class)
 /**
  * Test that repeatedly accessing edge items in paging will make it load all of the page even when
