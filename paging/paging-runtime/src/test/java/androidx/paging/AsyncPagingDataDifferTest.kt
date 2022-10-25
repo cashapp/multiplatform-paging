@@ -23,9 +23,6 @@ import androidx.paging.LoadState.Loading
 import androidx.paging.LoadState.NotLoading
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.MediumTest
-import androidx.test.filters.SdkSuppress
 import androidx.testutils.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
 import kotlin.coroutines.ContinuationInterceptor
@@ -48,6 +45,7 @@ import kotlinx.coroutines.withContext
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 
 sealed class ListUpdateEvent {
     data class Changed(val position: Int, val count: Int, val payload: Any?) : ListUpdateEvent()
@@ -60,8 +58,7 @@ sealed class ListUpdateEvent {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@MediumTest
-@RunWith(AndroidJUnit4::class)
+@RunWith(JUnit4::class)
 class AsyncPagingDataDifferTest {
     private val testScope = TestScope(StandardTestDispatcher())
 
@@ -85,7 +82,6 @@ class AsyncPagingDataDifferTest {
         workerDispatcher = Dispatchers.Main
     )
 
-    @SdkSuppress(minSdkVersion = 21) // b/189492631
     @Test
     fun performDiff_fastPathLoadStates() = testScope.runTest {
         val loadEvents = mutableListOf<CombinedLoadStates>()
@@ -149,7 +145,6 @@ class AsyncPagingDataDifferTest {
         )
     }
 
-    @SdkSuppress(minSdkVersion = 21) // b/189492631
     @Test
     fun performDiff_fastPathLoadStatesFlow() = testScope.runTest {
         val loadEvents = mutableListOf<CombinedLoadStates>()
@@ -359,7 +354,6 @@ class AsyncPagingDataDifferTest {
         }
     }
 
-    @SdkSuppress(minSdkVersion = 21) // b/189492631
     @Test
     fun submitData_guaranteesOrder() = testScope.runTest {
         val pager = Pager(config = PagingConfig(2, enablePlaceholders = false), initialKey = 50) {
@@ -524,7 +518,6 @@ class AsyncPagingDataDifferTest {
      * to end expected behavior.
      * Repro for b/1987328.
      */
-    @SdkSuppress(minSdkVersion = 21) // b/189492631
     @Test
     fun refreshEventsAreImmediate_cached() = testScope.runTest {
         val loadStates = mutableListOf<CombinedLoadStates>()
@@ -557,7 +550,6 @@ class AsyncPagingDataDifferTest {
         job.cancelAndJoin()
     }
 
-    @SdkSuppress(minSdkVersion = 21) // b/189492631
     @Test
     fun loadStateFlowSynchronouslyUpdates() = testScope.runTest {
         var combinedLoadStates: CombinedLoadStates? = null

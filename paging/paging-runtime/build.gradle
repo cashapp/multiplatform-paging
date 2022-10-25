@@ -19,15 +19,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("AndroidXPlugin")
-    id("com.android.library")
-    id("kotlin-android")
-}
-
-android {
-    defaultConfig {
-        multiDexEnabled true
-    }
-    namespace "androidx.paging.runtime"
+    id("kotlin")
 }
 
 dependencies {
@@ -37,20 +29,13 @@ dependencies {
 
     api(libs.kotlinStdlib)
     api(libs.kotlinCoroutinesAndroid)
-    implementation("androidx.core:core-ktx:1.7.0")
 
-    androidTestImplementation(project(":internal-testutils-ktx"))
-    androidTestImplementation(project(":internal-testutils-paging"))
-    androidTestImplementation(libs.testCore)
-    androidTestImplementation(libs.testExtJunit)
-    androidTestImplementation(libs.testRunner)
-    androidTestImplementation("androidx.arch.core:core-testing:2.1.0")
-    androidTestImplementation(libs.truth)
-    androidTestImplementation(libs.kotlinTest)
-    androidTestImplementation(libs.kotlinCoroutinesTest)
-    androidTestImplementation(libs.junit)
-    androidTestImplementation(libs.multidex)
-
+    testImplementation(project(":internal-testutils-ktx"))
+    testImplementation(project(":internal-testutils-paging"))
+    testImplementation("androidx.arch.core:core-testing:2.1.0")
+    testImplementation(libs.truth)
+    testImplementation(libs.kotlinTest)
+    testImplementation(libs.kotlinCoroutinesTest)
     testImplementation(libs.junit)
     testImplementation(libs.mockitoCore)
     testImplementation(libs.kotlinStdlib)

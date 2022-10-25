@@ -32,7 +32,7 @@ package androidx.recyclerview.widget {
   public class BatchingListUpdateCallback implements androidx.recyclerview.widget.ListUpdateCallback {
     ctor public BatchingListUpdateCallback(androidx.recyclerview.widget.ListUpdateCallback);
     method public void dispatchLastEvent();
-    method public void onChanged(int, int, Object!);
+    method public void onChanged(int, int, Object?);
     method public void onInserted(int, int);
     method public void onMoved(int, int);
     method public void onRemoved(int, int);
