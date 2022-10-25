@@ -16,40 +16,22 @@
 
 package androidx.paging
 
-import android.content.Context
-import android.view.View
-import android.view.View.MeasureSpec.EXACTLY
-import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 import kotlin.random.Random
 
 /**
  * For some tests, this test uses a real recyclerview with a real adapter to serve as an
  * integration test so that we can validate all updates and state restorations after updates.
  */
-@RunWith(AndroidJUnit4::class)
-@LargeTest
+@RunWith(JUnit4::class)
 class NullPaddedListDiffWithRecyclerViewTest {
-    private lateinit var context: Context
-
-    @Before
-    fun init() {
-        context = ApplicationProvider.getApplicationContext()
-    }
-
-    // this is no different that init but reads better in tests to have a reset method
-    private fun reset() {
-        init()
-    }
 
     @Test
     fun distinctLists_validateDiff() {
@@ -67,7 +49,6 @@ class NullPaddedListDiffWithRecyclerViewTest {
     }
 
     @Test
-    @LargeTest
     fun random_distinctListTest() {
         // this is a random test but if it fails, the exception will have enough information to
         // create an isolated test
@@ -149,13 +130,11 @@ class NullPaddedListDiffWithRecyclerViewTest {
     }
 
     @Test
-    @LargeTest
     fun randomTest_withContinuousMatch() {
         randomContinuousMatchTest(shuffle = false)
     }
 
     @Test
-    @LargeTest
     fun randomTest_withContinuousMatch_withShuffle() {
         randomContinuousMatchTest(shuffle = true)
     }
