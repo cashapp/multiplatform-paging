@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
+package androidx.recyclerview.widget
 
-package androidx.recyclerview.widget;
+object RecyclerView {
 
-public class RecyclerView {
-
-    public static final int NO_POSITION = -1;
+    const val NO_POSITION = -1
 }
