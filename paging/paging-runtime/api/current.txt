@@ -20,17 +20,9 @@ package androidx.paging {
     method public void retry();
     method public androidx.paging.ItemSnapshotList<T> snapshot();
     method public suspend Object? submitData(androidx.paging.PagingData<T> pagingData, kotlin.coroutines.Continuation<? super kotlin.Unit>);
-    method public void submitData(androidx.lifecycle.Lifecycle lifecycle, androidx.paging.PagingData<T> pagingData);
     property public final int itemCount;
     property public final kotlinx.coroutines.flow.Flow<androidx.paging.CombinedLoadStates> loadStateFlow;
     property public final kotlinx.coroutines.flow.Flow<kotlin.Unit> onPagesUpdatedFlow;
-  }
-
-  public final class PagingLiveData {
-    method public static <T> androidx.lifecycle.LiveData<androidx.paging.PagingData<T>> cachedIn(androidx.lifecycle.LiveData<androidx.paging.PagingData<T>>, androidx.lifecycle.Lifecycle lifecycle);
-    method public static <T> androidx.lifecycle.LiveData<androidx.paging.PagingData<T>> cachedIn(androidx.lifecycle.LiveData<androidx.paging.PagingData<T>>, androidx.lifecycle.ViewModel viewModel);
-    method public static <T> androidx.lifecycle.LiveData<androidx.paging.PagingData<T>> cachedIn(androidx.lifecycle.LiveData<androidx.paging.PagingData<T>>, kotlinx.coroutines.CoroutineScope scope);
-    method public static <Key, Value> androidx.lifecycle.LiveData<androidx.paging.PagingData<Value>> getLiveData(androidx.paging.Pager<Key,Value>);
   }
 
 }

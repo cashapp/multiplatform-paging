@@ -16,7 +16,6 @@
 
 package androidx.paging
 
-import androidx.lifecycle.testing.TestLifecycleOwner
 import androidx.paging.DiffingChangePayload.ITEM_TO_PLACEHOLDER
 import androidx.paging.ListUpdateEvent.Changed
 import androidx.paging.ListUpdateEvent.Inserted
@@ -126,7 +125,7 @@ class AsyncPagingDataDifferTest {
         job.cancel()
 
         differ.submitData(
-            TestLifecycleOwner().lifecycle, PagingData.empty(
+            PagingData.empty(
                 sourceLoadStates = loadStates(
                     refresh = NotLoading(endOfPaginationReached = false),
                     prepend = NotLoading(endOfPaginationReached = true),
@@ -192,7 +191,7 @@ class AsyncPagingDataDifferTest {
         job.cancel()
 
         differ.submitData(
-            TestLifecycleOwner().lifecycle, PagingData.empty(
+            PagingData.empty(
                 sourceLoadStates = loadStates(
                     refresh = NotLoading(endOfPaginationReached = false),
                     prepend = NotLoading(endOfPaginationReached = true),
@@ -291,11 +290,10 @@ class AsyncPagingDataDifferTest {
                 initialKey = 50
             ) { TestPagingSource() }
 
-            val lifecycle = TestLifecycleOwner()
             var jobSubmitted = false
             val job = launch {
                 pager.flow.collectLatest {
-                    differ.submitData(lifecycle.lifecycle, it)
+                    differ.submitData(it)
                     jobSubmitted = true
                 }
             }
@@ -329,11 +327,12 @@ class AsyncPagingDataDifferTest {
                 initialKey = 50
             ) { TestPagingSource() }
 
-            val lifecycle = TestLifecycleOwner()
             var jobSubmitted = false
             val job = launch {
                 pager.flow.collectLatest {
-                    differ.submitData(lifecycle.lifecycle, it)
+                    launch {
+                        differ.submitData(it)
+                    }
                     jobSubmitted = true
                 }
             }
@@ -343,7 +342,9 @@ class AsyncPagingDataDifferTest {
             var job2Submitted = false
             val job2 = launch {
                 pager2.flow.collectLatest {
-                    differ.submitData(lifecycle.lifecycle, it)
+                    launch {
+                        differ.submitData(it)
+                    }
                     job2Submitted = true
                 }
             }
@@ -380,17 +381,23 @@ class AsyncPagingDataDifferTest {
             }
         }
 
-        val lifecycle = TestLifecycleOwner()
-        differ.submitData(lifecycle.lifecycle, PagingData.empty())
-        differ.submitData(lifecycle.lifecycle, pager.flow.first()) // Loads 6 items
+        launch {
+            differ.submitData(PagingData.empty())
+        }
+        launch {
+            differ.submitData(pager.flow.first()) // Loads 6 items
+        }
 
         // Ensure the second call wins when dispatched in order of execution.
         advanceUntilIdle()
         assertEquals(6, differ.itemCount)
 
-        val reversedLifecycle = TestLifecycleOwner(coroutineDispatcher = reversedDispatcher)
-        differ.submitData(reversedLifecycle.lifecycle, PagingData.empty())
-        differ.submitData(reversedLifecycle.lifecycle, pager.flow.first()) // Loads 6 items
+        launch(reversedDispatcher) {
+            differ.submitData(PagingData.empty())
+        }
+        launch(reversedDispatcher) {
+            differ.submitData(pager.flow.first()) // Loads 6 items
+        }
 
         // Ensure the second call wins when dispatched in reverse order of execution.
         advanceUntilIdle()
@@ -409,7 +416,6 @@ class AsyncPagingDataDifferTest {
                 initialKey = 50
             ) { TestPagingSource() }
 
-            val lifecycle = TestLifecycleOwner()
             var jobSubmitted = false
             val job = launch {
                 pager.flow.collectLatest {
@@ -424,7 +430,7 @@ class AsyncPagingDataDifferTest {
             val job2 = launch {
                 pager2.flow.collectLatest {
                     job2Submitted = true
-                    differ.submitData(lifecycle.lifecycle, it)
+                    differ.submitData(it)
                 }
             }
 

@@ -11,6 +11,8 @@ RemovedClass: androidx.paging.NullPaddedListDiffHelperKt:
     Removed class androidx.paging.NullPaddedListDiffHelperKt
 RemovedClass: androidx.paging.PagingDataAdapter:
     Removed class androidx.paging.PagingDataAdapter
+RemovedClass: androidx.paging.PagingLiveData:
+    Removed class androidx.paging.PagingLiveData
 
 
 RemovedDeprecatedClass: androidx.paging.AsyncPagedListDiffer:
@@ -19,3 +21,7 @@ RemovedDeprecatedClass: androidx.paging.LivePagedListBuilder:
     Removed deprecated class androidx.paging.LivePagedListBuilder
 RemovedDeprecatedClass: androidx.paging.PagedListAdapter:
     Removed deprecated class androidx.paging.PagedListAdapter
+
+
+RemovedMethod: androidx.paging.AsyncPagingDataDiffer#submitData(androidx.lifecycle.Lifecycle, androidx.paging.PagingData<T>):
+    Removed method androidx.paging.AsyncPagingDataDiffer.submitData(androidx.lifecycle.Lifecycle,androidx.paging.PagingData<T>)
