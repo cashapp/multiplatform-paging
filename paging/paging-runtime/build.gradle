@@ -28,12 +28,12 @@ kotlin {
     jvm()
 
     sourceSets {
-        jvmMain {
+        commonMain {
             dependencies {
                 api(project(":paging:paging-common"))
                 api(libs.kotlinStdlib)
-                api(libs.kotlinCoroutinesAndroid)
-                implementation("androidx.core:core-ktx:1.2.0")
+                api(libs.kotlinCoroutinesCore)
+                implementation("co.touchlab:stately-concurrency:1.2.0")
             }
         }
         jvmTest {

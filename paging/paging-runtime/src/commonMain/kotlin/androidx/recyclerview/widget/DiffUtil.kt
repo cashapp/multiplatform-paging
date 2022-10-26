@@ -16,7 +16,8 @@
 
 package androidx.recyclerview.widget
 
-import androidx.annotation.IntRange
+import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * DiffUtil is a utility class that calculates the difference between two lists and outputs a
@@ -196,7 +197,7 @@ object DiffUtil {
         backward: CenteredArray,
         d: Int,
     ): Snake? {
-        val checkForSnake: Boolean = Math.abs(range.oldSize() - range.newSize()) % 2 == 1
+        val checkForSnake: Boolean = abs(range.oldSize() - range.newSize()) % 2 == 1
         val delta: Int = range.oldSize() - range.newSize()
         var k: Int = -d
         while (k <= d) {
@@ -480,7 +481,7 @@ object DiffUtil {
      * Snakes represent a match between two lists. It is optionally prefixed or postfixed with an
      * add or remove operation. See the Myers' paper for details.
      */
-    @SuppressWarnings("WeakerAccess")
+    @Suppress("WeakerAccess")
     class Snake {
         /**
          * Position in the old list
@@ -516,7 +517,7 @@ object DiffUtil {
         }
 
         fun diagonalSize(): Int {
-            return Math.min(endX - startX, endY - startY)
+            return min(endX - startX, endY - startY)
         }
 
         /**
@@ -737,7 +738,7 @@ object DiffUtil {
          * @see #NO_POSITION
          * @see #convertNewPositionToOld(int)
          */
-        fun convertOldPositionToNew(@IntRange(from = 0) oldListPosition: Int): Int {
+        fun convertOldPositionToNew(oldListPosition: Int): Int {
             if (oldListPosition < 0 || oldListPosition >= mOldListSize) {
                 throw IndexOutOfBoundsException("Index out of bounds - passed position = "
                         + oldListPosition + ", old list size = " + mOldListSize)
@@ -759,7 +760,7 @@ object DiffUtil {
          * @see #NO_POSITION
          * @see #convertOldPositionToNew(int)
          */
-        fun convertNewPositionToOld(@IntRange(from = 0) newListPosition: Int): Int {
+        fun convertNewPositionToOld(newListPosition: Int): Int {
             if (newListPosition < 0 || newListPosition >= mNewListSize) {
                 throw IndexOutOfBoundsException("Index out of bounds - passed position = "
                         + newListPosition + ", new list size = " + mNewListSize)

@@ -16,16 +16,16 @@
 
 package androidx.paging
 
-import androidx.annotation.IntRange
 import androidx.paging.LoadType.REFRESH
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
+import co.touchlab.stately.concurrency.AtomicInt
+import kotlin.jvm.JvmOverloads
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Helper class for mapping a [PagingData] into a
@@ -117,7 +117,7 @@ class AsyncPagingDataDiffer<T : Any> @JvmOverloads constructor(
         }
     }
 
-    private val submitDataId = AtomicInteger(0)
+    private val submitDataId = AtomicInt(0)
 
     /**
      * Present a [PagingData] until it is invalidated by a call to [refresh] or
@@ -183,7 +183,7 @@ class AsyncPagingDataDiffer<T : Any> @JvmOverloads constructor(
      * @param index Index of item to get, must be >= 0, and < [itemCount]
      * @return The item, or `null`, if a `null` placeholder is at the specified position.
      */
-    fun getItem(@IntRange(from = 0) index: Int): T? {
+    fun getItem(index: Int): T? {
         try {
             inGetItem = true
             return differBase[index]
@@ -199,7 +199,7 @@ class AsyncPagingDataDiffer<T : Any> @JvmOverloads constructor(
      * @param index Index of the presented item to return, including placeholders.
      * @return The presented item at position [index], `null` if it is a placeholder
      */
-    fun peek(@IntRange(from = 0) index: Int): T? {
+    fun peek(index: Int): T? {
         return differBase.peek(index)
     }
 
