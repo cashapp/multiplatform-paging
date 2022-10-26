@@ -14,23 +14,41 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
 
 plugins {
     id("AndroidXPlugin")
-    id("kotlin")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-dependencies {
-    api(libs.kotlinStdlib)
-    implementation(project(":paging:paging-common"))
-    implementation(project(":internal-testutils-ktx"))
-    implementation(libs.kotlinTest)
+kotlin {
+    ios()
+    js(IR) {
+        nodejs()
+        binaries.executable()
+    }
+    jvm()
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                api(libs.kotlinStdlib)
+                implementation(project(":paging:paging-common"))
+                implementation(project(":internal-testutils-ktx"))
+                implementation(libs.kotlinTest)
+            }
+        }
+    }
 }
 
 // Allow usage of Kotlin's @OptIn.
-tasks.withType(KotlinCompile).configureEach {
+tasks.withType(KotlinCompileCommon).configureEach {
     kotlinOptions {
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
+}
+
+// TODO Remove when upgraded to Kotlin 1.6.20
+rootProject.plugins.withType(Class.forName("org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin")) {
+    rootProject.extensions.getByType(org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension.class).nodeVersion = "16.0.0"
 }
