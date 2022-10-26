@@ -27,14 +27,12 @@ kotlin {
     jvm()
 
     sourceSets {
-        jvmMain {
+        commonMain {
             dependencies {
                 api(project(":paging:paging-common"))
-                // Ensure that the -ktx dependency graph mirrors the Java dependency graph
-                api(project(":paging:paging-common-ktx"))
-
                 api(libs.kotlinStdlib)
-                api(libs.kotlinCoroutinesAndroid)
+                api(libs.kotlinCoroutinesCore)
+                implementation("co.touchlab:stately-concurrency:1.2.0")
             }
         }
         jvmTest {
