@@ -42,7 +42,12 @@ kotlin {
     watchosSimulatorArm64()
 
     sourceSets {
-        jvmMain {
+        all {
+            languageSettings {
+                optIn("kotlin.RequiresOptIn")
+            }
+        }
+        commonMain {
             dependencies {
                 api(libs.kotlinStdlib)
                 implementation(project(":paging:paging-common"))
