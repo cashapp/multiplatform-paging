@@ -16,8 +16,6 @@
 
 package androidx.recyclerview.widget
 
-import androidx.annotation.IntRange
-
 /**
  * DiffUtil is a utility class that calculates the difference between two lists and outputs a
  * list of update operations that converts the first list into the second one.
@@ -744,7 +742,7 @@ object DiffUtil {
          * @see #NO_POSITION
          * @see #convertNewPositionToOld(int)
          */
-        fun convertOldPositionToNew(@IntRange(from = 0) oldListPosition: Int): Int {
+        fun convertOldPositionToNew(oldListPosition: Int): Int {
             if (oldListPosition < 0 || oldListPosition >= mOldListSize) {
                 throw IndexOutOfBoundsException("Index out of bounds - passed position = " +
                     oldListPosition + ", old list size = " + mOldListSize)
@@ -766,7 +764,7 @@ object DiffUtil {
          * @see #NO_POSITION
          * @see #convertOldPositionToNew(int)
          */
-        fun convertNewPositionToOld(@IntRange(from = 0) newListPosition: Int): Int {
+        fun convertNewPositionToOld(newListPosition: Int): Int {
             if (newListPosition < 0 || newListPosition >= mNewListSize) {
                 throw IndexOutOfBoundsException("Index out of bounds - passed position = " +
                     newListPosition + ", new list size = " + mNewListSize)
