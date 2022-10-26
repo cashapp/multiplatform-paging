@@ -23,7 +23,6 @@ import androidx.paging.LoadState.Loading
 import androidx.paging.LoadState.NotLoading
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
-import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,14 +37,13 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.Ignore
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.withContext
@@ -61,16 +59,15 @@ sealed class ListUpdateEvent {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(JUnit4::class)
 class AsyncPagingDataDifferTest {
     private val testScope = TestScope(StandardTestDispatcher())
 
-    @Before
+    @BeforeTest
     fun before() {
         Dispatchers.setMain(testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher)
     }
 
-    @After
+    @AfterTest
     fun after() {
         Dispatchers.resetMain()
     }
@@ -513,19 +510,22 @@ class AsyncPagingDataDifferTest {
             pager.flow.cachedIn(this).collectLatest { differ.submitData(it) }
         }
         advanceUntilIdle()
-        assertThat(loadStates.lastOrNull()?.prepend?.endOfPaginationReached).isTrue()
+        assertTrue(loadStates.lastOrNull()?.prepend?.endOfPaginationReached!!)
         loadStates.clear()
         differ.refresh()
         advanceUntilIdle()
-        assertThat(loadStates).containsExactly(
-            localLoadStatesOf(
-                prependLocal = NotLoading(endOfPaginationReached = false),
-                refreshLocal = Loading
+        assertContentEquals(
+            listOf(
+                localLoadStatesOf(
+                    prependLocal = NotLoading(endOfPaginationReached = false),
+                    refreshLocal = Loading
+                ),
+                localLoadStatesOf(
+                    prependLocal = NotLoading(endOfPaginationReached = true),
+                    refreshLocal = NotLoading(endOfPaginationReached = false)
+                )
             ),
-            localLoadStatesOf(
-                prependLocal = NotLoading(endOfPaginationReached = true),
-                refreshLocal = NotLoading(endOfPaginationReached = false)
-            )
+            loadStates,
         )
         job.cancelAndJoin()
     }

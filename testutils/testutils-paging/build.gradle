@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
-
 plugins {
     id("AndroidXPlugin")
     id("org.jetbrains.kotlin.multiplatform")
@@ -30,7 +28,12 @@ kotlin {
     jvm()
 
     sourceSets {
-        jvmMain {
+        all {
+            languageSettings {
+                optIn("kotlin.RequiresOptIn")
+            }
+        }
+        commonMain {
             dependencies {
                 api(libs.kotlinStdlib)
                 implementation(project(":paging:paging-common"))
@@ -38,13 +41,6 @@ kotlin {
                 implementation(libs.kotlinTest)
             }
         }
-    }
-}
-
-// Allow usage of Kotlin's @OptIn.
-tasks.withType(KotlinCompileCommon).configureEach {
-    kotlinOptions {
-        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
 }
 

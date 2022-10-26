@@ -798,7 +798,7 @@ class PagingDataDifferTest(
         val combinedLoadStateCapture = CombinedLoadStatesCapture()
 
         // Adding a new listener without a real value should not trigger it.
-        differ.addLoadStateListener(combinedLoadStateCapture)
+        differ.addLoadStateListener { combinedLoadStateCapture.invoke(it) }
         assertThat(combinedLoadStateCapture.newEvents()).isEmpty()
 
         // Add a real value and now the listener should trigger.
@@ -812,7 +812,7 @@ class PagingDataDifferTest(
 
         // Should emit real values to new listeners immediately
         val newCombinedLoadStateCapture = CombinedLoadStatesCapture()
-        differ.addLoadStateListener(newCombinedLoadStateCapture)
+        differ.addLoadStateListener { newCombinedLoadStateCapture.invoke(it) }
         assertThat(newCombinedLoadStateCapture.newEvents()).containsExactly(
             localLoadStatesOf(
                 prependLocal = NotLoading.Complete,

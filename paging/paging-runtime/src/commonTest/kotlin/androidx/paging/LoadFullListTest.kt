@@ -17,7 +17,6 @@
 package androidx.paging
 
 import androidx.recyclerview.widget.DiffUtil
-import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,48 +28,30 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.coroutines.ContinuationInterceptor
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(Parameterized::class)
 /**
  * Test that repeatedly accessing edge items in paging will make it load all of the page even when
  * there is heavy filtering involved.
  */
-class LoadFullListTest(
-    private val reverse: Boolean
-) {
+class LoadFullListTest {
 
     private val testScope = TestScope()
 
-    @Before
+    @BeforeTest
     fun before() {
         Dispatchers.setMain(testScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher)
     }
 
-    @After
+    @AfterTest
     fun after() {
         Dispatchers.resetMain()
     }
-
-    private val differ = AsyncPagingDataDiffer(
-        diffCallback = object : DiffUtil.ItemCallback<Int>() {
-            override fun areContentsTheSame(oldItem: Int, newItem: Int): Boolean {
-                return oldItem == newItem
-            }
-
-            override fun areItemsTheSame(oldItem: Int, newItem: Int): Boolean {
-                return oldItem == newItem
-            }
-        },
-        updateCallback = ListUpdateCallbackFake(),
-        workerDispatcher = Dispatchers.Main
-    )
 
     @Test
     fun noFilter() = loadAll {
@@ -128,52 +109,66 @@ class LoadFullListTest(
         sourceSize: Int = 100,
         testFilter: (Int) -> Boolean
     ) = testScope.runTest {
-        val expectedFinalSize = (0 until sourceSize).count(testFilter)
-        val pager = Pager(
-            config = pageConfig,
-            initialKey = if (reverse) {
-                sourceSize - 1
-            } else {
-                0
-            }
-        ) {
-            TestPagingSource(
-                items = List(sourceSize) { it }
+        params().forEach { reverse ->
+            val differ = AsyncPagingDataDiffer(
+                diffCallback = object : DiffUtil.ItemCallback<Int>() {
+                    override fun areContentsTheSame(oldItem: Int, newItem: Int): Boolean {
+                        return oldItem == newItem
+                    }
+
+                    override fun areItemsTheSame(oldItem: Int, newItem: Int): Boolean {
+                        return oldItem == newItem
+                    }
+                },
+                updateCallback = ListUpdateCallbackFake(),
+                workerDispatcher = Dispatchers.Main
             )
-        }
 
-        val job = launch {
-            pager.flow.map { pagingData ->
-                pagingData.filter {
-                    testFilter(it)
+            val expectedFinalSize = (0 until sourceSize).count(testFilter)
+            val pager = Pager(
+                config = pageConfig,
+                initialKey = if (reverse) {
+                    sourceSize - 1
+                } else {
+                    0
                 }
-            }.collectLatest {
-                differ.submitData(it)
+            ) {
+                TestPagingSource(
+                    items = List(sourceSize) { it }
+                )
             }
-        }
 
-        advanceUntilIdle()
-        // repeatedly load pages until all of the list is loaded
-        while (differ.itemCount < expectedFinalSize) {
-            val startSize = differ.itemCount
-            if (reverse) {
-                differ.getItem(0)
-            } else {
-                differ.getItem(differ.itemCount - 1)
+            val job = launch {
+                pager.flow.map { pagingData ->
+                    pagingData.filter {
+                        testFilter(it)
+                    }
+                }.collectLatest {
+                    differ.submitData(it)
+                }
             }
+
             advanceUntilIdle()
-            if (differ.itemCount == startSize) {
-                break
+            // repeatedly load pages until all of the list is loaded
+            while (differ.itemCount < expectedFinalSize) {
+                val startSize = differ.itemCount
+                if (reverse) {
+                    differ.getItem(0)
+                } else {
+                    differ.getItem(differ.itemCount - 1)
+                }
+                advanceUntilIdle()
+                if (differ.itemCount == startSize) {
+                    break
+                }
             }
-        }
-        assertThat(differ.itemCount).isEqualTo(expectedFinalSize)
+            assertEquals(expectedFinalSize, differ.itemCount)
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     companion object {
-        @JvmStatic
-        @Parameterized.Parameters(name = "reverse_{0}")
         fun params() = listOf(false, true)
         private val pageConfig = PagingConfig(
             pageSize = 5,

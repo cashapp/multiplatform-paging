@@ -18,19 +18,18 @@ package androidx.paging
 
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
-import com.google.common.truth.Truth.assertThat
-import com.google.common.truth.Truth.assertWithMessage
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import kotlin.random.Random
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * For some tests, this test uses a real recyclerview with a real adapter to serve as an
  * integration test so that we can validate all updates and state restorations after updates.
  */
-@RunWith(JUnit4::class)
 class NullPaddedListDiffWithRecyclerViewTest {
 
     @Test
@@ -52,7 +51,7 @@ class NullPaddedListDiffWithRecyclerViewTest {
     fun random_distinctListTest() {
         // this is a random test but if it fails, the exception will have enough information to
         // create an isolated test
-        val rand = Random(System.nanoTime())
+        val rand = Random
         fun randomNullPaddedStorage(startId: Int) = NullPaddedStorage(
             placeholdersBefore = rand.nextInt(0, 20),
             data = createItems(
@@ -146,7 +145,7 @@ class NullPaddedListDiffWithRecyclerViewTest {
     private fun randomContinuousMatchTest(shuffle: Boolean) {
         // this is a random test but if it fails, the exception will have enough information to
         // create an isolated test
-        val rand = Random(System.nanoTime())
+        val rand = Random
         fun randomNullPaddedStorage(startId: Int) = NullPaddedStorage(
             placeholdersBefore = rand.nextInt(0, 20),
             data = createItems(
@@ -310,13 +309,13 @@ class NullPaddedListDiffWithRecyclerViewTest {
             get() = runningList.size
 
         private fun Int.assertWithinBounds() {
-            assertWithMessage(msg).that(this).isAtLeast(0)
-            assertWithMessage(msg).that(this).isAtMost(size)
+            assertTrue(this >= 0, msg)
+            assertTrue(this <= size, msg)
         }
 
         override fun onInserted(position: Int, count: Int) {
             position.assertWithinBounds()
-            assertWithMessage(msg).that(count).isAtLeast(1)
+            assertTrue(count >= 1, msg)
             repeat(count) {
                 runningList.add(position, ListSnapshotItem.Inserted)
             }
@@ -325,14 +324,13 @@ class NullPaddedListDiffWithRecyclerViewTest {
         override fun onRemoved(position: Int, count: Int) {
             position.assertWithinBounds()
             (position + count).assertWithinBounds()
-            assertWithMessage(msg).that(count).isAtLeast(1)
+            assertTrue(count >= 1, msg)
             (position until position + count).forEach { pos ->
-                assertWithMessage(
+                assertTrue(
+                    runningList[pos].isOriginalItem(),
                     "$msg\nshouldn't be removing an item that already got a change event" +
                         " pos: $pos , ${runningList[pos]}"
                 )
-                    .that(runningList[pos].isOriginalItem())
-                    .isTrue()
             }
             repeat(count) {
                 runningList.removeAt(position)
@@ -348,25 +346,20 @@ class NullPaddedListDiffWithRecyclerViewTest {
         override fun onChanged(position: Int, count: Int, payload: Any?) {
             position.assertWithinBounds()
             (position + count).assertWithinBounds()
-            assertWithMessage(msg).that(count).isAtLeast(1)
+            assertTrue(count >= 1, msg)
             (position until position + count).forEach { pos ->
                 // make sure we don't dispatch overlapping updates
-                assertWithMessage(
+                assertTrue(
+                    runningList[pos].isOriginalItem(),
                     "$msg\nunnecessary change event for position $pos $payload " +
                         "${runningList[pos]}"
                 )
-                    .that(runningList[pos].isOriginalItem())
-                    .isTrue()
                 if (payload == DiffingChangePayload.PLACEHOLDER_TO_ITEM ||
                     payload == DiffingChangePayload.PLACEHOLDER_POSITION_CHANGE
                 ) {
-                    assertWithMessage(msg).that(runningList[pos]).isInstanceOf(
-                        ListSnapshotItem.Placeholder::class.java
-                    )
+                    assertIs<ListSnapshotItem.Placeholder>(runningList[pos], msg)
                 } else {
-                    assertWithMessage(msg).that(runningList[pos]).isInstanceOf(
-                        ListSnapshotItem.Item::class.java
-                    )
+                    assertIs<ListSnapshotItem.Item<*>>(runningList[pos], msg)
                 }
                 runningList[pos] = ListSnapshotItem.Changed(
                     payload = payload as? DiffingChangePayload
@@ -376,7 +369,7 @@ class NullPaddedListDiffWithRecyclerViewTest {
 
         fun validateRunningListAgainst() {
             // check for size first
-            assertWithMessage(msg).that(size).isEqualTo(newList.size)
+            assertEquals(newList.size, size, msg)
             val newListSnapshot = newList.createSnapshot()
             runningList.forEachIndexed { index, listSnapshotItem ->
                 val newListItem = newListSnapshot[index]
@@ -390,7 +383,7 @@ class NullPaddedListDiffWithRecyclerViewTest {
                 }
             }
             // now after this, each list must be exactly equal, if not, something is wrong
-            assertWithMessage(msg).that(runningList).containsExactlyElementsIn(newListSnapshot)
+            assertContentEquals(newListSnapshot, runningList, msg)
         }
     }
 
@@ -439,9 +432,7 @@ internal sealed class ListSnapshotItem {
             newListItem: ListSnapshotItem
         ) {
             // no change
-            assertWithMessage(msg).that(
-                newListItem
-            ).isEqualTo(this)
+            assertEquals(this, newListItem, msg)
         }
     }
 
@@ -450,16 +441,10 @@ internal sealed class ListSnapshotItem {
             msg: String,
             newListItem: ListSnapshotItem
         ) {
-            assertWithMessage(msg).that(
-                newListItem
-            ).isInstanceOf(
-                Placeholder::class.java
-            )
+            assertIs<Placeholder>(newListItem, msg)
             val replacement = newListItem as Placeholder
             // make sure position didn't change. If it did, we would be replaced with a [Changed].
-            assertWithMessage(msg).that(
-                pos
-            ).isEqualTo(replacement.pos)
+            assertEquals(replacement.pos, pos, msg)
         }
     }
 
@@ -478,21 +463,17 @@ internal sealed class ListSnapshotItem {
             // item change from original diffing.
             when (payload) {
                 DiffingChangePayload.ITEM_TO_PLACEHOLDER -> {
-                    assertWithMessage(msg).that(newListItem)
-                        .isInstanceOf(Placeholder::class.java)
+                    assertIs<Placeholder>(newListItem, msg)
                 }
                 DiffingChangePayload.PLACEHOLDER_TO_ITEM -> {
-                    assertWithMessage(msg).that(newListItem)
-                        .isInstanceOf(Item::class.java)
+                    assertIs<Item<*>>(newListItem, msg)
                 }
                 DiffingChangePayload.PLACEHOLDER_POSITION_CHANGE -> {
-                    assertWithMessage(msg).that(newListItem)
-                        .isInstanceOf(Placeholder::class.java)
+                    assertIs<Placeholder>(newListItem, msg)
                 }
                 else -> {
                     // item change that came from diffing.
-                    assertWithMessage(msg).that(newListItem)
-                        .isInstanceOf(Item::class.java)
+                    assertIs<Item<*>>(newListItem, msg)
                 }
             }
         }

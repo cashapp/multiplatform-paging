@@ -36,7 +36,7 @@ kotlin {
                 implementation("co.touchlab:stately-concurrency:1.2.0")
             }
         }
-        jvmTest {
+        commonTest {
             dependencies {
                 implementation(project(":internal-testutils-ktx"))
                 implementation(project(":internal-testutils-paging"))

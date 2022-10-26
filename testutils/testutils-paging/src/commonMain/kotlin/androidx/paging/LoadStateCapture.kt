@@ -16,12 +16,12 @@
 
 package androidx.paging
 
-class LoadStateCapture : (LoadType, LoadState) -> Unit {
+class LoadStateCapture {
     private var lastEventsListIndex = -1
 
     val events = mutableListOf<LoadStateEvent>()
 
-    override fun invoke(type: LoadType, state: LoadState) {
+    operator fun invoke(type: LoadType, state: LoadState) {
         events.add(LoadStateEvent(type, state))
     }
 
