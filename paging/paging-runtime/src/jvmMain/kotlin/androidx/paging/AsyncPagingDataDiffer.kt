@@ -16,7 +16,6 @@
 
 package androidx.paging
 
-import androidx.annotation.IntRange
 import androidx.paging.LoadType.REFRESH
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
@@ -266,7 +265,7 @@ constructor(
      * @param index Index of item to get, must be >= 0, and < [itemCount]
      * @return The item, or `null`, if a `null` placeholder is at the specified position.
      */
-    fun getItem(@IntRange(from = 0) index: Int): T? {
+    fun getItem(index: Int): T? {
         try {
             inGetItem = true
             return differBase[index]
@@ -282,7 +281,7 @@ constructor(
      * @param index Index of the presented item to return, including placeholders.
      * @return The presented item at position [index], `null` if it is a placeholder
      */
-    fun peek(@IntRange(from = 0) index: Int): T? {
+    fun peek(index: Int): T? {
         return differBase.peek(index)
     }
 
