@@ -8,6 +8,8 @@
           <key-server uri="https://keyserver.ubuntu.com"/>
       </key-servers>
       <trusted-artifacts>
+         <trust group="org.nodejs" name="node"/>
+         <trust group="com.yarnpkg" name="yarn"/>
          <trust group="ch.qos.logback" name="logback-classic" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-core" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-parent" version="1.2.11" reason="b/234161459"/>
