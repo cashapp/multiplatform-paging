@@ -15,6 +15,9 @@
  */
 package androidx.recyclerview.widget
 
+import kotlin.math.max
+import kotlin.math.min
+
 /**
  * Wraps a {@link ListUpdateCallback} callback and batches operations that can be merged.
  * <p>
@@ -69,7 +72,7 @@ public class BatchingListUpdateCallback(callback: ListUpdateCallback) : ListUpda
         if (mLastEventType == TYPE_ADD && position >= mLastEventPosition &&
             position <= mLastEventPosition + mLastEventCount) {
             mLastEventCount += count
-            mLastEventPosition = Math.min(position, mLastEventPosition)
+            mLastEventPosition = min(position, mLastEventPosition)
             return
         }
         dispatchLastEvent()
@@ -102,8 +105,8 @@ public class BatchingListUpdateCallback(callback: ListUpdateCallback) : ListUpda
                     position + count < mLastEventPosition || mLastEventPayload != payload)) {
             // take potential overlap into account
             val previousEnd: Int = mLastEventPosition + mLastEventCount
-            mLastEventPosition = Math.min(position, mLastEventPosition)
-            mLastEventCount = Math.max(previousEnd, position + count) - mLastEventPosition
+            mLastEventPosition = min(position, mLastEventPosition)
+            mLastEventCount = max(previousEnd, position + count) - mLastEventPosition
             return
         }
         dispatchLastEvent()
