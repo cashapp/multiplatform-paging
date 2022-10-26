@@ -15,18 +15,30 @@
  */
 
 import androidx.build.LibraryType
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("AndroidXPlugin")
-    id("kotlin")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-dependencies {
-    api(libs.kotlinStdlib)
-    api(libs.kotlinCoroutinesCore)
-    api(libs.kotlinCoroutinesTest)
-    api(libs.junit)
+kotlin {
+    ios()
+    js(IR) {
+        nodejs()
+        binaries.executable()
+    }
+    jvm()
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                api(libs.kotlinStdlib)
+                api(libs.kotlinCoroutinesCore)
+                api(libs.kotlinCoroutinesTest)
+                api(libs.junit)
+            }
+        }
+    }
 }
 
 androidx {
