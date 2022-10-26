@@ -16,6 +16,9 @@
 
 package androidx.recyclerview.widget
 
+import kotlin.math.abs
+import kotlin.math.min
+
 /**
  * DiffUtil is a utility class that calculates the difference between two lists and outputs a
  * list of update operations that converts the first list into the second one.
@@ -197,7 +200,7 @@ object DiffUtil {
         backward: CenteredArray,
         d: Int,
     ): Snake? {
-        val checkForSnake: Boolean = Math.abs(range.oldSize() - range.newSize()) % 2 == 1
+        val checkForSnake: Boolean = abs(range.oldSize() - range.newSize()) % 2 == 1
         val delta: Int = range.oldSize() - range.newSize()
         var k: Int = -d
         while (k <= d) {
@@ -481,7 +484,7 @@ object DiffUtil {
      * Snakes represent a match between two lists. It is optionally prefixed or postfixed with an
      * add or remove operation. See the Myers' paper for details.
      */
-    @SuppressWarnings("WeakerAccess")
+    @Suppress("WeakerAccess")
     class Snake {
         /**
          * Position in the old list
@@ -517,7 +520,7 @@ object DiffUtil {
         }
 
         fun diagonalSize(): Int {
-            return Math.min(endX - startX, endY - startY)
+            return min(endX - startX, endY - startY)
         }
 
         /**

@@ -19,8 +19,9 @@ package androidx.paging
 import androidx.paging.LoadType.REFRESH
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
-import java.util.concurrent.atomic.AtomicInteger
+import co.touchlab.stately.concurrency.AtomicInt
 import kotlin.coroutines.CoroutineContext
+import kotlin.jvm.JvmOverloads
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -200,7 +201,7 @@ constructor(
         }
     }
 
-    private val submitDataId = AtomicInteger(0)
+    private val submitDataId = AtomicInt(0)
 
     /**
      * Present a [PagingData] until it is invalidated by a call to [refresh] or
