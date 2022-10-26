@@ -5,6 +5,8 @@
       <verify-signatures>true</verify-signatures>
       <key-servers enabled="false"/>
       <trusted-artifacts>
+         <trust group="org.nodejs" name="node"/>
+         <trust group="com.yarnpkg" name="yarn"/>
          <trust group="gradle" name="gradle"/>
          <trust file=".*-javadoc[.]jar" regex="true"/>
          <trust file=".*-sources[.]jar" regex="true"/>
