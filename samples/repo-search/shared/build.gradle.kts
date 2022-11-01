@@ -17,7 +17,7 @@ kotlin {
   sourceSets {
     val commonMain by getting {
       dependencies {
-        api(projects.pagingRuntime)
+        api(projects.pagingCommon)
         api(libs.kotlinx.coroutines.core)
         implementation(libs.ktor.client.core)
         implementation(libs.ktor.client.contentNegotiation)
@@ -26,6 +26,7 @@ kotlin {
     }
     val iosMain by getting {
       dependencies {
+        api(projects.pagingRuntime)
         implementation(libs.ktor.client.darwin)
       }
     }

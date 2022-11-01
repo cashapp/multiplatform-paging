@@ -6,7 +6,6 @@ plugins {
 kotlin {
   ios()
   iosSimulatorArm64()
-  jvm()
 
   sourceSets {
     all {
@@ -21,11 +20,6 @@ kotlin {
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.stately.concurrency)
         implementation(libs.stately.iso.collections)
-      }
-    }
-    val jvmMain by getting {
-      dependencies {
-        implementation(libs.androidx.paging.runtime)
       }
     }
     val iosMain by getting {
