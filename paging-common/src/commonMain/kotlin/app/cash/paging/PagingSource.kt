@@ -88,6 +88,12 @@ expect class PagingSourceLoadResultError<Key : Any, Value : Any>(
   operator fun component1(): Throwable
 }
 
+fun <Key : Any, Value : Any> PagingSourceLoadResultError<Key, Value>.copy(
+  throwable: Throwable = this.throwable,
+): PagingSourceLoadResultError<Key, Value> {
+  return PagingSourceLoadResultError(throwable)
+}
+
 expect class PagingSourceLoadResultInvalid<Key : Any, Value : Any>()
 
 expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
@@ -116,6 +122,22 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   operator fun component5(): Int
 
   companion object
+}
+
+fun <Key : Any, Value : Any> PagingSourceLoadResultPage<Key, Value>.copy(
+  data: List<Value> = this.data,
+  prevKey: Key? = this.prevKey,
+  nextKey: Key? = this.nextKey,
+  itemsBefore: Int = this.itemsBefore,
+  itemsAfter: Int = this.itemsAfter,
+): PagingSourceLoadResultPage<Key, Value> {
+  return PagingSourceLoadResultPage(
+    data,
+    prevKey,
+    nextKey,
+    itemsBefore,
+    itemsAfter,
+  )
 }
 
 const val COUNT_UNDEFINED: Int = Int.MIN_VALUE
