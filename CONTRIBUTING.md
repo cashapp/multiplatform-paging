@@ -2,7 +2,7 @@
 
 ## Building This Project
 
-This project uses Git submodules to build our branch of Jetpack paging alongside our common API declarations.
+This project uses Git submodules to build our branch of AndroidX Paging alongside our common API declarations.
 
 You'll need to run these commands before you can build:
 

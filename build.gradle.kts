@@ -29,7 +29,7 @@ allprojects {
       publishToMavenCentral(SonatypeHost.DEFAULT)
       signAllPublications()
       pom {
-        description.set("Packages Android Jetpack's Paging library for Kotlin/Multiplatform.")
+        description.set("Packages AndroidX's Paging library for Kotlin/Multiplatform.")
         name.set(project.name)
         url.set("https://github.com/cashapp/multiplatform-paging/")
         licenses {

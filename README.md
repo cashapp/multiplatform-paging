@@ -1,9 +1,9 @@
 # Multiplatform Paging
 
-This library packages [Jetpack Paging] for Kotlin/Multiplatform.
+This library packages [AndroidX Paging] for Kotlin/Multiplatform.
 
 Our multiplatform APIs use `app.cash.paging`.
-This library delegates to the stock Jetpack Paging artifact on the Android platform.
+This library delegates to the stock AndroidX Paging artifact on the Android platform.
 
 Note that commonMain includes only the Paging 3 APIs from `androidx.paging`.
 We don't plan to offer multiplatform APIs for Paging 2.
@@ -36,15 +36,15 @@ Unfortunately, there are a few exceptions, due to limitations in the Kotlin comp
 
 ## Versioning
 
-Multiplatform Paging follows the [same version numbers](https://mvnrepository.com/artifact/androidx.paging/paging-common) as Jetpack's Paging.
+Multiplatform Paging follows the [same version numbers](https://mvnrepository.com/artifact/androidx.paging/paging-common) as AndroidX's Paging.
 We will (or won't?) follow alpha/beta/rc releases of androidx/paging.
 In the case of patch releases affecting just Multiplatform Paging, we will append `-patchX` (e.g., `app.cash.paging:paging-common:3.1.1-patch01`).
-Catching up to the latest release of Jetpack's Paging may take some time due to potential issues making the new KMP compatible.
+Catching up to the latest release of AndroidX's Paging may take some time due to potential issues making the new KMP compatible.
 A tracking issue will be created and pinned each time we are lagging behind a version.
 
 It's similar to the [versioning of KSP](https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing) where it's the androidx-paging version number followed by our number.
 
-[Jetpack Paging]: https://developer.android.com/topic/libraries/architecture/paging/v3-overview
+[AndroidX Paging]: https://developer.android.com/topic/libraries/architecture/paging/v3-overview
 
 ## License
 
