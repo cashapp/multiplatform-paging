@@ -1,50 +1,141 @@
 # Multiplatform Paging
 
-This library packages [AndroidX Paging] for Kotlin/Multiplatform.
+A library that packages [AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) for Kotlin/Multiplatform.
 
-Our multiplatform APIs use `app.cash.paging`.
-This library delegates to the stock AndroidX Paging artifact on the Android platform.
+## Introduction
 
-Note that commonMain includes only the Paging 3 APIs from `androidx.paging`.
-We don't plan to offer multiplatform APIs for Paging 2.
+As with AndroidX Paging, the primary modules of Multiplatform Paging are:
 
-## API Discrepancies
+* `paging-common` – encompasses the [repository layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#repository) and the [view model layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#viewmodel)
+* `paging-runtime` – encompasses the [UI layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#ui)
 
-Our common API is the same as `androidx.paging`, copied to `app.cash.paging`.
-All types in `app.cash.paging` typealias to `androidx.paging` on all platforms.
+Unlike AndroidX Paging that makes `paging-common` JVM-specific and `paging-runtime` Android-specific,
+Multiplatform Paging makes `paging-common` multiplatform and provides iOS as an additional target to `paging-runtime`.
+Therefore, pagination logic between Android and iOS can be shared,
+and the provided UI components can be used to render the paged items on Android and iOS.
 
-Unfortunately, there are a few exceptions, due to limitations in the Kotlin compiler.
+## Usage
 
-| `androidx.paging`                                      | `app.cash.paging`                         | Issue reference                               |
-|--------------------------------------------------------|-------------------------------------------|-----------------------------------------------|
-| LoadState.NotLoading                                   | LoadStateNotLoading                       | https://youtrack.jetbrains.com/issue/KT-34281 |
-| LoadState.Loading                                      | LoadStateLoading                          | https://youtrack.jetbrains.com/issue/KT-34281 |
-| LoadState.Error                                        | LoadStateError                            | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingConfig.Companion.MAX_SIZE_UNBOUNDED              | MAX_SIZE_UNBOUNDED                        | https://youtrack.jetbrains.com/issue/KT-18856 |
-| PagingSource.LoadParams<Key>                           | PagingSourceLoadParams<Key>               | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadParams.Refresh<Key>                   | PagingSourceLoadParamsRefresh<Key>        | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadParams.Append<Key>                    | PagingSourceLoadParamsAppend<Key>         | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadParams.Prepend<Key>                   | PagingSourceLoadParamsPrepend<Key>        | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadResult.Error<Key, Value>              | PagingSourceLoadResultError<Key, Value>   | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadResult.Invalid<Key, Value>            | PagingSourceLoadResultInvalid<Key, Value> | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadResult.Page<Key, Value>               | PagingSourceLoadResultPage<Key, Value>    | https://youtrack.jetbrains.com/issue/KT-34281 |
-| PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED | COUNT_UNDEFINED                           | https://youtrack.jetbrains.com/issue/KT-18856 |
-| RemoteMediator.MediatorResult                          | RemoteMediatorMediatorResult              | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.MediatorResult.Error                    | RemoteMediatorMediatorResultError         | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.MediatorResult.Success                  | RemoteMediatorMediatorResultSuccess       | https://youtrack.jetbrains.com/issue/KT-34281 |
-| RemoteMediator.InitializeAction                        | RemoteMediatorInitializeAction            | https://youtrack.jetbrains.com/issue/KT-34281 |
+For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
 
-## Versioning
+### `paging-common`
 
-Multiplatform Paging follows the [same version numbers](https://mvnrepository.com/artifact/androidx.paging/paging-common) as AndroidX's Paging.
-We will (or won't?) follow alpha/beta/rc releases of androidx/paging.
-In the case of patch releases affecting just Multiplatform Paging, we will append `-patchX` (e.g., `app.cash.paging:paging-common:3.1.1-patch01`).
-Catching up to the latest release of AndroidX's Paging may take some time due to potential issues making the new KMP compatible.
-A tracking issue will be created and pinned each time we are lagging behind a version.
+The API of `paging-common` in Multiplatform Paging is identical to that of `paging-common` in AndroidX Paging
+(with the exception that: the namespace has changed from `androidx.paging` to `app.cash.paging`;
+there are some minor [API discrepancies](paging-common/README.md) due to limitations in the Kotlin compiler).
+Therefore, to see how to use `paging-common`, consult the [official documentation of AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview).
 
-It's similar to the [versioning of KSP](https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing) where it's the androidx-paging version number followed by our number.
+#### JVM
 
-[AndroidX Paging]: https://developer.android.com/topic/libraries/architecture/paging/v3-overview
+`app.cash.paging:paging-common` on the JVM delegates to `androidx.paging:paging-common` via type aliases.
+To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
+
+#### iOS
+
+`app.cash.paging:paging-common` on iOS delegates to _our fork_ of AndroidX Paging.
+
+iOS only includes the Paging 3 APIs from AndroidX Paging.
+We don't plan on offering Paging 2 support for iOS,
+though you can continue to use Paging 2 on the JVM.
+
+### `paging-runtime`
+
+#### Android
+
+See the [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging) section below.
+
+#### iOS
+
+The `PagingCollectionViewController` allows a `PagingData` to be rendered via a `UICollectionView`.
+The `PagingCollectionViewController` mimics the `UICollectionViewController`,
+providing: the cell count; and item retrieval via `IndexPath`.
+
+Here's an example in Swift:
+
+```swift
+final class FooViewController: UICollectionViewController {
+
+  private let delegate = Paging_runtimePagingCollectionViewController<Repository>(
+    indexCreator: { row, section in
+      NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath
+    },
+  )
+
+  private let presenter = …
+
+  required init(coder: NSCoder) {
+    super.init(coder: coder)!
+    presenter.pagingDatas
+      .sink { pagingData in
+        self.delegate.submitData(pagingData: pagingData, completionHandler: …)
+      }
+  }
+
+  override func collectionView(
+    _ collectionView: UICollectionView,
+    numberOfItemsInSection section: Int
+  ) -> Int {
+    return Int(delegate.collectionView(collectionView: collectionView, numberOfItemsInSection: Int64(section)))
+  }
+
+  override func collectionView(
+    _ collectionView: UICollectionView,
+    cellForItemAt indexPath: IndexPath
+  ) -> UICollectionViewCell {
+    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "RepositoryCell", for: indexPath) as! RepositoryCell
+
+    let item = delegate.getItem(position: Int32(indexPath.row))!
+    // …
+
+    return cell
+  }
+}
+```
+
+## Interoperability with AndroidX Paging
+
+As `app.cash.paging:paging-common` on the JVM type aliases to `androidx.paging:paging-common`,
+some useful side effects occur:
+
+* The implementation of `app.cash.paging:paging-common` on the JVM is **identical** to `androidx.paging:paging-common`.
+  This means that it is impossible for there to be a behavioral discrepancy when using `app.cash.paging:paging-common` on the JVM.
+* All libraries that depend on `androidx.paging:paging-common` can continue to be used on the JVM (e.g., `androidx.paging:paging-runtime`, `androidx.paging:paging-compose`, `androidx.paging:paging-rxjava3`).
+  This is why `app.cash.paging:paging-runtime` doesn't have a JVM target, as you can instead depend on the official AndroidX artifact.
+* If you're already using AndroidX Paging, you don't need to refactor your Android code to use Multiplatform Paging.
+  The use of Multiplatform Paging is only necessary if you wish to share pagination logic in common code and/or paginate on iOS. 
+
+## Releases
+
+The versioning scheme is of the form `X-Y` where:
+
+- `X` is the AndroidX Paging version that is being tracked.
+- `Y` is the Multiplatform Paging version.
+
+For example, if AndroidX Paging is on `3.1.1` and Multiplatform Paging is on `0.1.0`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.1.1-0.1.0`.
+
+### `paging-common` for common
+
+```kotlin
+implementation("app.cash.paging:paging-common:3.1.1-0.1.0")
+```
+
+### `paging-runtime` for iOS
+
+```kotlin
+implementation("app.cash.paging:paging-runtime:3.1.1-0.1.0")
+```
+
+### Android
+
+Use the [official AndroidX Paging dependencies](https://developer.android.com/jetpack/androidx/releases/paging#declaring_dependencies).
+
+```kotlin
+implementation("androidx.paging:paging-runtime:3.1.1")
+implementation("androidx.paging:paging-compose:1.0.0-alpha17")
+implementation("androidx.paging:paging-rxjava3:3.1.1")
+// etc.
+```
 
 ## License
 
