@@ -1,12 +1,8 @@
 # Contributing
 
-If you would like to contribute code to this project,
-you can do so through GitHub by forking the repository and sending a pull request.
+Before code can be accepted, all contributors must complete our [Individual Contributor License Agreement (CLA)](http://squ.re/sign-the-cla).
 
-Before your code can be accepted into the project,
-you must sign the [Individual Contributor License Agreement (CLA)](http://squ.re/sign-the-cla).
-
-## Building This Project
+## Build
 
 This project uses Git submodules to build our branch of AndroidX Paging alongside our common API declarations.
 
@@ -16,33 +12,17 @@ You'll need to run these commands before you can build:
 git submodule update --init --remote
 ```
 
-## Directory Structure
+There are two primary branches:
 
-- [paging-common/src/commonMain](paging-common/src/commonMain)
-  - Defines the common multiplatform API.
-    This is the paging3 subset of `androidx.paging`.
-  - Exclusively `expect` types with package name `app.cash.paging`.
+* [`androidx-main`](https://github.com/cashapp/multiplatform-paging/tree/androidx-main) – a pruned fork of https://github.com/androidx/androidx containing the multiplatformized `paging-common` and `paging-runtime` code.
+* [`main`](https://github.com/cashapp/multiplatform-paging/tree/main) – contains type aliases to the multiplatformized code in `androidx-main` on iOS, and type aliases to the `androidx.paging:paging-X` artifact on JVM.
+  The submodule [`upstreams/androidx-main`](upstreams/androidx-main) points to the `androidx-main` branch.
 
-- [paging-common/src/jvmMain](paging-common/src/jvmMain)
-  - Only `typealias` declarations from `app.cash.paging` to `androidx.paging`.
-  - This has a library dependency on androidx.paging.
-    We depend on Google's official releases on Android.
+## Add support for another AndroidX Paging release
 
-- [paging-common/src/nonJvmMain](paging-common/src/nonJvmMain)
-  - Only `typealias` declarations from `app.cash.paging` to `androidx.paging`.
-  - Includes sources from our branch of `androidx.paging` in the `upstreams/androidx-main` directory.
-
-- [upstreams/androidx-main](upstreams/androidx-main)
-  - the androidx repo, branched to work on non-JVM platforms
-  - our branch does this:
-    - prunes everything that isn't paging-related
-    - changes paging internals to support non-JVM platforms
-
-## Updating `androidx-main` to release X
-
-1. Locate release X on the [AndroidX Paging releases page](https://developer.android.com/jetpack/androidx/releases/paging).
+1. Locate the desired release on the [AndroidX Paging releases page](https://developer.android.com/jetpack/androidx/releases/paging).
 2. Click the 'Version X contains these commits' link.
-3. Copy the second SHA in the URL (`abc123`).
+3. Copy the second SHA in the URL.
    For example, the second SHA in the [3.1.1 release commits](https://android.googlesource.com/platform/frameworks/support/+log/04b73e954d139340d0ac8b00cdcef55b103ba393..65c8f2c53158200a61e0e1cc012cdbbadaee60ab/paging) would be 65c8f2c53158200a61e0e1cc012cdbbadaee60ab.
-4. `git fetch https://android.googlesource.com/platform/frameworks/support abc123`
+4. `git fetch https://android.googlesource.com/platform/frameworks/support COPIED_SHA`
 5. Cherry-pick the Multiplatform Paging commits from androidx-main and resolve conflicts.
