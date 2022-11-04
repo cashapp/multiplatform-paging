@@ -7,7 +7,7 @@ This project uses Git submodules to build our branch of AndroidX Paging alongsid
 You'll need to run these commands before you can build:
 
 ```bash
-git submodule init
+git submodule update --init --remote
 ```
 
 ## Directory Structure
