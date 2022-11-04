@@ -55,7 +55,7 @@ Here's an example in Swift:
 ```swift
 final class FooViewController: UICollectionViewController {
 
-  private let delegate = Paging_runtimePagingCollectionViewController<Repository>(
+  private let delegate = Paging_runtimePagingCollectionViewController<Foo>(
     indexCreator: { row, section in
       NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath
     },
@@ -82,7 +82,7 @@ final class FooViewController: UICollectionViewController {
     _ collectionView: UICollectionView,
     cellForItemAt indexPath: IndexPath
   ) -> UICollectionViewCell {
-    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "RepositoryCell", for: indexPath) as! RepositoryCell
+    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "FooCell", for: indexPath) as! FooCell
 
     let item = delegate.getItem(position: Int32(indexPath.row))!
     // …
