@@ -1,5 +1,11 @@
 # Contributing
 
+If you would like to contribute code to this project,
+you can do so through GitHub by forking the repository and sending a pull request.
+
+Before your code can be accepted into the project,
+you must sign the [Individual Contributor License Agreement (CLA)](http://squ.re/sign-the-cla).
+
 ## Building This Project
 
 This project uses Git submodules to build our branch of AndroidX Paging alongside our common API declarations.
