@@ -27,14 +27,3 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
-
-      - uses: ffurrer2/extract-release-notes@v1
-        id: release_notes
-
-      - uses: softprops/action-gh-release@v1
-        with:
-          body: ${{ steps.release_notes.outputs.release_notes }}
-          files: |
-            zipline-cli/build/distributions/zipline-cli-*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
