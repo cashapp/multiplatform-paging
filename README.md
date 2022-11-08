@@ -111,19 +111,19 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.1.1` and Multiplatform Paging is on `0.1.0`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.1.1-0.1.0`.
+For example, if AndroidX Paging is on `3.1.1` and Multiplatform Paging is on `0.1.1`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.1.1-0.1.1`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.1.1-0.1.0")
+implementation("app.cash.paging:paging-common:3.1.1-0.1.1")
 ```
 
 ### `paging-runtime` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime:3.1.1-0.1.0")
+implementation("app.cash.paging:paging-runtime:3.1.1-0.1.1")
 ```
 
 ### Android
