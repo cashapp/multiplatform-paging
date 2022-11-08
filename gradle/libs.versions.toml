@@ -39,4 +39,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-native-cocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+mavenPublish = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish" }
