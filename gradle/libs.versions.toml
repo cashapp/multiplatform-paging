@@ -1,5 +1,5 @@
 [versions]
-android = "7.3.0"
+android = "7.3.1"
 androidx-activity-compose = "1.7.0-alpha01"
 androidx-appcompat = "1.4.2"
 androidx-compose = "1.3.0-rc01"
