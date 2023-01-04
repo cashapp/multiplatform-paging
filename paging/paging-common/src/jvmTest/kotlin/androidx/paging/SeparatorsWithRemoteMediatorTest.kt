@@ -20,7 +20,8 @@ import androidx.paging.LoadState.NotLoading
 import androidx.paging.SeparatorsTest.Companion.LETTER_SEPARATOR_GENERATOR
 import androidx.paging.TerminalSeparatorType.FULLY_COMPLETE
 import androidx.paging.TerminalSeparatorType.SOURCE_COMPLETE
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.*
 import kotlin.test.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf

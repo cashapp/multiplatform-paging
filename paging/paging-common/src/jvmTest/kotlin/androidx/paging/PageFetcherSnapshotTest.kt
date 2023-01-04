@@ -27,7 +27,8 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page
 import androidx.paging.RemoteMediatorMock.LoadEvent
 import androidx.paging.TestPagingSource.Companion.LOAD_ERROR
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -1656,12 +1657,10 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 3,
-                    APPEND to 1,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 3,
+                APPEND to 1,
+                REFRESH to 0
             )
         }
     }
@@ -1707,12 +1706,10 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 1,
-                    APPEND to 3,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 1,
+                APPEND to 3,
+                REFRESH to 0
             )
         }
     }
@@ -3026,11 +3023,11 @@ class PageFetcherSnapshotTest {
         assertThat(fetcherState.pageEventLists[0]).containsExactly(
             remoteLoadStateUpdate<Int>(
                 refreshLocal = Loading,
-                refreshRemote = Loading,
+                refreshRemote = NotLoading.Incomplete,
             ),
             remoteLoadStateUpdate<Int>(
                 refreshLocal = Loading,
-                refreshRemote = NotLoading.Incomplete,
+                refreshRemote = Loading,
             ),
         )
         assertThat(fetcherState.pageEventLists[1]).containsExactly(

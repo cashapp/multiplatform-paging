@@ -19,7 +19,8 @@ package androidx.paging
 import androidx.paging.CombineSource.INITIAL
 import androidx.paging.CombineSource.OTHER
 import androidx.paging.CombineSource.RECEIVER
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.*
 import kotlin.test.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -55,12 +56,12 @@ class FlowExtTest {
             }.toList()
         ).containsExactly(
             0, 1, 3, 6
-        ).inOrder()
+        )
         assertThat(arguments).containsExactly(
             0 to 1,
             1 to 2,
             3 to 3
-        ).inOrder()
+        )
     }
 
     @Test
@@ -103,7 +104,7 @@ class FlowExtTest {
                 }.toList()
         ).containsExactly(
             "1-1", "4-4"
-        ).inOrder()
+        )
     }
 
     @Test
@@ -131,7 +132,7 @@ class FlowExtTest {
                 }.toList()
         ).containsExactly(
             1, 2, 2, 3, 3, 3, 4, 4, 4, 4
-        ).inOrder()
+        )
     }
 
     @Test
@@ -251,9 +252,9 @@ class FlowExtTest {
 
         // We can't guarantee whether cancellation will propagate before or after the second item
         // is emitted, but we should never get the third.
-        assertThat(flow1Emissions.size).isIn(1..2)
-        assertThat(flow2Emissions.size).isIn(1..2)
-        assertThat(result.size).isIn(1..2)
+        assertThat(flow1Emissions.size).isBetween(1, 2)
+        assertThat(flow2Emissions.size).isBetween(1, 2)
+        assertThat(result.size).isBetween(1, 2)
     }
 
     @Test
@@ -282,12 +283,12 @@ class FlowExtTest {
             }
 
             // Never emit the same values twice.
-            assertThat(result).containsNoDuplicates()
+            assertThat(result).isEqualTo(result.toSet().toList())
 
             // Assert order of emissions
             result.scan(0 to 0) { acc, next ->
-                assertThat(next.first).isAtLeast(acc.first)
-                assertThat(next.second).isAtLeast(acc.second)
+                assertThat(next.first).isGreaterThanOrEqualTo(acc.first)
+                assertThat(next.second).isGreaterThanOrEqualTo(acc.second)
                 next
             }
 

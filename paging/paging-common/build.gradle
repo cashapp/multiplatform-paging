@@ -44,6 +44,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinTest)
                 implementation(libs.kotlinCoroutinesTest)
+                implementation("com.willowtreeapps.assertk:assertk:0.25")
             }
         }
         nonJsMain {
@@ -59,7 +60,6 @@ kotlin {
             dependencies {
                 implementation(project(":internal-testutils-ktx"))
                 implementation(project(":internal-testutils-paging"))
-                implementation(libs.truth)
             }
         }
     }

@@ -22,7 +22,8 @@ import androidx.paging.LoadType.REFRESH
 import androidx.paging.PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED
 import androidx.paging.RemoteMediatorMock.LoadEvent
 import androidx.paging.TestPagingSource.Companion.LOAD_ERROR
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -998,8 +999,8 @@ class RemoteMediatorAccessorTest {
         assertThat(
             remoteMediatorMock.newLoadEvents
         ).containsExactly(
+            LoadEvent(APPEND, retryState),
             LoadEvent(PREPEND, retryState),
-            LoadEvent(APPEND, retryState)
         )
         // make sure new loading states are correct
         assertThat(

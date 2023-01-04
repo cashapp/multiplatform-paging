@@ -16,7 +16,8 @@
 
 package androidx.paging
 
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.*
 import kotlin.test.Test
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -122,12 +123,12 @@ class CachedPageEventFlowTest(
             appendEvent
         ) + manyNewAppendEvents + finalAppendEvent
         runCurrent()
-        assertThat(fastCollector.items()).containsExactlyElementsIn(fullList).inOrder()
+        assertThat(fastCollector.items()).isEqualTo(fullList)
         assertThat(fastCollector.isActive()).isFalse()
         assertThat(slowCollector.isActive()).isTrue()
         assertThat(lateSlowCollector.isActive()).isTrue()
         advanceUntilIdle()
-        assertThat(slowCollector.items()).containsExactlyElementsIn(fullList).inOrder()
+        assertThat(slowCollector.items()).isEqualTo(fullList)
         assertThat(slowCollector.isActive()).isFalse()
 
         val lateCollectorState = localRefresh(
@@ -137,7 +138,7 @@ class CachedPageEventFlowTest(
         )
         assertThat(lateSlowCollector.items()).containsExactly(
             lateCollectorState, finalAppendEvent
-        ).inOrder()
+        )
         assertThat(lateSlowCollector.isActive()).isFalse()
 
         upstream.close()
