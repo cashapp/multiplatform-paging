@@ -27,7 +27,12 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page
 import androidx.paging.RemoteMediatorMock.LoadEvent
 import androidx.paging.TestPagingSource.Companion.LOAD_ERROR
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.containsOnly
+import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -1654,12 +1659,10 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 3,
-                    APPEND to 1,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 3,
+                APPEND to 1,
+                REFRESH to 0
             )
         }
     }
@@ -1703,12 +1706,10 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 1,
-                    APPEND to 3,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 1,
+                APPEND to 3,
+                REFRESH to 0
             )
         }
     }
@@ -2554,7 +2555,7 @@ class PageFetcherSnapshotTest {
                 prependRemote = Loading,
             ),
         )
-        assertThat(fetcherState.newEvents()).containsExactlyElementsIn(expectedFirstGen).inOrder()
+        assertThat(fetcherState.newEvents()).isEqualTo(expectedFirstGen)
 
         // let remote prepend start loading but don't let it complete
         advanceTimeBy(300)
@@ -2589,7 +2590,7 @@ class PageFetcherSnapshotTest {
             )
         )
         assertThat(fetcherState.newEvents().take(3))
-            .containsExactlyElementsIn(expectedSecondGen).inOrder()
+            .isEqualTo(expectedSecondGen)
         fetcherState.job.cancel()
     }
 
@@ -2785,7 +2786,7 @@ class PageFetcherSnapshotTest {
                 appendRemote = Loading
             ),
         )
-        assertThat(fetcherState.newEvents()).containsExactlyElementsIn(expectedFirstGen).inOrder()
+        assertThat(fetcherState.newEvents()).isEqualTo(expectedFirstGen)
 
         // let remote append start loading but don't let it complete
         advanceTimeBy(300)
@@ -2820,7 +2821,7 @@ class PageFetcherSnapshotTest {
             ),
         )
         assertThat(fetcherState.newEvents().take(3))
-            .containsExactlyElementsIn(expectedSecondGen).inOrder()
+            .isEqualTo(expectedSecondGen)
         fetcherState.job.cancel()
     }
 
@@ -3077,11 +3078,11 @@ class PageFetcherSnapshotTest {
         assertThat(fetcherState.pageEventLists[0]).containsExactly(
             remoteLoadStateUpdate<Int>(
                 refreshLocal = Loading,
-                refreshRemote = Loading,
+                refreshRemote = NotLoading.Incomplete,
             ),
             remoteLoadStateUpdate<Int>(
                 refreshLocal = Loading,
-                refreshRemote = NotLoading.Incomplete,
+                refreshRemote = Loading,
             ),
         )
         assertThat(fetcherState.pageEventLists[1]).containsExactly(
@@ -3872,7 +3873,7 @@ class PageFetcherSnapshotTest {
         testScope.runCurrent()
         expected.forEachIndexed { index, list ->
             assertThat(actual.getOrNull(index)
-            ?: emptyList<PageEvent<T>>()).containsExactlyElementsIn(list).inOrder()
+            ?: emptyList<PageEvent<T>>()).isEqualTo(list)
         }
         assertThat(actual.size).isEqualTo(expected.size)
     }

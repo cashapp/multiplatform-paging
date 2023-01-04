@@ -16,7 +16,12 @@
 
 package androidx.paging
 
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
+import assertk.assertions.messageContains
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -76,7 +81,7 @@ class SimpleChannelFlowTest(
         }
         testScope.runTest {
             val items = channelFlow.toList()
-            assertThat(items).containsExactly(1, 3, 2).inOrder()
+            assertThat(items).containsExactly(1, 3, 2)
         }
     }
 
@@ -91,7 +96,7 @@ class SimpleChannelFlowTest(
         }
         testScope.runTest {
             assertThat(channelFlow.take(4).toList()).containsExactly(0, 1, 2, 3)
-            assertThat(emittedValues).containsExactlyElementsIn((0..9).toList())
+            assertThat(emittedValues).isEqualTo((0..9).toList())
         }
     }
 
@@ -165,8 +170,9 @@ class SimpleChannelFlowTest(
             collection.cancel(CancellationException("test message"))
             collection.join()
             assertThat(dispatched).containsExactly(0, 1, 2)
-            assertThat(producerException).hasMessageThat()
-                .contains("test message")
+            assertThat(producerException)
+                .isNotNull()
+                .messageContains("test message")
         }
     }
 
@@ -190,8 +196,9 @@ class SimpleChannelFlowTest(
                 }
             }
         }
-        assertThat(producerException).hasMessageThat()
-            .contains("consumer had failed")
+        assertThat(producerException)
+            .isNotNull()
+            .messageContains("consumer had failed")
     }
 
     @Test
@@ -223,8 +230,9 @@ class SimpleChannelFlowTest(
                 5, 13, 26
             )
         }
-        assertThat(producerException).hasMessageThat()
-            .contains("Child of the scoped flow was cancelled")
+        assertThat(producerException)
+            .isNotNull()
+            .messageContains("Child of the scoped flow was cancelled")
     }
 
     @Test

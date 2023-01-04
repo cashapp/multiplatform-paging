@@ -16,7 +16,8 @@
 
 package androidx.paging
 
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.containsExactly
 import kotlin.test.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -54,7 +55,7 @@ class SimpleTransformLatestTest(
             "1 - 0", "1 - 1",
             "2 - 0", "2 - 1",
             "3 - 0", "3 - 1", "3 - 2"
-        ).inOrder()
+        )
     }
 
     @Test
@@ -69,7 +70,7 @@ class SimpleTransformLatestTest(
             "1 - 0", "1 - 1", "1 - 2",
             "2 - 0", "2 - 1", "2 - 2",
             "3 - 0", "3 - 1", "3 - 2"
-        ).inOrder()
+        )
     }
 
     @Test

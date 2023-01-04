@@ -19,7 +19,9 @@ package androidx.paging
 import androidx.paging.PagingSource.LoadParams
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED
-import com.google.common.truth.Truth.assertThat
+import assertk.assertThat
+import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
 import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -291,9 +293,9 @@ class PagingSourceTest {
             pages.add(page2)
 
             // iterate through list of pages
-            assertThat(pages.flatten()).containsExactlyElementsIn(
+            assertThat(pages.flatten()).isEqualTo(
                 ITEMS_BY_NAME_ID.subList(6, 16)
-            ).inOrder()
+            )
         }
     }
 
