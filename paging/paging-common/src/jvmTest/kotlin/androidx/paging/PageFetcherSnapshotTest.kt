@@ -16,6 +16,7 @@
 
 package androidx.paging
 
+import androidx.kruth.assertThat
 import androidx.paging.LoadState.Error
 import androidx.paging.LoadState.Loading
 import androidx.paging.LoadState.NotLoading
@@ -27,7 +28,7 @@ import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingSource.LoadResult.Page
 import androidx.paging.RemoteMediatorMock.LoadEvent
 import androidx.paging.TestPagingSource.Companion.LOAD_ERROR
-import com.google.common.truth.Truth.assertThat
+import assertk.assertions.containsOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -1652,14 +1653,12 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             retry()
             awaitIdle()
-            assertThat(
+            assertk.assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 3,
-                    APPEND to 1,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 3,
+                APPEND to 1,
+                REFRESH to 0
             )
         }
     }
@@ -1701,14 +1700,12 @@ class PageFetcherSnapshotTest {
             awaitIdle()
             retry()
             awaitIdle()
-            assertThat(
+            assertk.assertThat(
                 remoteMediator.loadEventCounts()
-            ).containsExactlyEntriesIn(
-                mapOf(
-                    PREPEND to 1,
-                    APPEND to 3,
-                    REFRESH to 0
-                )
+            ).containsOnly(
+                PREPEND to 1,
+                APPEND to 3,
+                REFRESH to 0
             )
         }
     }

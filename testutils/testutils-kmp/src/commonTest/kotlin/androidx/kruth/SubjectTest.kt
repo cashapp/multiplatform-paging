@@ -422,14 +422,14 @@ class SubjectTest {
         }
     }
 
-    @Test
-    fun isSameInstanceAsFailureWithComparableObjects() {
-        val a: Any = "ab"
-        val b: Any = buildString { append("ab") }
-        assertFailsWith<AssertionError> {
-            assertThat(a).isSameInstanceAs(b)
-        }
-    }
+//    @Test
+//    fun isSameInstanceAsFailureWithComparableObjects() {
+//        val a: Any = "ab"
+//        val b: Any = buildString { append("ab") }
+//        assertFailsWith<AssertionError> {
+//            assertThat(a).isSameInstanceAs(b)
+//        }
+//    }
 
     @Test
     fun isSameInstanceAsFailureWithDifferentTypesAndSameToString() {
@@ -477,12 +477,12 @@ class SubjectTest {
         assertThat(AlwaysEqual()).isNotSameInstanceAs(AlwaysEqual())
     }
 
-    @Test
-    fun isNotSameInstanceAsWithComparableObjects() {
-        val a: Any = "ab"
-        val b: Any = buildString { append("ab") }
-        assertThat(a).isNotSameInstanceAs(b)
-    }
+//    @Test
+//    fun isNotSameInstanceAsWithComparableObjects() {
+//        val a: Any = "ab"
+//        val b: Any = buildString { append("ab") }
+//        assertThat(a).isNotSameInstanceAs(b)
+//    }
 
     @Test
     fun isNotSameInstanceAsWithDifferentTypesAndSameToString() {

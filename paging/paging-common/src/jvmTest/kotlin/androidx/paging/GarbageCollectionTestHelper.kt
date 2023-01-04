@@ -16,7 +16,8 @@
 
 package androidx.paging
 
-import com.google.common.truth.Truth.assertWithMessage
+import androidx.kruth.assertThat
+import assertk.assertions.isEqualTo
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
@@ -59,12 +60,12 @@ internal class GarbageCollectionTestHelper {
         val leakedObjectToStrings = references.mapNotNull {
             it.get()
         }.joinToString("\n")
-        assertWithMessage(
+        assertk.assertThat(leakedObjects) {
             """
             expected to collect $expectedItemCount, collected $collectedItemCount.
             live objects: $leakedObjectToStrings
             """.trimIndent()
-        ).that(leakedObjects).containsExactlyElementsIn(expected)
+        }.isEqualTo(expected.toList())
     }
 
     /**

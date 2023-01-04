@@ -15,6 +15,7 @@
  */
 
 import androidx.build.LibraryType
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     id("AndroidXPlugin")
@@ -52,6 +53,17 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(libs.kotlinTestAnnotationsCommon)
+            }
+        }
+
+        nonJsMain {
+            dependsOn(commonMain)
+        }
+
+        targets.each { target ->
+            if (target.platformType == KotlinPlatformType.common) return
+            if (target.platformType != KotlinPlatformType.js) {
+                target.compilations.main.defaultSourceSet.dependsOn(sourceSets.nonJsMain)
             }
         }
     }

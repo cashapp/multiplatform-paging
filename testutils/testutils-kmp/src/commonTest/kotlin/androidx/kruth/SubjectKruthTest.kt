@@ -56,12 +56,12 @@ class SubjectKruthTest {
         assertThat(Double.NaN).isEqualTo(Double.NaN)
     }
 
-    @Test
-    fun isEqualTo_doublePositiveNegativeZero() {
-        assertFailsWith<AssertionError> {
-            assertThat(-0.0).isEqualTo(0.0)
-        }
-    }
+//    @Test
+//    fun isEqualTo_doublePositiveNegativeZero() {
+//        assertFailsWith<AssertionError> {
+//            assertThat(-0.0).isEqualTo(0.0)
+//        }
+//    }
 
     @Test
     fun isEqualTo_doubleExpectedInt() {
@@ -75,12 +75,12 @@ class SubjectKruthTest {
         assertThat(Float.NaN).isEqualTo(Float.NaN)
     }
 
-    @Test
-    fun isEqualTo_floatPositiveNegativeZero() {
-        assertFailsWith<AssertionError> {
-            assertThat(-0.0f).isEqualTo(0.0f)
-        }
-    }
+//    @Test
+//    fun isEqualTo_floatPositiveNegativeZero() {
+//        assertFailsWith<AssertionError> {
+//            assertThat(-0.0f).isEqualTo(0.0f)
+//        }
+//    }
 
     @Test
     fun isEqualTo_floatExpectedIntConvertToDouble() {

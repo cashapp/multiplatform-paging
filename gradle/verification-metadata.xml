@@ -10,6 +10,20 @@
       <trusted-artifacts>
          <trust group="org.nodejs" name="node"/>
          <trust group="com.yarnpkg" name="yarn"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-iosarm64"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-iosx64"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-js"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-jvm"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-macosarm64"/>
+         <trust group="com.willowtreeapps.assertk" name="assertk-macosx64"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-iosarm64"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-iosx64"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-js"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-jvm"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-macosarm64"/>
+         <trust group="com.willowtreeapps.opentest4k" name="opentest4k-macosx64"/>
          <trust group="ch.qos.logback" name="logback-classic" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-core" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-parent" version="1.2.11" reason="b/234161459"/>

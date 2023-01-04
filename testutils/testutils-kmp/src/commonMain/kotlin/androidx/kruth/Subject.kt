@@ -16,6 +16,7 @@
 
 package androidx.kruth
 
+import kotlin.reflect.KClass
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertIsNot
@@ -191,8 +192,10 @@ private fun Any?.integralValue(): Long = when (this) {
     else -> throw AssertionError("$this must be either a Char or a Number.")
 }
 
+internal expect val <T : Any> KClass<T>.qualifiedNamePlatform: String?
+
 private fun Any?.toStringForAssert(): String = when {
     this == null -> toString()
-    isIntegralBoxedPrimitive() -> "${this::class.qualifiedName}<$this>"
+    isIntegralBoxedPrimitive() -> "${this::class.qualifiedNamePlatform}<$this>"
     else -> toString()
 }
