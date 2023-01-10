@@ -16,14 +16,14 @@
 
 package app.cash.paging
 
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlin.coroutines.CoroutineContext
 
 /** @suppress */
 expect abstract class PagingDataDiffer<T : Any>(
   differCallback: DifferCallback,
-  mainDispatcher: CoroutineDispatcher = Dispatchers.Main
+  mainContext: CoroutineContext = Dispatchers.Main
 ) {
 
   abstract suspend fun presentNewList(

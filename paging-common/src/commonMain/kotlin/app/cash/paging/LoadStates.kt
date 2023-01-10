@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+@file:JvmName("LoadStates")
+
 package app.cash.paging
+
+import kotlin.jvm.JvmName
 
 expect class LoadStates(
   refresh: LoadState,
@@ -25,6 +29,22 @@ expect class LoadStates(
   val prepend: LoadState
   val append: LoadState
 
+  operator fun component1(): LoadState
+  operator fun component2(): LoadState
+  operator fun component3(): LoadState
+
   /** @suppress */
   inline fun forEach(op: (LoadType, LoadState) -> Unit)
+}
+
+fun LoadStates.copy(
+  refresh: LoadState = this.refresh,
+  prepend: LoadState = this.prepend,
+  append: LoadState = this.append,
+): LoadStates {
+  return LoadStates(
+    refresh,
+    prepend,
+    append,
+  )
 }
