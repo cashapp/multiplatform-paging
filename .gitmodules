@@ -1,4 +1,4 @@
 [submodule "upstreams/androidx-main"]
 	path = upstreams/androidx-main
 	url = ./
-	branch = androidx-main-3.1.1
+	branch = androidx-main-3.2.0-alpha03

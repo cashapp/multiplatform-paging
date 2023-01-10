@@ -87,7 +87,7 @@ The following table is an exhaustive list of such mappings.
 | PagingConfig.Companion.MAX_SIZE_UNBOUNDED              | MAX_SIZE_UNBOUNDED |
 | PagingSource.LoadResult.Page.Companion.COUNT_UNDEFINED | COUNT_UNDEFINED    |
 
-### Missing `copy` functions for `PagingSourceLoadResultPage` and `PagingSourceLoadResultError`
+### Missing `copy` functions for `LoadStates`, `PagingSourceLoadResultPage`, and `PagingSourceLoadResultError`
 
 #### Issue references
 
@@ -98,3 +98,13 @@ https://youtrack.jetbrains.com/issue/KT-54786
 #### Workaround
 
 Import the `copy` extension functions via `app.cash.paging.copy`.
+
+### Missing default values for `PagingData.Companion.empty(LoadStates, LoadStates? = null)` and `PagingData.Companion.from(List<T>, LoadStates, LoadStates? = null)`
+
+#### Issue references
+
+https://youtrack.jetbrains.com/issue/KT-54786
+
+#### Workaround
+
+Pass in the default value yourself.

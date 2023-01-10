@@ -102,7 +102,7 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   nextKey: Key?,
   itemsBefore: Int = COUNT_UNDEFINED,
   itemsAfter: Int = COUNT_UNDEFINED
-) {
+) : Iterable<Value> {
   val data: List<Value>
   val prevKey: Key?
   val nextKey: Key?
