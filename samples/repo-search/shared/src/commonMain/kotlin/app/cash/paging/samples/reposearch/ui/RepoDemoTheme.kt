@@ -1,4 +1,4 @@
-package app.cash.paging.samples.reposearch
+package app.cash.paging.samples.reposearch.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
@@ -7,7 +7,7 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 
 @Composable
-fun RepoSearchTheme(
+fun RepoDemoTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
   content: @Composable () -> Unit,
 ) {

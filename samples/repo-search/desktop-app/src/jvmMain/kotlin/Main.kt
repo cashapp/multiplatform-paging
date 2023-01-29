@@ -8,6 +8,7 @@ import androidx.compose.ui.window.application
 import app.cash.paging.samples.reposearch.Event
 import app.cash.paging.samples.reposearch.RepoSearchPresenter
 import app.cash.paging.samples.reposearch.ViewModel
+import app.cash.paging.samples.reposearch.ui.RepoDemoTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -33,7 +34,7 @@ fun App() {
     viewModels.emitAll(presenter.produceViewModels(events))
   }
 
-  RepoSearchTheme {
+  RepoDemoTheme {
     RepoSearch(viewModel) { event ->
       events.tryEmit(event)
     }
