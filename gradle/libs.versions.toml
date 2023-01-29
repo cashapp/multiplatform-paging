@@ -10,6 +10,7 @@ kotlinx-serialization-json = "1.3.3"
 ktor = "2.0.3"
 maven-publish = "0.22.0"
 stately = "1.2.0"
+jb-compose-plugin = "1.2.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
@@ -36,6 +37,8 @@ stately-iso-collections = { module = "co.touchlab:stately-iso-collections", vers
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "jb-compose-plugin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-native-cocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }

@@ -5,16 +5,21 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.jetbrains.compose)
+  id("com.android.library")
+  alias(libs.plugins.kotlin.parcelize)
   alias(libs.plugins.mavenPublish)
 }
 
+android {
+  namespace = "app.cash.paging"
+  compileSdk = 33
+}
+
 kotlin {
-  ios()
-  iosSimulatorArm64()
-  js(IR) {
-    browser()
-  }
+
   jvm()
+  android()
 
   sourceSets {
     all {
@@ -26,36 +31,25 @@ kotlin {
       dependencies {
         implementation(libs.kotlin.stdlib.common)
         implementation(libs.kotlinx.coroutines.core)
+        api(projects.pagingCommon)
+        implementation(compose.runtime)
+        implementation(compose.foundation)
+        implementation(compose.material)
       }
     }
-    val nonJsMain by creating {
-      dependsOn(commonMain)
-    }
+
     val jvmMain by getting {
-      dependsOn(nonJsMain)
-      dependencies {
-        api(libs.androidx.paging.common)
-      }
-    }
-    val nonJvmMain by creating {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/commonMain")
       dependsOn(commonMain)
       dependencies {
-        implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
       }
     }
-    val iosMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain", )
-      dependsOn(nonJsMain)
-      dependsOn(nonJvmMain)
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
-    }
-    val jsMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain", )
-      dependsOn(nonJvmMain)
+
+    val androidMain by getting {
+      dependsOn(commonMain)
+      dependencies {
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+      }
     }
   }
 }

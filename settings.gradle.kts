@@ -5,12 +5,13 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
   repositories {
     gradlePluginPortal()
-    google()
     mavenCentral()
+    google()
   }
 }
 
 include(":paging-common")
 include(":paging-runtime")
+include(":paging-runtime-composeui")
 include(":samples:repo-search:shared")
 include(":samples:repo-search:androidApp")

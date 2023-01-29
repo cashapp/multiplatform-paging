@@ -15,7 +15,6 @@ kotlin {
     all {
       languageSettings {
         optIn("androidx.paging.ExperimentalPagingApi")
-        optIn("kotlin.RequiresOptIn")
       }
     }
     val commonMain by getting {
