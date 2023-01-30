@@ -1,3 +1,5 @@
+package app.cash.paging.samples.reposearch.ui
+
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,15 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import app.cash.paging.LazyPagingItems
 import app.cash.paging.samples.reposearch.Event
-import app.cash.paging.samples.reposearch.Repository
 
 @Composable
 fun SearchField(
   searchTerm: String,
-  repositories: LazyPagingItems<Repository>,
   events: (Event) -> Unit,
+  onRefreshList: () -> Unit,
 ) {
   var textFieldValue by remember { mutableStateOf(TextFieldValue(searchTerm)) }
   Row(
@@ -50,10 +50,14 @@ fun SearchField(
     IconButton(
       onClick = {
         events(Event.SearchTerm(textFieldValue.text))
-        repositories.refresh()
-      }
-    ) {
-      Icon(imageVector = Icons.Default.Search, contentDescription = null)
-    }
+        onRefreshList()
+      },
+      content = {
+        Icon(
+          imageVector = Icons.Default.Search,
+          contentDescription = "search"
+        )
+      },
+    )
   }
 }

@@ -14,7 +14,9 @@ import app.cash.paging.items
 import app.cash.paging.samples.reposearch.Repository
 
 @Composable
-fun SearchResults(repositories: LazyPagingItems<Repository>) {
+fun SearchResults(
+  repositories: LazyPagingItems<Repository>
+) {
   LazyColumn(
     Modifier.fillMaxWidth(),
     contentPadding = PaddingValues(16.dp),
