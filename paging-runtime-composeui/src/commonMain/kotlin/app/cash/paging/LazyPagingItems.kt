@@ -185,7 +185,6 @@ class LazyPagingItems<T : Any> internal constructor(
 
 private val IncompleteLoadState = LoadStateNotLoading(false)
 private val InitialLoadStates = LoadStates(
-  // TODO: casting?
   LoadStateLoading as LoadState,
   IncompleteLoadState as LoadState,
   IncompleteLoadState as LoadState
