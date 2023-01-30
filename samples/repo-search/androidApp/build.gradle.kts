@@ -38,7 +38,7 @@ dependencies {
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.core.ktx)
-  implementation(libs.androidx.paging.compose)
   implementation(libs.androidx.compose.material)
   implementation(libs.androidx.compose.ui)
+  api(projects.pagingRuntimeComposeui)
 }

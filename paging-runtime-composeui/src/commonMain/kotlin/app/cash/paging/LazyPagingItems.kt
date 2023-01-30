@@ -245,7 +245,7 @@ fun <T : Any> Flow<PagingData<T>>.collectAsLazyPagingItems(
  * [itemContent] method should handle the logic of displaying a placeholder instead of the main
  * content displayed by an item which is not `null`.
  */
-public fun <T : Any> LazyListScope.items(
+fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,
   key: ((item: T) -> Any)? = null,
   itemContent: @Composable LazyItemScope.(value: T?) -> Unit

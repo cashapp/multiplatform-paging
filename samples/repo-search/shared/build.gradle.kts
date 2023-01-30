@@ -8,6 +8,7 @@ plugins {
 }
 
 android {
+  namespace = "app.cash.paging.samples.reposearch"
   compileSdk = 33
   defaultConfig {
     minSdk = 21
@@ -44,6 +45,13 @@ kotlin {
         implementation(compose.foundation)
         implementation(compose.material)
         implementation(compose.runtime)
+      }
+    }
+    val androidMain by getting {
+      dependsOn(commonMain)
+      dependencies {
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+        implementation(libs.ktor.client.okhttp)
       }
     }
     val iosMain by getting {

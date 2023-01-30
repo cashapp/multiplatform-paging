@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.items
+import app.cash.paging.LazyPagingItems
+import app.cash.paging.collectAsLazyPagingItems
+import app.cash.paging.items
 import app.cash.paging.samples.reposearch.ui.RepoDemoTheme
 import app.cash.paging.samples.reposearch.ui.RepoSearchEmpty
 import app.cash.paging.samples.reposearch.ui.RepoSearchResults
