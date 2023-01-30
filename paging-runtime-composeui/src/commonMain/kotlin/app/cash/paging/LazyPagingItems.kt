@@ -148,6 +148,8 @@ class LazyPagingItems<T : Any> internal constructor(
    * A [CombinedLoadStates] object which represents the current loading state.
    */
   var loadState: CombinedLoadStates by mutableStateOf(
+    // See the mapped classes from androidx.paging -> app.cash.paging
+    // in multiplatform-paging/paging-common/README.md for more info
     CombinedLoadStates(
       refresh = InitialLoadStates.refresh,
       prepend = InitialLoadStates.prepend,
@@ -183,6 +185,8 @@ class LazyPagingItems<T : Any> internal constructor(
   }
 }
 
+// See the mapped classes from androidx.paging -> app.cash.paging
+// in multiplatform-paging/paging-common/README.md for more info
 private val IncompleteLoadState = LoadStateNotLoading(false)
 private val InitialLoadStates = LoadStates(
   LoadStateLoading as LoadState,
