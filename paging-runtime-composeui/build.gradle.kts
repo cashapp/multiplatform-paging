@@ -17,7 +17,6 @@ android {
 }
 
 kotlin {
-
   jvm()
   android()
 
@@ -29,26 +28,22 @@ kotlin {
     }
     val commonMain by getting {
       dependencies {
-        implementation(libs.kotlin.stdlib.common)
         implementation(libs.kotlinx.coroutines.core)
         api(projects.pagingCommon)
         implementation(compose.runtime)
         implementation(compose.foundation)
-        implementation(compose.material)
       }
     }
 
     val jvmMain by getting {
-      dependsOn(commonMain)
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
+        implementation(libs.kotlinx.coroutines.swing)
       }
     }
 
     val androidMain by getting {
-      dependsOn(commonMain)
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+        implementation(libs.kotlinx.coroutines.android)
       }
     }
   }

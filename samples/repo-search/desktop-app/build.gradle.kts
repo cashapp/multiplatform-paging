@@ -14,7 +14,7 @@ kotlin {
         implementation(compose.desktop.currentOs)
         implementation(projects.samples.repoSearch.shared)
         api(projects.pagingRuntimeComposeui)
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.4")
+        implementation(libs.kotlinx.coroutines.swing)
       }
     }
   }

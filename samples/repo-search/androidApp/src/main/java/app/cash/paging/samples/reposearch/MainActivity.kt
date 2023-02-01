@@ -21,7 +21,7 @@ import androidx.paging.PagingData
 import app.cash.paging.LazyPagingItems
 import app.cash.paging.collectAsLazyPagingItems
 import app.cash.paging.items
-import app.cash.paging.samples.reposearch.ui.RepoDemoTheme
+import app.cash.paging.samples.reposearch.ui.RepoSearchTheme
 import app.cash.paging.samples.reposearch.ui.RepoSearchEmpty
 import app.cash.paging.samples.reposearch.ui.RepoSearchResults
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       val viewModel by viewModels.collectAsState()
-      RepoDemoTheme {
+      RepoSearchTheme {
         RepoSearchContent(
           viewModel = viewModel,
           events = { event ->

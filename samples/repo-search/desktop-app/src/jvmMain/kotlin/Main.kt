@@ -11,7 +11,7 @@ import app.cash.paging.samples.reposearch.Event
 import app.cash.paging.samples.reposearch.RepoSearchPresenter
 import app.cash.paging.samples.reposearch.Repository
 import app.cash.paging.samples.reposearch.ViewModel
-import app.cash.paging.samples.reposearch.ui.RepoDemoTheme
+import app.cash.paging.samples.reposearch.ui.RepoSearchTheme
 import app.cash.paging.samples.reposearch.ui.RepoSearchEmpty
 import app.cash.paging.samples.reposearch.ui.RepoSearchResults
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,7 +40,7 @@ fun App() {
     viewModels.emitAll(presenter.produceViewModels(events))
   }
 
-  RepoDemoTheme {
+  RepoSearchTheme {
     RepoSearchContent(
       viewModel = viewModel,
       events = { event ->

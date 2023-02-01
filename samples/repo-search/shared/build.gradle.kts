@@ -48,9 +48,8 @@ kotlin {
       }
     }
     val androidMain by getting {
-      dependsOn(commonMain)
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+        implementation(libs.kotlinx.coroutines.android)
         implementation(libs.ktor.client.okhttp)
       }
     }

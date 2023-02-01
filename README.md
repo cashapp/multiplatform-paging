@@ -38,6 +38,31 @@ iOS only includes the Paging 3 APIs from AndroidX Paging.
 We don't plan on offering Paging 2 support for iOS,
 though you can continue to use Paging 2 on the JVM.
 
+### `paging-runtime-composeui`
+
+This runtime adds support for using common APIs within compose UI.
+The android specific logic around internal debug logging and parcelizing the paging key have been removed from a clone of [LazyPagingItems.kt](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:paging/paging-compose/src/main/java/androidx/paging/compose/LazyPagingItems.kt;l=60?q=LazyPagingItem&sq=).
+Some examples of common APIs that are now "multiplatformized" for compose UI are:
+
+- Flow<PagingData<T>>.collectAsLazyPagingItems(...)
+- LazyListScope.items(...)
+- LazyListScope.itemsIndexed(...)
+
+#### JVM
+
+Internal debug logging is disabled and the paging key is currently not serialized.
+
+#### Android
+
+Delegates internal paging debug logging to android.util.Log and saves the paging
+key to a Bundle via Parcelable. This is effectively what is being done in the original LazyPagingItems source.
+
+
+#### iOS
+
+Compose targets 'uikit' are currently experimental and may have bugs. For this reason, support for iOS target
+will be added once they become more stable.
+
 ### `paging-runtime`
 
 #### Android
