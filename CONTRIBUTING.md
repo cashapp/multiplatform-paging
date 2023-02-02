@@ -29,3 +29,7 @@ The primary branches are:
 5. Create a branch named `androidx-main-${X}`.
 6. Cherry-pick the Multiplatform Paging commits from `androidx-main-${Y}` onto `androidx-main-${X}`.
    `Y` should be the version closest to `X`.
+
+## IntelliJ IDEA Optional plugins
+
+* Compose Multiplatform IDE Support - This adds support for IDE preview of composable functions marked by @Preview annotations

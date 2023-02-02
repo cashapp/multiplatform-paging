@@ -3,36 +3,27 @@ package app.cash.paging.samples.reposearch
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.items
+import app.cash.paging.LazyPagingItems
+import app.cash.paging.collectAsLazyPagingItems
+import app.cash.paging.items
+import app.cash.paging.samples.reposearch.ui.RepoSearchTheme
+import app.cash.paging.samples.reposearch.ui.RepoSearchEmpty
+import app.cash.paging.samples.reposearch.ui.RepoSearchResults
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -56,58 +47,41 @@ class MainActivity : ComponentActivity() {
     setContent {
       val viewModel by viewModels.collectAsState()
       RepoSearchTheme {
-        RepoSearch(viewModel) { event ->
-          events.tryEmit(event)
-        }
+        RepoSearchContent(
+          viewModel = viewModel,
+          events = { event ->
+            events.tryEmit(event)
+          },
+        )
       }
     }
   }
 }
 
 @Composable
-fun RepoSearch(
+private fun RepoSearchContent(
   viewModel: ViewModel,
   events: (Event) -> Unit,
 ) {
-  Surface(Modifier.fillMaxSize()) {
-    Column {
-      when (viewModel) {
-        is ViewModel.Empty -> {
-          SearchField("", emptyFlow<PagingData<Repository>>().collectAsLazyPagingItems(), events)
-        }
-        is ViewModel.SearchResults -> {
-          val repositories = viewModel.repositories.collectAsLazyPagingItems()
-          SearchField(viewModel.searchTerm, repositories, events)
-          SearchResults(repositories)
-        }
-      }
+  when (viewModel) {
+    ViewModel.Empty -> {
+      val repositories = emptyFlow<PagingData<Repository>>().collectAsLazyPagingItems()
+      RepoSearchEmpty(
+        events = events,
+        onRefreshList = repositories::refresh,
+      )
+    }
+
+    is ViewModel.SearchResults -> {
+      val repositories = viewModel.repositories.collectAsLazyPagingItems()
+      RepoSearchResults(
+        searchTerm = viewModel.searchTerm,
+        events = events,
+        searchResults = { SearchResults(repositories) },
+        onRefreshList = repositories::refresh,
+      )
     }
   }
-}
-
-@Composable
-fun SearchField(
-  searchTerm: String,
-  repositories: LazyPagingItems<Repository>,
-  events: (Event) -> Unit,
-) {
-  var textFieldValue by remember { mutableStateOf(TextFieldValue(searchTerm)) }
-  TextField(
-    textFieldValue,
-    onValueChange = { textFieldValue = it },
-    Modifier
-      .fillMaxWidth()
-      .padding(start = 16.dp, top = 16.dp, end = 16.dp),
-    placeholder = { Text("Search for a repository…") },
-    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Search),
-    keyboardActions = KeyboardActions(
-      onSearch = {
-        events(Event.SearchTerm(textFieldValue.text))
-        repositories.refresh()
-      }
-    ),
-    singleLine = true,
-  )
 }
 
 @Composable

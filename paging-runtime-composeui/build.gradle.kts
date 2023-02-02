@@ -5,12 +5,20 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.jetbrains.compose)
+  id("com.android.library")
+  alias(libs.plugins.kotlin.parcelize)
   alias(libs.plugins.mavenPublish)
 }
 
+android {
+  namespace = "app.cash.paging"
+  compileSdk = 33
+}
+
 kotlin {
-  ios()
-  iosSimulatorArm64()
+  jvm()
+  android()
 
   sourceSets {
     all {
@@ -20,17 +28,23 @@ kotlin {
     }
     val commonMain by getting {
       dependencies {
-        api(projects.pagingCommon)
         implementation(libs.kotlinx.coroutines.core)
-        implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
+        api(projects.pagingCommon)
+        implementation(compose.runtime)
+        implementation(compose.foundation)
       }
     }
-    val iosMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-runtime/src/commonMain/kotlin")
+
+    val jvmMain by getting {
+      dependencies {
+        implementation(libs.kotlinx.coroutines.swing)
+      }
     }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
+
+    val androidMain by getting {
+      dependencies {
+        implementation(libs.kotlinx.coroutines.android)
+      }
     }
   }
 }
