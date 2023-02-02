@@ -15,6 +15,7 @@
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-iosx64"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-js"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-jvm"/>
+         <trust group="^org\.jetbrains\.compose.*" regex="true"/>
          <trust group="gradle" name="gradle"/>
          <trust file=".*-javadoc[.]jar" regex="true"/>
          <trust file=".*-sources[.]jar" regex="true"/>

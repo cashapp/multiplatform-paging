@@ -16,12 +16,6 @@
 
 package androidx.paging.compose
 
-import android.annotation.SuppressLint
-import android.os.Parcel
-import android.os.Parcelable
-import android.util.Log
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,11 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.paging.CombinedLoadStates
 import androidx.paging.DifferCallback
 import androidx.paging.ItemSnapshotList
-import androidx.paging.LOGGER
-import androidx.paging.LOG_TAG
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
-import androidx.paging.Logger
 import androidx.paging.NullPaddedList
 import androidx.paging.PagingData
 import androidx.paging.PagingDataDiffer
@@ -201,38 +192,6 @@ public class LazyPagingItems<T : Any> internal constructor(
             pagingDataDiffer.collectFrom(it)
         }
     }
-
-    private companion object {
-        init {
-            /**
-             * Implements the Logger interface from paging-common and injects it into the LOGGER
-             * global var stored within Pager.
-             *
-             * Checks for null LOGGER because other runtime entry points to paging can also
-             * inject a Logger
-             */
-            LOGGER = LOGGER ?: object : Logger {
-                override fun isLoggable(level: Int): Boolean {
-                    return Log.isLoggable(LOG_TAG, level)
-                }
-
-                override fun log(level: Int, message: String, tr: Throwable?) {
-                    when {
-                        tr != null && level == Log.DEBUG -> Log.d(LOG_TAG, message, tr)
-                        tr != null && level == Log.VERBOSE -> Log.v(LOG_TAG, message, tr)
-                        level == Log.DEBUG -> Log.d(LOG_TAG, message)
-                        level == Log.VERBOSE -> Log.v(LOG_TAG, message)
-                        else -> {
-                            throw IllegalArgumentException(
-                                "debug level $level is requested but Paging only supports " +
-                                    "default logging for level 2 (DEBUG) or level 3 (VERBOSE)"
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 private val IncompleteLoadState = LoadState.NotLoading(false)
@@ -280,104 +239,4 @@ public fun <T : Any> Flow<PagingData<T>>.collectAsLazyPagingItems(
     }
 
     return lazyPagingItems
-}
-
-/**
- * Adds the [LazyPagingItems] and their content to the scope. The range from 0 (inclusive) to
- * [LazyPagingItems.itemCount] (exclusive) always represents the full range of presentable items,
- * because every event from [PagingDataDiffer] will trigger a recomposition.
- *
- * @sample androidx.paging.compose.samples.ItemsDemo
- *
- * @param items the items received from a [Flow] of [PagingData].
- * @param key a factory of stable and unique keys representing the item. Using the same key
- * for multiple items in the list is not allowed. Type of the key should be saveable
- * via Bundle on Android. If null is passed the position in the list will represent the key.
- * When you specify the key the scroll position will be maintained based on the key, which
- * means if you add/remove items before the current visible item the item with the given key
- * will be kept as the first visible one.
- * @param itemContent the content displayed by a single item. In case the item is `null`, the
- * [itemContent] method should handle the logic of displaying a placeholder instead of the main
- * content displayed by an item which is not `null`.
- */
-public fun <T : Any> LazyListScope.items(
-    items: LazyPagingItems<T>,
-    key: ((item: T) -> Any)? = null,
-    itemContent: @Composable LazyItemScope.(value: T?) -> Unit
-) {
-    items(
-        count = items.itemCount,
-        key = if (key == null) null else { index ->
-            val item = items.peek(index)
-            if (item == null) {
-                PagingPlaceholderKey(index)
-            } else {
-                key(item)
-            }
-        }
-    ) { index ->
-        itemContent(items[index])
-    }
-}
-
-/**
- * Adds the [LazyPagingItems] and their content to the scope where the content of an item is
- * aware of its local index. The range from 0 (inclusive) to [LazyPagingItems.itemCount] (exclusive)
- * always represents the full range of presentable items, because every event from
- * [PagingDataDiffer] will trigger a recomposition.
- *
- * @sample androidx.paging.compose.samples.ItemsIndexedDemo
- *
- * @param items the items received from a [Flow] of [PagingData].
- * @param key a factory of stable and unique keys representing the item. Using the same key
- * for multiple items in the list is not allowed. Type of the key should be saveable
- * via Bundle on Android. If null is passed the position in the list will represent the key.
- * When you specify the key the scroll position will be maintained based on the key, which
- * means if you add/remove items before the current visible item the item with the given key
- * will be kept as the first visible one.
- * @param itemContent the content displayed by a single item. In case the item is `null`, the
- * [itemContent] method should handle the logic of displaying a placeholder instead of the main
- * content displayed by an item which is not `null`.
- */
-public fun <T : Any> LazyListScope.itemsIndexed(
-    items: LazyPagingItems<T>,
-    key: ((index: Int, item: T) -> Any)? = null,
-    itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
-) {
-    items(
-        count = items.itemCount,
-        key = if (key == null) null else { index ->
-            val item = items.peek(index)
-            if (item == null) {
-                PagingPlaceholderKey(index)
-            } else {
-                key(index, item)
-            }
-        }
-    ) { index ->
-        itemContent(index, items[index])
-    }
-}
-
-@SuppressLint("BanParcelableUsage")
-private data class PagingPlaceholderKey(private val index: Int) : Parcelable {
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeInt(index)
-    }
-
-    override fun describeContents(): Int {
-        return 0
-    }
-
-    companion object {
-        @Suppress("unused")
-        @JvmField
-        val CREATOR: Parcelable.Creator<PagingPlaceholderKey> =
-            object : Parcelable.Creator<PagingPlaceholderKey> {
-                override fun createFromParcel(parcel: Parcel) =
-                    PagingPlaceholderKey(parcel.readInt())
-
-                override fun newArray(size: Int) = arrayOfNulls<PagingPlaceholderKey?>(size)
-            }
-    }
 }
