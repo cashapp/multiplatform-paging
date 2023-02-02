@@ -14,43 +14,57 @@
  * limitations under the License.
  */
 
-import androidx.build.Publish
 import androidx.build.RunApiTasks
 
 plugins {
     id("AndroidXPlugin")
-    id("com.android.library")
     id("AndroidXComposePlugin")
-    id("org.jetbrains.kotlin.android")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.multiplatform")
+    id("org.jetbrains.compose") version "1.4.0"
 }
 
-dependencies {
-    implementation(libs.kotlinStdlib)
-    api("androidx.compose.foundation:foundation:1.2.1")
-    api(project(":paging:paging-common"))
-    api("androidx.compose.runtime:runtime:1.2.1")
+// TODO Remove once there is a compatible version of Jetbrains Compose for Kotlin 1.8.21.
+compose {
+    kotlinCompilerPlugin.set(dependencies.compiler.forKotlin("1.8.20"))
+    kotlinCompilerPluginArgs.add("suppressKotlinVersionCompatibilityCheck=1.8.21")
+}
 
-    androidTestImplementation(projectOrArtifact(":compose:ui:ui-test-junit4"))
-    androidTestImplementation(project(":compose:test-utils"))
-    androidTestImplementation(projectOrArtifact(":internal-testutils-paging"))
-    androidTestImplementation(libs.testRunner)
-    androidTestImplementation(libs.junit)
-    androidTestImplementation(libs.truth)
+kotlin {
+    ios()
+    js(IR) {
+        nodejs()
+        binaries.executable()
+    }
+    jvm()
 
-    samples(projectOrArtifact(":paging:paging-compose:paging-compose-samples"))
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(libs.kotlinStdlib)
+                api(project(":paging:paging-common"))
+                api(compose.runtime)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(projectOrArtifact(":internal-testutils-paging"))
+                implementation(project(":compose:test-utils"))
+                implementation(libs.junit)
+                implementation(libs.kotlinCoroutinesTest)
+                implementation(libs.testRunner)
+                implementation(libs.truth)
+                implementation(compose.desktop.currentOs)
+                implementation(compose.uiTestJUnit4)
+            }
+        }
+    }
 }
 
 androidx {
     name = "Android Paging-Compose"
-    publish = Publish.SNAPSHOT_AND_RELEASE
     mavenVersion = LibraryVersions.PAGING_COMPOSE
     inceptionYear = "2020"
     description = "Compose integration with Paging"
     runApiTasks = new RunApiTasks.Yes()
     legacyDisableKotlinStrictApiMode = true
-}
-
-android {
-    namespace "androidx.paging.compose"
 }

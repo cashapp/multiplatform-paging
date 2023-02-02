@@ -17,7 +17,7 @@
 package androidx.paging.compose
 
 import androidx.paging.PagingConfig
-import androidx.compose.foundation.lazy.grid.LazyGridScope
+import kotlin.jvm.JvmSuppressWildcards
 
 /**
  * Returns a factory of stable and unique keys representing the item.

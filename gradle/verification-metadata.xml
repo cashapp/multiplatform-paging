@@ -24,6 +24,7 @@
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-jvm"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-macosarm64"/>
          <trust group="com.willowtreeapps.opentest4k" name="opentest4k-macosx64"/>
+         <trust group="^org\.jetbrains\.compose.*" regex="true"/>
          <trust group="ch.qos.logback" name="logback-classic" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-core" version="1.2.11" reason="b/234161459"/>
          <trust group="ch.qos.logback" name="logback-parent" version="1.2.11" reason="b/234161459"/>
