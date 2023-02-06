@@ -3,9 +3,9 @@ import shared
 
 class PagingDataCollector: Kotlinx_coroutines_coreFlowCollector {
   
-  private let pagingCollectionViewController: Paging_runtimePagingCollectionViewController<Repository>
+  private let pagingCollectionViewController: Paging_runtime_uikitPagingCollectionViewController<Repository>
   
-  init(pagingCollectionViewController: Paging_runtimePagingCollectionViewController<Repository>) {
+  init(pagingCollectionViewController: Paging_runtime_uikitPagingCollectionViewController<Repository>) {
     self.pagingCollectionViewController = pagingCollectionViewController
   }
   
@@ -19,9 +19,9 @@ class PagingDataCollector: Kotlinx_coroutines_coreFlowCollector {
 
 class ViewModelCollector: Kotlinx_coroutines_coreFlowCollector {
   
-  private let pagingCollectionViewController: Paging_runtimePagingCollectionViewController<Repository>
+  private let pagingCollectionViewController: Paging_runtime_uikitPagingCollectionViewController<Repository>
   
-  init(pagingCollectionViewController: Paging_runtimePagingCollectionViewController<Repository>) {
+  init(pagingCollectionViewController: Paging_runtime_uikitPagingCollectionViewController<Repository>) {
     self.pagingCollectionViewController = pagingCollectionViewController
   }
   
@@ -41,7 +41,7 @@ class ViewModelCollector: Kotlinx_coroutines_coreFlowCollector {
 final class RepositoriesViewController: UICollectionViewController {
   private let presenter = RepoSearchPresenter()
   
-  private let delegate = Paging_runtimePagingCollectionViewController<Repository>(indexCreator: { row, section in NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath})
+  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Repository>(indexCreator: { row, section in NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath})
   
   private let events = ExposedKt.mutableSharedFlow(extraBufferCapacity: Int32.max)
   

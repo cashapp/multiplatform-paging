@@ -55,7 +55,7 @@ kotlin {
     }
     val iosMain by getting {
       dependencies {
-        api(projects.pagingRuntime)
+        api(projects.pagingRuntimeUikit)
         implementation(libs.ktor.client.darwin)
       }
     }

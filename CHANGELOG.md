@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking
+
+- [paging-runtime-uikit] `paging-runtime` renamed to `paging-runtime-uikit` (https://github.com/cashapp/multiplatform-paging/issues/8).
+
 ## [3.1.1-0.1.1] - 2022-11-08
 
 ### Fixed
