@@ -12,7 +12,7 @@ kotlin {
     val jvmMain by getting {
       dependencies {
         implementation(compose.desktop.currentOs)
-        implementation(projects.samples.repoSearch.shared)
+        implementation(projects.samples.repoSearch.sharedComposeui)
         api(projects.pagingRuntimeComposeui)
         implementation(libs.kotlinx.coroutines.swing)
       }

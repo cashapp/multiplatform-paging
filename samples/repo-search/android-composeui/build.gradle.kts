@@ -34,7 +34,7 @@ android {
 }
 
 dependencies {
-  implementation(projects.samples.repoSearch.shared)
+  implementation(projects.samples.repoSearch.sharedComposeui)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.core.ktx)

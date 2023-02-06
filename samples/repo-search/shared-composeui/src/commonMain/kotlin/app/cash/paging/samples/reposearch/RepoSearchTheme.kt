@@ -1,4 +1,4 @@
-package app.cash.paging.samples.reposearch.ui
+package app.cash.paging.samples.reposearch
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
