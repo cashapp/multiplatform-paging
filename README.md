@@ -10,7 +10,7 @@ As with AndroidX Paging, the primary modules of Multiplatform Paging are:
 * `paging-runtime` – encompasses the [UI layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#ui)
 
 Unlike AndroidX Paging that makes `paging-common` JVM-specific and `paging-runtime` Android-specific,
-Multiplatform Paging makes `paging-common` multiplatform and provides iOS as an additional target to `paging-runtime`.
+Multiplatform Paging makes `paging-common` multiplatform and provides `paging-runtime-uikit`, a UIKit-specific runtime for iOS.
 Therefore, pagination logic between Android and iOS can be shared,
 and the provided UI components can be used to render the paged items on Android and iOS.
 
@@ -55,7 +55,7 @@ Here's an example in Swift:
 ```swift
 final class FooViewController: UICollectionViewController {
 
-  private let delegate = Paging_runtimePagingCollectionViewController<Foo>(
+  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Foo>(
     indexCreator: { row, section in
       NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath
     },
@@ -100,7 +100,8 @@ some useful side effects occur:
 * The implementation of `app.cash.paging:paging-common` on the JVM is **identical** to `androidx.paging:paging-common`.
   This means that it is impossible for there to be a behavioral discrepancy when using `app.cash.paging:paging-common` on the JVM.
 * All libraries that depend on `androidx.paging:paging-common` can continue to be used on the JVM (e.g., `androidx.paging:paging-runtime`, `androidx.paging:paging-compose`, `androidx.paging:paging-rxjava3`).
-  This is why `app.cash.paging:paging-runtime` doesn't have a JVM target, as you can instead depend on the official AndroidX artifact.
+  This is why there aren't additional `paging-runtime` artifacts to support Android's UI toolkit,
+  as you can instead depend on the official AndroidX artifact.
 * If you're already using AndroidX Paging, you don't need to refactor your Android code to use Multiplatform Paging.
   The use of Multiplatform Paging is only necessary if you wish to share pagination logic in common code and/or paginate on iOS. 
 
@@ -120,10 +121,10 @@ the artifact for a release of `paging-common` will be `app.cash.paging:paging-co
 implementation("app.cash.paging:paging-common:3.1.1-0.1.1")
 ```
 
-### `paging-runtime` for iOS
+### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime:3.1.1-0.1.1")
+implementation("app.cash.paging:paging-runtime-uikit:3.1.1-0.1.1")
 ```
 
 ### Android
