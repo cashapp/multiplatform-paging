@@ -18,14 +18,12 @@ import androidx.build.RunApiTasks
 
 plugins {
     id("AndroidXPlugin")
-    id("com.android.library")
     id("AndroidXComposePlugin")
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.compose") version "1.2.2"
 }
 
 kotlin {
-    android()
     ios()
     js(IR) {
         nodejs()
@@ -41,29 +39,7 @@ kotlin {
                 api(compose.runtime)
             }
         }
-        nonAndroidMain {
-            dependsOn(commonMain)
-        }
-        nonAndroidTest {
-            dependsOn(commonTest)
-        }
-        iosMain {
-            dependsOn(nonAndroidMain)
-        }
-        iosTest {
-            dependsOn(nonAndroidTest)
-        }
-        jsMain {
-            dependsOn(nonAndroidMain)
-        }
-        jsTest {
-            dependsOn(nonAndroidTest)
-        }
-        jvmMain {
-            dependsOn(nonAndroidMain)
-        }
         jvmTest {
-            dependsOn(nonAndroidTest)
             dependencies {
                 implementation(projectOrArtifact(":internal-testutils-paging"))
                 implementation(project(":internal-testutils-ktx"))
@@ -85,8 +61,4 @@ androidx {
     description = "Compose integration with Paging"
     runApiTasks = new RunApiTasks.Yes()
     legacyDisableKotlinStrictApiMode = true
-}
-
-android {
-    namespace "androidx.paging.compose"
 }

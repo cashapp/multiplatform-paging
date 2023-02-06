@@ -25,10 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.paging.CombinedLoadStates
 import androidx.paging.DifferCallback
 import androidx.paging.ItemSnapshotList
-import androidx.paging.LOGGER
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
-import androidx.paging.Logger
 import androidx.paging.NullPaddedList
 import androidx.paging.PagingData
 import androidx.paging.PagingDataDiffer
@@ -39,8 +37,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
-
-internal expect val platformLogger: Logger?
 
 /**
  * The class responsible for accessing the data from a [Flow] of [PagingData].
@@ -192,19 +188,6 @@ public class LazyPagingItems<T : Any> internal constructor(
     internal suspend fun collectPagingData() {
         flow.collectLatest {
             pagingDataDiffer.collectFrom(it)
-        }
-    }
-
-    private companion object {
-        init {
-            /**
-             * Implements the Logger interface from paging-common and injects it into the LOGGER
-             * global var stored within Pager.
-             *
-             * Checks for null LOGGER because other runtime entry points to paging can also
-             * inject a Logger
-             */
-            LOGGER = LOGGER ?: platformLogger
         }
     }
 }
