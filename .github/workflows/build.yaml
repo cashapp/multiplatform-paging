@@ -1,4 +1,6 @@
 on: [pull_request]
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g"
 jobs:
   build:
     runs-on: macos-latest
@@ -6,4 +8,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: 11
+      - uses: gradle/gradle-build-action@v2
       - run: ./gradlew build
