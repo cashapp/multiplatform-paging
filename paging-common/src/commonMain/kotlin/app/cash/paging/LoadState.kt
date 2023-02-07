@@ -17,7 +17,7 @@
 package app.cash.paging
 
 expect sealed class LoadState(
-  endOfPaginationReached: Boolean
+  endOfPaginationReached: Boolean,
 ) {
   val endOfPaginationReached: Boolean
 }

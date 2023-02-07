@@ -81,7 +81,7 @@ expect class PagingSourceLoadParamsPrepend<Key : Any> constructor(
 expect sealed class PagingSourceLoadResult<Key : Any, Value : Any>
 
 expect class PagingSourceLoadResultError<Key : Any, Value : Any>(
-  throwable: Throwable
+  throwable: Throwable,
 ) {
   val throwable: Throwable
 
@@ -101,7 +101,7 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   prevKey: Key?,
   nextKey: Key?,
   itemsBefore: Int = COUNT_UNDEFINED,
-  itemsAfter: Int = COUNT_UNDEFINED
+  itemsAfter: Int = COUNT_UNDEFINED,
 ) {
   val data: List<Value>
   val prevKey: Key?
@@ -112,7 +112,7 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   constructor(
     data: List<Value>,
     prevKey: Key?,
-    nextKey: Key?
+    nextKey: Key?,
   )
 
   operator fun component1(): List<Value>

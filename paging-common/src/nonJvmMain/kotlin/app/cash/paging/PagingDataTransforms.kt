@@ -26,15 +26,15 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 
 actual inline fun <T : Any, R : Any> PagingData<T>.map(
-  noinline transform: suspend (T) -> R
+  noinline transform: suspend (T) -> R,
 ): PagingData<R> = map(transform)
 
 actual inline fun <T : Any, R : Any> PagingData<T>.flatMap(
-  noinline transform: suspend (T) -> Iterable<R>
+  noinline transform: suspend (T) -> Iterable<R>,
 ): PagingData<R> = flatMap(transform)
 
 actual inline fun <T : Any> PagingData<T>.filter(
-  noinline predicate: suspend (T) -> Boolean
+  noinline predicate: suspend (T) -> Boolean,
 ): PagingData<T> = filter(predicate)
 
 actual inline fun <T : R, R : Any> PagingData<T>.insertSeparators(

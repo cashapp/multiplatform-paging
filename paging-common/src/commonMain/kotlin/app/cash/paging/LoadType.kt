@@ -19,5 +19,5 @@ package app.cash.paging
 expect enum class LoadType {
   REFRESH,
   PREPEND,
-  APPEND
+  APPEND,
 }
