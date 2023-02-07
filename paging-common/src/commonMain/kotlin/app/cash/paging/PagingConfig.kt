@@ -28,7 +28,7 @@ expect class PagingConfig @JvmOverloads constructor(
   enablePlaceholders: Boolean = true,
   initialLoadSize: Int = pageSize * 3,
   maxSize: Int = MAX_SIZE_UNBOUNDED,
-  jumpThreshold: Int = COUNT_UNDEFINED
+  jumpThreshold: Int = COUNT_UNDEFINED,
 ) {
 
   @JvmField

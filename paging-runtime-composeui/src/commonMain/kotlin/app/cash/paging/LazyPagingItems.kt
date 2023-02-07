@@ -29,7 +29,7 @@ class LazyPagingItems<T : Any> internal constructor(
   /**
    * the [Flow] object which contains a stream of [PagingData] elements.
    */
-  private val flow: Flow<PagingData<T>>
+  private val flow: Flow<PagingData<T>>,
 ) {
   private val mainDispatcher = Dispatchers.Main
 
@@ -40,7 +40,7 @@ class LazyPagingItems<T : Any> internal constructor(
    * Use [get] to achieve such behavior.
    */
   var itemSnapshotList by mutableStateOf(
-    ItemSnapshotList<T>(0, 0, emptyList())
+    ItemSnapshotList<T>(0, 0, emptyList()),
   )
     private set
 
@@ -71,13 +71,13 @@ class LazyPagingItems<T : Any> internal constructor(
 
   private val pagingDataDiffer = object : PagingDataDiffer<T>(
     differCallback = differCallback,
-    mainContext = mainDispatcher
+    mainContext = mainDispatcher,
   ) {
     override suspend fun presentNewList(
       previousList: NullPaddedList<T>,
       newList: NullPaddedList<T>,
       lastAccessedIndex: Int,
-      onListPresentable: () -> Unit
+      onListPresentable: () -> Unit,
     ): Int? {
       onListPresentable()
       updateItemSnapshotList()
@@ -154,8 +154,8 @@ class LazyPagingItems<T : Any> internal constructor(
       refresh = InitialLoadStates.refresh,
       prepend = InitialLoadStates.prepend,
       append = InitialLoadStates.append,
-      source = InitialLoadStates
-    )
+      source = InitialLoadStates,
+    ),
   )
     private set
 
@@ -191,7 +191,7 @@ private val IncompleteLoadState = LoadStateNotLoading(false)
 private val InitialLoadStates = LoadStates(
   LoadStateLoading as LoadState,
   IncompleteLoadState as LoadState,
-  IncompleteLoadState as LoadState
+  IncompleteLoadState as LoadState,
 )
 
 /**
@@ -204,9 +204,8 @@ private val InitialLoadStates = LoadStates(
  */
 @Composable
 fun <T : Any> Flow<PagingData<T>>.collectAsLazyPagingItems(
-  context: CoroutineContext = EmptyCoroutineContext
+  context: CoroutineContext = EmptyCoroutineContext,
 ): LazyPagingItems<T> {
-
   val lazyPagingItems = remember(this) { LazyPagingItems(this) }
 
   LaunchedEffect(lazyPagingItems) {
@@ -251,18 +250,22 @@ fun <T : Any> Flow<PagingData<T>>.collectAsLazyPagingItems(
 fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,
   key: ((item: T) -> Any)? = null,
-  itemContent: @Composable LazyItemScope.(value: T?) -> Unit
+  itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
 ) {
   items(
     count = items.itemCount,
-    key = if (key == null) null else { index ->
-      val item = items.peek(index)
-      if (item == null) {
-        createPagingPlaceholderKey(index)
-      } else {
-        key(item)
+    key = if (key == null) {
+      null
+    } else {
+      { index ->
+        val item = items.peek(index)
+        if (item == null) {
+          createPagingPlaceholderKey(index)
+        } else {
+          key(item)
+        }
       }
-    }
+    },
   ) { index ->
     itemContent(items[index])
   }
@@ -288,18 +291,22 @@ fun <T : Any> LazyListScope.items(
 fun <T : Any> LazyListScope.itemsIndexed(
   items: LazyPagingItems<T>,
   key: ((index: Int, item: T) -> Any)? = null,
-  itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
+  itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
 ) {
   items(
     count = items.itemCount,
-    key = if (key == null) null else { index ->
-      val item = items.peek(index)
-      if (item == null) {
-        createPagingPlaceholderKey(index)
-      } else {
-        key(index, item)
+    key = if (key == null) {
+      null
+    } else {
+      { index ->
+        val item = items.peek(index)
+        if (item == null) {
+          createPagingPlaceholderKey(index)
+        } else {
+          key(index, item)
+        }
       }
-    }
+    },
   ) { index ->
     itemContent(index, items[index])
   }

@@ -22,7 +22,7 @@ import kotlin.jvm.JvmName
 expect abstract class RemoteMediator<Key : Any, Value : Any> {
   abstract suspend fun load(
     loadType: LoadType,
-    state: PagingState<Key, Value>
+    state: PagingState<Key, Value>,
   ): RemoteMediatorMediatorResult
 
   open suspend fun initialize(): RemoteMediatorInitializeAction
@@ -35,7 +35,7 @@ expect class RemoteMediatorMediatorResultError(throwable: Throwable) {
 }
 
 expect class RemoteMediatorMediatorResultSuccess(
-  endOfPaginationReached: Boolean
+  endOfPaginationReached: Boolean,
 ) {
   @get:JvmName("endOfPaginationReached")
   val endOfPaginationReached: Boolean
@@ -44,5 +44,5 @@ expect class RemoteMediatorMediatorResultSuccess(
 expect enum class RemoteMediatorInitializeAction {
   LAUNCH_INITIAL_REFRESH,
 
-  SKIP_INITIAL_REFRESH
+  SKIP_INITIAL_REFRESH,
 }

@@ -23,7 +23,7 @@ import kotlin.jvm.JvmName
 expect class LoadStates(
   refresh: LoadState,
   prepend: LoadState,
-  append: LoadState
+  append: LoadState,
 ) {
   val refresh: LoadState
   val prepend: LoadState

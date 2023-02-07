@@ -51,6 +51,6 @@ kotlin {
 
 configure<MavenPublishBaseExtension> {
   configure(
-    KotlinMultiplatform(javadocJar = JavadocJar.Empty())
+    KotlinMultiplatform(javadocJar = JavadocJar.Empty()),
   )
 }

@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import app.cash.paging.samples.reposearch.Event
 
 @Composable
 fun SearchField(
@@ -35,7 +34,6 @@ fun SearchField(
       .padding(24.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-
     TextField(
       textFieldValue,
       onValueChange = { textFieldValue = it },
@@ -55,7 +53,7 @@ fun SearchField(
       content = {
         Icon(
           imageVector = Icons.Default.Search,
-          contentDescription = "search"
+          contentDescription = "search",
         )
       },
     )

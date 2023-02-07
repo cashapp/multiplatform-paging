@@ -42,7 +42,7 @@ class RepoSearchPresenter {
       "As GitHub uses offset based pagination, an elegant PagingSource implementation requires each page to be of equal size."
     }
     Pager(pagingConfig) {
-        RepositoryPagingSource(httpClient, latestSearchTerm)
+      RepositoryPagingSource(httpClient, latestSearchTerm)
     }
   }
 

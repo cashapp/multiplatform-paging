@@ -8,12 +8,12 @@ import androidx.compose.ui.window.application
 import androidx.paging.PagingData
 import app.cash.paging.collectAsLazyPagingItems
 import app.cash.paging.samples.reposearch.Event
+import app.cash.paging.samples.reposearch.RepoSearchEmpty
 import app.cash.paging.samples.reposearch.RepoSearchPresenter
+import app.cash.paging.samples.reposearch.RepoSearchResults
+import app.cash.paging.samples.reposearch.RepoSearchTheme
 import app.cash.paging.samples.reposearch.Repository
 import app.cash.paging.samples.reposearch.ViewModel
-import app.cash.paging.samples.reposearch.RepoSearchTheme
-import app.cash.paging.samples.reposearch.RepoSearchEmpty
-import app.cash.paging.samples.reposearch.RepoSearchResults
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -29,7 +29,6 @@ fun main() = application {
 @Composable
 @Preview
 fun App() {
-
   val events = MutableSharedFlow<Event>(extraBufferCapacity = Int.MAX_VALUE)
   val viewModels = MutableStateFlow<ViewModel>(ViewModel.Empty)
   val viewModel by viewModels.collectAsState()

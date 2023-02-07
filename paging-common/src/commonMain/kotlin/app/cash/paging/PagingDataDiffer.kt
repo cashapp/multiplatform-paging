@@ -23,7 +23,7 @@ import kotlin.coroutines.CoroutineContext
 /** @suppress */
 expect abstract class PagingDataDiffer<T : Any>(
   differCallback: DifferCallback,
-  mainContext: CoroutineContext = Dispatchers.Main
+  mainContext: CoroutineContext = Dispatchers.Main,
 ) {
 
   abstract suspend fun presentNewList(
@@ -72,5 +72,5 @@ expect interface DifferCallback {
 expect enum class DiffingChangePayload {
   ITEM_TO_PLACEHOLDER,
   PLACEHOLDER_TO_ITEM,
-  PLACEHOLDER_POSITION_CHANGE
+  PLACEHOLDER_POSITION_CHANGE,
 }
