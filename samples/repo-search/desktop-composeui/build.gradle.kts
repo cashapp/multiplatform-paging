@@ -13,7 +13,6 @@ kotlin {
       dependencies {
         implementation(compose.desktop.currentOs)
         implementation(projects.samples.repoSearch.sharedComposeui)
-        api(projects.pagingRuntimeComposeui)
         implementation(libs.kotlinx.coroutines.swing)
       }
     }

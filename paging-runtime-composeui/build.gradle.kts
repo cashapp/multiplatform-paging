@@ -14,6 +14,9 @@ plugins {
 android {
   namespace = "app.cash.paging"
   compileSdk = 33
+  defaultConfig {
+    minSdk = 21
+  }
 }
 
 kotlin {

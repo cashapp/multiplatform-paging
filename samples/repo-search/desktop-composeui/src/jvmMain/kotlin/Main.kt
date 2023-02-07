@@ -5,19 +5,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import androidx.paging.PagingData
-import app.cash.paging.collectAsLazyPagingItems
 import app.cash.paging.samples.reposearch.Event
-import app.cash.paging.samples.reposearch.RepoSearchEmpty
+import app.cash.paging.samples.reposearch.RepoSearchContent
 import app.cash.paging.samples.reposearch.RepoSearchPresenter
-import app.cash.paging.samples.reposearch.RepoSearchResults
 import app.cash.paging.samples.reposearch.RepoSearchTheme
-import app.cash.paging.samples.reposearch.Repository
 import app.cash.paging.samples.reposearch.ViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 
 fun main() = application {
@@ -46,31 +41,5 @@ fun App() {
         events.tryEmit(event)
       },
     )
-  }
-}
-
-@Composable
-private fun RepoSearchContent(
-  viewModel: ViewModel,
-  events: (Event) -> Unit,
-) {
-  when (viewModel) {
-    ViewModel.Empty -> {
-      val repositories = emptyFlow<PagingData<Repository>>().collectAsLazyPagingItems()
-      RepoSearchEmpty(
-        events = events,
-        onRefreshList = repositories::refresh,
-      )
-    }
-
-    is ViewModel.SearchResults -> {
-      val repositories = viewModel.repositories.collectAsLazyPagingItems()
-      RepoSearchResults(
-        searchTerm = viewModel.searchTerm,
-        events = events,
-        searchResults = { SearchResults(repositories) },
-        onRefreshList = repositories::refresh,
-      )
-    }
   }
 }
