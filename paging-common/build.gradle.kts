@@ -46,7 +46,7 @@ kotlin {
       }
     }
     val iosMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain", )
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain")
       dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
     }
@@ -54,14 +54,12 @@ kotlin {
       dependsOn(iosMain)
     }
     val jsMain by getting {
-      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain", )
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain")
       dependsOn(nonJvmMain)
     }
   }
 }
 
 configure<MavenPublishBaseExtension> {
-  configure(
-    KotlinMultiplatform(javadocJar = JavadocJar.Empty())
-  )
+  configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty()))
 }

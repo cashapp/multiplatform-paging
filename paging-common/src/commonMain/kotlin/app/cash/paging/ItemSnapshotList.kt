@@ -19,7 +19,7 @@ package app.cash.paging
 expect class ItemSnapshotList<T>(
   placeholdersBefore: Int,
   placeholdersAfter: Int,
-  items: List<T>
+  items: List<T>,
 ) : AbstractList<T?> {
   val placeholdersBefore: Int
   val placeholdersAfter: Int

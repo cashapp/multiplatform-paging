@@ -20,7 +20,7 @@ expect class PagingState<Key : Any, Value : Any>(
   pages: List<PagingSourceLoadResultPage<Key, Value>>,
   anchorPosition: Int?,
   config: PagingConfig,
-  leadingPlaceholderCount: Int
+  leadingPlaceholderCount: Int,
 ) {
 
   val pages: List<PagingSourceLoadResultPage<Key, Value>>

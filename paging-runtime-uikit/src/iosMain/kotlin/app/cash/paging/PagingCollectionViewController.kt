@@ -15,7 +15,7 @@ import platform.darwin.NSInteger
 
 // Making abstract causes the compilation error "Non-final Kotlin subclasses of Objective-C classes are not yet supported".
 class PagingCollectionViewController<T : Any>(
-  private val indexCreator: (row: Int, section: Int) -> NSIndexPath
+  private val indexCreator: (row: Int, section: Int) -> NSIndexPath,
 ) {
 
   private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main

@@ -104,7 +104,7 @@ fun SearchField(
       onSearch = {
         events(Event.SearchTerm(textFieldValue.text))
         repositories.refresh()
-      }
+      },
     ),
     singleLine = true,
   )
