@@ -2,5 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "baseBranch": [
+    "main",
+    "main-3.2.0-alpha03"
   ]
 }
