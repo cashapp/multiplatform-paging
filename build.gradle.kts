@@ -1,3 +1,4 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 
@@ -10,6 +11,7 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.kotlin.android) apply false
   alias(libs.plugins.android.application) apply false
+  alias(libs.plugins.spotless) apply false
 }
 
 allprojects {
@@ -19,6 +21,26 @@ allprojects {
   repositories {
     mavenCentral()
     google()
+  }
+
+  apply(plugin = rootProject.libs.plugins.spotless.get().pluginId)
+  configure<SpotlessExtension> {
+    kotlin {
+      target("**/*.kt")
+      targetExclude("upstreams/**/*.kt")
+      ktlint(libs.versions.ktlint.get())
+        .editorConfigOverride(
+          mapOf(
+            // Disabled because paging-* filenames should be identical to that of AndroidX Paging.
+            "ktlint_standard_filename" to "disabled",
+          ),
+        )
+    }
+    kotlinGradle {
+      target("**/*.kts")
+      targetExclude("upstreams/**/*.kts")
+      ktlint(libs.versions.ktlint.get())
+    }
   }
 
   plugins.withId("com.vanniktech.maven.publish.base") {
