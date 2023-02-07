@@ -21,9 +21,6 @@ import androidx.paging.PagingData
 import app.cash.paging.LazyPagingItems
 import app.cash.paging.collectAsLazyPagingItems
 import app.cash.paging.items
-import app.cash.paging.samples.reposearch.ui.RepoSearchTheme
-import app.cash.paging.samples.reposearch.ui.RepoSearchEmpty
-import app.cash.paging.samples.reposearch.ui.RepoSearchResults
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
