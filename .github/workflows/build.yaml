@@ -1,4 +1,10 @@
-on: [pull_request]
+on:
+  pull_request: {}
+  push:
+    branches:
+      - 'main*'
+    tags-ignore:
+      - '**'
 env:
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g"
 jobs:
