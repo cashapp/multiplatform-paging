@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-  namespace = "app.cash.paging.samples.reposearch"
+  namespace = "app.cash.paging.samples.reposearch.shared.composeui"
   compileSdk = 33
   defaultConfig {
     minSdk = 21
@@ -33,6 +33,7 @@ kotlin {
     val commonMain by getting {
       dependencies {
         api(projects.samples.repoSearch.shared)
+        implementation(projects.pagingRuntimeComposeui)
         implementation(compose.ui)
         implementation(compose.foundation)
         implementation(compose.material)

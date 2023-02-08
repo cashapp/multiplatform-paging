@@ -40,5 +40,4 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.compose.material)
   implementation(libs.androidx.compose.ui)
-  api(projects.pagingRuntimeComposeui)
 }
