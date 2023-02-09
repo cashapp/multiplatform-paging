@@ -18,7 +18,7 @@ kotlin {
   sourceSets {
     val commonMain by getting {
       dependencies {
-        api(projects.pagingCommon)
+        api(projects.pagingComposeCommon)
         api(libs.kotlinx.coroutines.core)
         implementation(libs.ktor.client.core)
         implementation(libs.ktor.client.contentNegotiation)
