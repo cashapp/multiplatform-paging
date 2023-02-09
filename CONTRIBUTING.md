@@ -25,8 +25,8 @@ The primary branches are:
 2. Click the 'Version X contains these commits' link.
 3. Copy the second SHA in the URL.
    For example, the second SHA in the [3.1.1 release commits](https://android.googlesource.com/platform/frameworks/support/+log/04b73e954d139340d0ac8b00cdcef55b103ba393..65c8f2c53158200a61e0e1cc012cdbbadaee60ab/paging) would be 65c8f2c53158200a61e0e1cc012cdbbadaee60ab.
-4. `git fetch https://android.googlesource.com/platform/frameworks/support COPIED_SHA`
-5. Create a branch named `androidx-main-${X}`.
+4. `git fetch https://android.googlesource.com/platform/frameworks/support ${COPIED_SHA}`
+5. `git switch -c androidx-main-${X} ${COPIED_SHA}`.
 6. Cherry-pick the Multiplatform Paging commits from `androidx-main-${Y}` onto `androidx-main-${X}`.
    `Y` should be the version closest to `X`.
 
