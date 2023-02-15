@@ -30,7 +30,6 @@ expect class PagingConfig @JvmOverloads constructor(
   maxSize: Int = MAX_SIZE_UNBOUNDED,
   jumpThreshold: Int = COUNT_UNDEFINED,
 ) {
-
   @JvmField
   val pageSize: Int
 
@@ -52,4 +51,5 @@ expect class PagingConfig @JvmOverloads constructor(
   companion object
 }
 
+@Suppress("MinMaxConstant")
 const val MAX_SIZE_UNBOUNDED: Int = Int.MAX_VALUE

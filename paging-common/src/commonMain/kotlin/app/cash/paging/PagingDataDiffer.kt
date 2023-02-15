@@ -18,6 +18,7 @@ package app.cash.paging
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
 
 /** @suppress */
@@ -49,7 +50,7 @@ expect abstract class PagingDataDiffer<T : Any>(
 
   val size: Int
 
-  val loadStateFlow: Flow<CombinedLoadStates>
+  val loadStateFlow: StateFlow<CombinedLoadStates?>
 
   val onPagesUpdatedFlow: Flow<Unit>
 
