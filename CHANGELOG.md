@@ -2,12 +2,15 @@
 
 ## [Unreleased]
 
+## [3.1.1-0.2.0]
+
 ### Breaking
 
 - [paging-runtime-uikit] `paging-runtime` renamed to `paging-runtime-uikit` (https://github.com/cashapp/multiplatform-paging/issues/8).
 
 ### Fixed
 
+- [paging-common] Type alias `app.cash.paging.ExperimentalPagingApi` to `androidx.paging.ExperimentalPagingApi` (https://github.com/cashapp/multiplatform-paging/issues/6)
 - [paging-common] Expose RemoteMediator's public constructor (https://github.com/cashapp/multiplatform-paging/pull/46)
 
 ## [3.1.1-0.1.1] - 2022-11-08
