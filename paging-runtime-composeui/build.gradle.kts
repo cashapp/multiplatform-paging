@@ -24,6 +24,8 @@ android {
 }
 
 kotlin {
+  ios()
+  iosSimulatorArm64()
   jvm()
   android()
 
@@ -41,8 +43,17 @@ kotlin {
         implementation(compose.foundation)
       }
     }
-
+    val nonAndroidMain by creating {
+      dependsOn(commonMain)
+    }
+    val iosMain by getting {
+      dependsOn(nonAndroidMain)
+    }
+    val iosSimulatorArm64Main by getting {
+      dependsOn(iosMain)
+    }
     val jvmMain by getting {
+      dependsOn(nonAndroidMain)
       dependencies {
         implementation(libs.kotlinx.coroutines.swing)
       }
