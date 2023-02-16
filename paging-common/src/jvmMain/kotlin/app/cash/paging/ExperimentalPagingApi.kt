@@ -16,5 +16,5 @@
 
 package app.cash.paging
 
-@RequiresOptIn
-expect annotation class ExperimentalPagingApi()
+@Suppress("OPT_IN_MARKER_CAN_ONLY_BE_USED_AS_ANNOTATION_OR_ARGUMENT_IN_OPT_IN")
+actual typealias ExperimentalPagingApi = androidx.paging.ExperimentalPagingApi
