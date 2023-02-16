@@ -1,7 +1,7 @@
 [versions]
 android = "7.4.1"
 androidx-activity-compose = "1.7.0-alpha01"
-androidx-appcompat = "1.6.0"
+androidx-appcompat = "1.6.1"
 androidx-compose = "1.4.0-beta01"
 androidx-compose-compiler = "1.4.1"
 androidx-paging = "3.2.0-alpha04"
