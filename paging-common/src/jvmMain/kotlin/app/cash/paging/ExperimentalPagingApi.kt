@@ -16,5 +16,6 @@
 
 package app.cash.paging
 
+// https://youtrack.jetbrains.com/issue/KT-56715
 @Suppress("OPT_IN_MARKER_CAN_ONLY_BE_USED_AS_ANNOTATION_OR_ARGUMENT_IN_OPT_IN")
 actual typealias ExperimentalPagingApi = androidx.paging.ExperimentalPagingApi
