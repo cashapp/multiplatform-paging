@@ -1,12 +1,9 @@
-@file:JvmName("ComposeCommonLazyPagingItems")
-
 package app.cash.paging
 
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import app.cash.paging.compose.LazyPagingItems
-import kotlin.jvm.JvmName
 
 fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,

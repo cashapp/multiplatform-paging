@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-@file:JvmName("Logger")
-
 package app.cash.paging
-
-import kotlin.jvm.JvmName
 
 expect var LOGGER: Logger?
 

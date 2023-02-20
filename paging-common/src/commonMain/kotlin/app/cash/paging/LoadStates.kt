@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-@file:JvmName("LoadStates")
-
 package app.cash.paging
-
-import kotlin.jvm.JvmName
 
 expect class LoadStates(
   refresh: LoadState,
