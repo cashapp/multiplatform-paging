@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-@file:JvmName("PagingSource")
-
 package app.cash.paging
-
-import kotlin.jvm.JvmName
 
 expect abstract class PagingSource<Key : Any, Value : Any>() {
 
