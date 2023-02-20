@@ -11,6 +11,7 @@ pluginManagement {
 }
 
 include(":paging-common")
+include(":paging-compose-common")
 include(":paging-runtime-composeui")
 include(":paging-runtime-uikit")
 include(":samples:repo-search:shared")

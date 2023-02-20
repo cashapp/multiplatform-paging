@@ -38,6 +38,32 @@ iOS only includes the Paging 3 APIs from AndroidX Paging.
 We don't plan on offering Paging 2 support for iOS,
 though you can continue to use Paging 2 on the JVM.
 
+### `paging-compose-common`
+
+The API of `paging-compose-common` in Multiplatform Paging is a subset of that of `paging-compose` in AndroidX Paging
+(with the exception that the namespace has changed from `androidx.paging` to `app.cash.paging`).
+`paging-compose-common` consists of the non-UI specific parts of `paging-compose`.
+
+This module is intended for those using Jetpack Compose[^1] within their business layer.
+If you want a module with an identical API to `paging-compose` (i.e., the UI-specific parts are included), see [`paging-runtime-composeui`](#paging-runtime-composeui).
+
+To see how to use `paging-compose-common`, consult the [official documentation of AndroidX Paging](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(kotlinx.coroutines.flow.Flow).collectAsLazyPagingItems(kotlin.coroutines.CoroutineContext)).
+
+[^1]: …and NOT Jetpack Compose UI!
+
+#### Android
+
+`app.cash.paging:paging-compose-common` on Android delegates to `androidx.paging:paging-compose` via type aliases.
+To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
+
+#### JVM
+
+`app.cash.paging:paging-compose-common` on the JVM (but not Android) delegates to _our fork_ of AndroidX Paging.
+
+#### iOS
+
+`app.cash.paging:paging-compose-common` on iOS delegates to _our fork_ of AndroidX Paging.
+
 ### `paging-runtime-composeui`
 
 This runtime adds support for using common APIs within compose UI.
@@ -143,6 +169,15 @@ the artifact for a release of `paging-common` will be `app.cash.paging:paging-co
 
 ```kotlin
 implementation("app.cash.paging:paging-common:3.1.1-0.2.0")
+```
+
+### `paging-compose-common` for Jetpack Compose
+
+> ⚠️ This artifact only contains the non-UI specific parts of `paging-compose`.
+> For a complete multiplatform variant of `paging-compose`, depend on `app.cash.paging.paging-runtime-composeui` instead.
+
+```kotlin
+implementation("app.cash.paging:paging-compose-common:3.1.1-0.2.0")
 ```
 
 ### `paging-runtime-uikit` for iOS

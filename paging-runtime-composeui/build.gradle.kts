@@ -38,7 +38,7 @@ kotlin {
     val commonMain by getting {
       dependencies {
         implementation(libs.kotlinx.coroutines.core)
-        api(projects.pagingCommon)
+        api(projects.pagingComposeCommon)
         implementation(compose.runtime)
         implementation(compose.foundation)
       }
