@@ -60,8 +60,7 @@ key to a Bundle via Parcelable. This is effectively what is being done in the or
 
 #### iOS
 
-Compose targets 'uikit' are currently experimental and may have bugs. For this reason, support for iOS target
-will be added once they become more stable.
+Compose targets 'uikit' are currently experimental and may have bugs.
 
 ### `paging-runtime`
 
