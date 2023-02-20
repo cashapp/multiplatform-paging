@@ -38,7 +38,7 @@ iOS only includes the Paging 3 APIs from AndroidX Paging.
 We don't plan on offering Paging 2 support for iOS,
 though you can continue to use Paging 2 on the JVM.
 
-### `paging-runtime`
+### `paging-runtime-uikit`
 
 #### Android
 
