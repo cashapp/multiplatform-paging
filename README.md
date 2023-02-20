@@ -180,6 +180,12 @@ implementation("app.cash.paging:paging-common:3.1.1-0.2.0")
 implementation("app.cash.paging:paging-compose-common:3.1.1-0.2.0")
 ```
 
+### `paging-runtime-composeui` for Android, desktop, and iOS
+
+```kotlin
+implementation("app.cash.paging:paging-runtime-composeui:3.1.1-0.2.0")
+```
+
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
