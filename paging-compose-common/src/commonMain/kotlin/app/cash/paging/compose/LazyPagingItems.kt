@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:JvmName("CommonLazyPagingItems")
-
 package app.cash.paging.compose
 
 import androidx.compose.runtime.Composable
@@ -25,7 +23,6 @@ import app.cash.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.jvm.JvmName
 
 expect class LazyPagingItems<T : Any> {
   var itemSnapshotList: ItemSnapshotList<T>
