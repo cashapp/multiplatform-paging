@@ -56,41 +56,34 @@ To see how to use `paging-compose-common`, consult the [official documentation o
 `app.cash.paging:paging-compose-common` on Android delegates to `androidx.paging:paging-compose` via type aliases.
 To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
 
-#### JVM
+#### Desktop/JVM and iOS
 
-`app.cash.paging:paging-compose-common` on the JVM (but not Android) delegates to _our fork_ of AndroidX Paging.
+`app.cash.paging:paging-compose-common` on the JVM (but not Android) and iOS delegates to _our fork_ of AndroidX Paging.
 
-#### iOS
-
-`app.cash.paging:paging-compose-common` on iOS delegates to _our fork_ of AndroidX Paging.
-
-### `paging-runtime-composeui`
-
-This runtime adds support for using common APIs within compose UI.
-The android specific logic around internal debug logging and parcelizing the paging key have been removed from a clone of [LazyPagingItems.kt](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:paging/paging-compose/src/main/java/androidx/paging/compose/LazyPagingItems.kt;l=60?q=LazyPagingItem&sq=).
-Some examples of common APIs that are now "multiplatformized" for compose UI are:
-
-- Flow<PagingData<T>>.collectAsLazyPagingItems(...)
-- LazyListScope.items(...)
-- LazyListScope.itemsIndexed(...)
-
-#### JVM
-
-Internal debug logging is disabled and the paging key is currently not serialized.
-
-#### Android
-
-Delegates internal paging debug logging to android.util.Log and saves the paging
-key to a Bundle via Parcelable. This is effectively what is being done in the original LazyPagingItems source.
-
-
-#### iOS
-
-Compose targets 'uikit' are currently experimental and may have bugs.
+The module is behaviorally identical to the Android counterpart,
+apart from the fact a default `Logger` implementation is _not_ provided if `LOGGER` is `null`.
 
 ### `paging-runtime` for Android
 
 See the [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging) section below.
+
+### `paging-runtime-composeui` for Android, desktop, and iOS
+
+The API of `paging-runtime-composeui` in Multiplatform Paging is identical to that of `paging-compose` in AndroidX Paging
+(with the exception that the namespace has changed from `androidx.paging` to `app.cash.paging`).
+Therefore, to see how to use `paging-runtime-composeui`, consult the [official documentation of AndroidX Paging](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary).
+
+#### Android
+
+`paging-runtime-composeui` on Android behaves identically to that of `paging-compose` in AndroidX Paging.
+
+#### Desktop/JVM and iOS
+
+The module is behaviorally identical to the Android counterpart,
+apart from the fact that:
+
+* a default `Logger` implementation is _not_ provided if `LOGGER` is `null`.
+* the key for items that aren't loaded yet are _not_ parcelized.
 
 ### `paging-runtime-uikit` for iOS
 
