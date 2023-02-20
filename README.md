@@ -88,13 +88,11 @@ key to a Bundle via Parcelable. This is effectively what is being done in the or
 
 Compose targets 'uikit' are currently experimental and may have bugs.
 
-### `paging-runtime-uikit`
-
-#### Android
+### `paging-runtime` for Android
 
 See the [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging) section below.
 
-#### iOS
+### `paging-runtime-uikit` for iOS
 
 The `PagingCollectionViewController` allows a `PagingData` to be rendered via a `UICollectionView`.
 The `PagingCollectionViewController` mimics the `UICollectionViewController`,
