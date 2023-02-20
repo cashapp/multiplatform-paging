@@ -171,7 +171,7 @@ the artifact for a release of `paging-common` will be `app.cash.paging:paging-co
 implementation("app.cash.paging:paging-common:3.1.1-0.2.0")
 ```
 
-### `paging-compose-common` for Jetpack Compose
+### `paging-compose-common` for common
 
 > ⚠️ This artifact only contains the non-UI specific parts of `paging-compose`.
 > For a complete multiplatform variant of `paging-compose`, depend on `app.cash.paging.paging-runtime-composeui` instead.
