@@ -88,7 +88,7 @@ key to a Bundle via Parcelable. This is effectively what is being done in the or
 
 Compose targets 'uikit' are currently experimental and may have bugs.
 
-### `paging-runtime`
+### `paging-runtime-uikit`
 
 #### Android
 
