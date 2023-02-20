@@ -16,6 +16,9 @@ and the provided UI components can be used to render the paged items on Android 
 
 ## Usage
 
+> ❗Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha04`?
+> Then check out [this README](https://github.com/cashapp/multiplatform-paging/tree/main) instead!
+
 For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
 
 ### `paging-common`
