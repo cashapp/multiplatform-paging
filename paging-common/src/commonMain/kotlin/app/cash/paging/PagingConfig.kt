@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-@file:JvmName("CommonPagingConfig") // TODO I have no idea why I need this one
-
 package app.cash.paging
 
 import kotlin.jvm.JvmField
-import kotlin.jvm.JvmName
 import kotlin.jvm.JvmOverloads
 
 expect class PagingConfig @JvmOverloads constructor(
