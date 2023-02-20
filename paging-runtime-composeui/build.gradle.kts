@@ -7,7 +7,6 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.jetbrains.compose)
   id("com.android.library")
-  alias(libs.plugins.kotlin.parcelize)
   alias(libs.plugins.mavenPublish)
 }
 
@@ -58,10 +57,10 @@ kotlin {
         implementation(libs.kotlinx.coroutines.swing)
       }
     }
-
     val androidMain by getting {
       dependencies {
         implementation(libs.kotlinx.coroutines.android)
+        implementation(libs.androidx.paging.compose)
       }
     }
   }

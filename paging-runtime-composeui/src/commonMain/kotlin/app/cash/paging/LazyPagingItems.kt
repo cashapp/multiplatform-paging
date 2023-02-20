@@ -5,50 +5,24 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import app.cash.paging.compose.LazyPagingItems
 
+expect fun <T : Any> LazyListScope.items(
+  items: LazyPagingItems<T>,
+  key: ((item: T) -> Any)?, /*  = null */
+  itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
+)
+
 fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,
-  key: ((item: T) -> Any)? = null,
   itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
-) {
-  items(
-    count = items.itemCount,
-    key = if (key == null) {
-      null
-    } else {
-      { index ->
-        val item = items.peek(index)
-        if (item == null) {
-          createPagingPlaceholderKey(index)
-        } else {
-          key(item)
-        }
-      }
-    },
-  ) { index ->
-    itemContent(items[index])
-  }
-}
+) = items(items, null, itemContent)
+
+expect fun <T : Any> LazyListScope.itemsIndexed(
+  items: LazyPagingItems<T>,
+  key: ((index: Int, item: T) -> Any)?, /*  = null */
+  itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
+)
 
 fun <T : Any> LazyListScope.itemsIndexed(
   items: LazyPagingItems<T>,
-  key: ((index: Int, item: T) -> Any)? = null,
   itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
-) {
-  items(
-    count = items.itemCount,
-    key = if (key == null) {
-      null
-    } else {
-      { index ->
-        val item = items.peek(index)
-        if (item == null) {
-          createPagingPlaceholderKey(index)
-        } else {
-          key(index, item)
-        }
-      }
-    },
-  ) { index ->
-    itemContent(index, items[index])
-  }
-}
+) = itemsIndexed(items, null, itemContent)
