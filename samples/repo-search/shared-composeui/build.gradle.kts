@@ -3,7 +3,6 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.jetbrains.compose)
   id("com.android.library")
-  alias(libs.plugins.kotlin.native.cocoapods)
 }
 
 android {
@@ -23,11 +22,6 @@ android {
 kotlin {
   jvm()
   android()
-
-  cocoapods {
-    summary = "Shared Compose UI code for Repo Search."
-    homepage = "https://github.com/cashapp/multiplatform-paging/tree/main/samples/repo-search/shared-composeui"
-  }
 
   sourceSets {
     val commonMain by getting {
