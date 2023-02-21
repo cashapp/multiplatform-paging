@@ -38,8 +38,8 @@ kotlin {
       dependencies {
         implementation(libs.kotlinx.coroutines.core)
         api(projects.pagingComposeCommon)
-        implementation(compose.runtime)
-        implementation(compose.foundation)
+        api(compose.runtime)
+        api(compose.foundation)
       }
     }
     val nonAndroidMain by creating {

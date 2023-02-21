@@ -35,9 +35,7 @@ kotlin {
         api(projects.samples.repoSearch.shared)
         implementation(projects.pagingRuntimeComposeui)
         implementation(compose.ui)
-        implementation(compose.foundation)
         implementation(compose.material)
-        implementation(compose.runtime)
       }
     }
   }
