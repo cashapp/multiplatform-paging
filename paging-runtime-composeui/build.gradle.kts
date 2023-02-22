@@ -26,7 +26,9 @@ kotlin {
   ios()
   iosSimulatorArm64()
   jvm()
-  android()
+  android {
+    publishLibraryVariants("release")
+  }
 
   sourceSets {
     all {
