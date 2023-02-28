@@ -40,3 +40,7 @@
    release artifacts to Sonatype Nexus.
 
 9. Visit [Sonatype Nexus](https://oss.sonatype.org/) and promote the artifact.
+
+10. Create a new GitHub Release.
+
+11. (optional) Link to release on Twitter/Mastodon.
