@@ -53,7 +53,7 @@ allprojects {
     }
     @Suppress("UnstableApiUsage")
     configure<MavenPublishBaseExtension> {
-      publishToMavenCentral(SonatypeHost.DEFAULT)
+      publishToMavenCentral(SonatypeHost.DEFAULT, automaticRelease = true)
       signAllPublications()
       pom {
         description.set("Packages AndroidX's Paging library for Kotlin/Multiplatform.")

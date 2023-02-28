@@ -36,10 +36,9 @@
    $ git push && git push --tags
    ```
 
-   This will trigger a GitHub Action workflow which will create a GitHub release and upload the
-   release artifacts to Sonatype Nexus.
-
-9. Visit [Sonatype Nexus](https://oss.sonatype.org/) and promote the artifact.
+   This will trigger a GitHub Action workflow which will create a GitHub release,
+   upload the release artifacts to [Sonatype Nexus](https://oss.sonatype.org/),
+   and automatically promote those artifacts.
 
 10. Create a new GitHub Release.
 
