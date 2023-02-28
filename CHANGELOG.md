@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [3.2.0-alpha04-0.2.0] - 2022-02-28
+
 ### Added
 
 - [paging-common] Packaged version `3.2.0-alpha04` of AndroidX Paging's `paging-common` for Kotlin/Multiplatform.
