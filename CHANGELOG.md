@@ -26,3 +26,8 @@
 ## [3.1.1-0.1.0] - 2022-11-08
 
 Initial release.
+
+[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.1.1-0.2.0...main
+[3.1.1-0.2.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.2.0
+[3.1.1-0.1.1]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.1.1
+[3.1.1-0.1.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.1.0
