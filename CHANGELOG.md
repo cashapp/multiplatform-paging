@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [paging-runtime-composeui] Fixed duplicate class error when depending on `paging-runtime-composeui` and targeting Android.
+
 ## [3.2.0-alpha04-0.2.0] - 2022-02-28
 
 ### Added

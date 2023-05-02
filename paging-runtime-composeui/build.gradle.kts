@@ -62,7 +62,6 @@ kotlin {
     val androidMain by getting {
       dependencies {
         implementation(libs.kotlinx.coroutines.android)
-        implementation(libs.androidx.paging.compose)
       }
     }
   }
