@@ -156,13 +156,13 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.2.0-alpha04` and Multiplatform Paging is on `0.2.0`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha04-0.2.0`.
+For example, if AndroidX Paging is on `3.2.0-alpha04` and Multiplatform Paging is on `0.2.1`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha04-0.2.1`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.2.0-alpha04-0.2.0")
+implementation("app.cash.paging:paging-common:3.2.0-alpha04-0.2.1")
 ```
 
 ### `paging-compose-common` for common
@@ -171,19 +171,19 @@ implementation("app.cash.paging:paging-common:3.2.0-alpha04-0.2.0")
 > For a complete multiplatform variant of `paging-compose`, depend on `app.cash.paging.paging-runtime-composeui` instead.
 
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.2.0-alpha04-0.2.0")
+implementation("app.cash.paging:paging-compose-common:3.2.0-alpha04-0.2.1")
 ```
 
 ### `paging-runtime-composeui` for Android, desktop, and iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha04-0.2.0")
+implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha04-0.2.1")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha04-0.2.0")
+implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha04-0.2.1")
 ```
 
 ### Android
