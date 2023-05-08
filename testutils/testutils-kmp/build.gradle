@@ -18,40 +18,40 @@ import androidx.build.LibraryType
 
 plugins {
     id("AndroidXPlugin")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-androidXMultiplatform {
-    jvm {}
-    mac()
-    linux()
+kotlin {
+    js(IR) {
+        nodejs()
+        binaries.executable()
+    }
+
+    jvm()
+
     ios()
+    iosSimulatorArm64()
+    linuxArm64()
+    linuxX64()
+    macosArm64()
+    macosX64()
+    mingwX64()
+    tvos()
+    tvosSimulatorArm64()
+    watchos()
+    watchosSimulatorArm64()
 
     sourceSets {
         commonMain {
-            dependencies {
-                api(libs.kotlinStdlibCommon)
-                api(libs.kotlinTestCommon)
-            }
-        }
-
-        commonTest {
-            dependencies {
-                implementation(libs.kotlinTestCommon)
-                implementation(libs.kotlinTestAnnotationsCommon)
-            }
-        }
-
-        jvmMain {
             dependencies {
                 api(libs.kotlinStdlib)
                 api(libs.kotlinTest)
             }
         }
 
-        jvmTest {
+        commonTest {
             dependencies {
-                implementation(libs.kotlinStdlib)
-                implementation(libs.kotlinTest)
+                implementation(libs.kotlinTestAnnotationsCommon)
             }
         }
     }

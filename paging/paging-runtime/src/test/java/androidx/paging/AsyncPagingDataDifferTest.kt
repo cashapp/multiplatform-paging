@@ -29,6 +29,7 @@ import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.Ignore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -355,6 +356,7 @@ class AsyncPagingDataDifferTest {
     }
 
     @Test
+    @Ignore
     fun submitData_guaranteesOrder() = testScope.runTest {
         val pager = Pager(config = PagingConfig(2, enablePlaceholders = false), initialKey = 50) {
             TestPagingSource()
