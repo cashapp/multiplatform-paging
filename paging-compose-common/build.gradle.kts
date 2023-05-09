@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -12,12 +13,24 @@ plugins {
 
 kotlin {
   android()
+
+  js(IR) {
+    nodejs()
+    binaries.executable()
+  }
+
+  jvm()
+
   ios()
   iosSimulatorArm64()
-  js(IR) {
-    browser()
-  }
-  jvm()
+  linuxX64()
+  macosArm64()
+  macosX64()
+  mingwX64()
+  tvos()
+  tvosSimulatorArm64()
+  watchos()
+  watchosSimulatorArm64()
 
   sourceSets {
     all {
@@ -38,31 +51,20 @@ kotlin {
         api(libs.androidx.paging.compose)
       }
     }
-    val jvmMain by getting {
-      // Not using a `nonAndroidMain` source set because the androidx-main branch srcDir has dependencies on
-      // `androidx.paging`. `app.cash.paging` has to be used within `commonMain`, and would mean the androidx-main
-      // branch depend would have to depend on main, resulting in a cyclical dependency. Multiplatformized variants
-      // of `androidx.paging` IS available when we're not in `commonMain`, so explicitly depending on the nonAndroidMain
-      // srcDir means that `androidx.paging` is in the classpath and will compile successfully.
-      kotlin.srcDirs(
-        "src/nonAndroidMain",
-        "../upstreams/androidx-main/paging/paging-compose/src/commonMain",
-      )
-    }
-    val iosMain by getting {
-      kotlin.srcDirs(
-        "src/nonAndroidMain",
-        "../upstreams/androidx-main/paging/paging-compose/src/commonMain",
-      )
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
-    }
-    val jsMain by getting {
-      kotlin.srcDirs(
-        "src/nonAndroidMain",
-        "../upstreams/androidx-main/paging/paging-compose/src/commonMain",
-      )
+    val jsMain by getting {}
+    targets.forEach { target ->
+      if (target.platformType == KotlinPlatformType.common) return@forEach
+      if (target.platformType != KotlinPlatformType.androidJvm) {
+        // Not using a `nonAndroidMain` source set because the androidx-main branch srcDir has dependencies on
+        // `androidx.paging`. `app.cash.paging` has to be used within `commonMain`, and would mean the androidx-main
+        // branch depend would have to depend on main, resulting in a cyclical dependency. Multiplatformized variants
+        // of `androidx.paging` IS available when we're not in `commonMain`, so explicitly depending on the nonAndroidMain
+        // srcDir means that `androidx.paging` is in the classpath and will compile successfully.
+        target.compilations.getByName("main").defaultSourceSet.kotlin.srcDirs(
+          "src/nonAndroidMain",
+          "../upstreams/androidx-main/paging/paging-compose/src/commonMain",
+        )
+      }
     }
   }
 }

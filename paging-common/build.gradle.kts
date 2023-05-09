@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -9,12 +10,23 @@ plugins {
 }
 
 kotlin {
+  js(IR) {
+    nodejs()
+    binaries.executable()
+  }
+
+  jvm()
+
   ios()
   iosSimulatorArm64()
-  js(IR) {
-    browser()
-  }
-  jvm()
+  linuxX64()
+  macosArm64()
+  macosX64()
+  mingwX64()
+  tvos()
+  tvosSimulatorArm64()
+  watchos()
+  watchosSimulatorArm64()
 
   sourceSets {
     all {
@@ -32,7 +44,6 @@ kotlin {
       dependsOn(commonMain)
     }
     val jvmMain by getting {
-      dependsOn(nonJsMain)
       dependencies {
         api(libs.androidx.paging.common)
       }
@@ -45,17 +56,24 @@ kotlin {
         implementation(libs.stately.iso.collections)
       }
     }
-    val iosMain by getting {
+    val nonJsAndNonJvmMain by creating {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain")
-      dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
     }
     val jsMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain")
-      dependsOn(nonJvmMain)
+    }
+    targets.forEach { target ->
+      if (target.platformType == KotlinPlatformType.common) return@forEach
+      if (target.platformType != KotlinPlatformType.js) {
+        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJsMain)
+      }
+      if (target.platformType != KotlinPlatformType.jvm) {
+        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJvmMain)
+      }
+      if (target.platformType !in arrayOf(KotlinPlatformType.js, KotlinPlatformType.jvm)) {
+        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJsAndNonJvmMain)
+      }
     }
   }
 }
