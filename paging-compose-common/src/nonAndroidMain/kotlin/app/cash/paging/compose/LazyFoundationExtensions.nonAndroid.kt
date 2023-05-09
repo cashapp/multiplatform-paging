@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package app.cash.paging
+package app.cash.paging.compose
 
-expect var LOGGER: Logger?
+actual fun <T : Any> LazyPagingItems<T>.itemKey(
+  key: ((item: T) -> Any)?,
+): (index: Int) -> Any = itemKey(key)
 
-const val LOG_TAG: String = "Paging"
-
-expect interface Logger {
-  fun isLoggable(level: Int): Boolean
-  fun log(level: Int, message: String, tr: Throwable? = null)
-}
-
-expect inline fun log(
-  level: Int,
-  tr: Throwable? = null,
-  block: () -> String,
-)
-
-const val VERBOSE: Int = 2
-
-const val DEBUG: Int = 3
+actual fun <T : Any> LazyPagingItems<T>.itemContentType(
+  contentType: ((item: T) -> Any?)?,
+): (index: Int) -> Any? = itemContentType(contentType)

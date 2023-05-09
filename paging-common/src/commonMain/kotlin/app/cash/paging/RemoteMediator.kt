@@ -16,8 +16,6 @@
 
 package app.cash.paging
 
-import kotlin.jvm.JvmName
-
 @ExperimentalPagingApi
 expect abstract class RemoteMediator<Key : Any, Value : Any>() {
   abstract suspend fun load(
@@ -37,7 +35,6 @@ expect class RemoteMediatorMediatorResultError(throwable: Throwable) {
 expect class RemoteMediatorMediatorResultSuccess(
   endOfPaginationReached: Boolean,
 ) {
-  @get:JvmName("endOfPaginationReached")
   val endOfPaginationReached: Boolean
 }
 

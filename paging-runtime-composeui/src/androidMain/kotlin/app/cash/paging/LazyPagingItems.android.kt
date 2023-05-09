@@ -11,10 +11,10 @@ actual inline fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,
   noinline key: ((item: T) -> Any)?,
   noinline itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
-) = items(items, key, itemContent)
+) = items(items, key, null, itemContent)
 
 actual inline fun <T : Any> LazyListScope.itemsIndexed(
   items: LazyPagingItems<T>,
   noinline key: ((index: Int, item: T) -> Any)?,
   noinline itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
-) = itemsIndexed(items, key, itemContent)
+) = itemsIndexed(items, key, null, itemContent)
