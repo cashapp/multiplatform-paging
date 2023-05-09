@@ -192,7 +192,7 @@ Use the [official AndroidX Paging dependencies](https://developer.android.com/je
 
 ```kotlin
 implementation("androidx.paging:paging-runtime:3.2.0-alpha05")
-implementation("androidx.paging:paging-compose:1.0.0-alpha17")
+implementation("androidx.paging:paging-compose:1.0.0-alpha19")
 implementation("androidx.paging:paging-rxjava3:3.2.0-alpha05")
 // etc.
 ```
