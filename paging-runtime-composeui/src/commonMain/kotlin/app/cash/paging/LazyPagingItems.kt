@@ -27,6 +27,22 @@ expect fun <T : Any> LazyListScope.items(
   itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
 )
 
+@Deprecated(
+  message = "Call LazyListScope.items directly with LazyPagingItems #itemKey and" +
+    "#itemContentType helper functions.",
+  replaceWith = ReplaceWith(
+    expression = """items(
+           count = items.itemCount,
+           key = items.itemKey(key),
+           contentType = items.itemContentType(
+                contentType
+           )
+        ) { index ->
+            val item = items[index]
+            itemContent(item)
+        }""",
+  ),
+)
 fun <T : Any> LazyListScope.items(
   items: LazyPagingItems<T>,
   itemContent: @Composable LazyItemScope.(value: T?) -> Unit,
@@ -55,6 +71,22 @@ expect fun <T : Any> LazyListScope.itemsIndexed(
   itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
 )
 
+@Deprecated(
+  message = "Call LazyListScope.items directly with LazyPagingItems #itemKey and" +
+    "#itemContentType helper functions.",
+  replaceWith = ReplaceWith(
+    expression = """items(
+           count = items.itemCount,
+           key = items.itemKey(key),
+           contentType = items.itemContentType(
+                contentType
+           )
+        ) { index ->
+            val item = items[index]
+            itemContent(item)
+        }""",
+  ),
+)
 fun <T : Any> LazyListScope.itemsIndexed(
   items: LazyPagingItems<T>,
   itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit,
