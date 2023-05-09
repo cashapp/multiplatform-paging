@@ -1,5 +1,5 @@
 PODS:
-  - shared (3.2.0-alpha04-0.3.0-SNAPSHOT)
+  - shared (3.2.0-alpha05-0.3.0-SNAPSHOT)
 
 DEPENDENCIES:
   - shared (from `../shared`)

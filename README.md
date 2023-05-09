@@ -16,7 +16,7 @@ and the provided UI components can be used to render the paged items on Android 
 
 ## Usage
 
-> ❗Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha04`?
+> ❗Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha05`?
 > Then check out [this README](https://github.com/cashapp/multiplatform-paging/tree/main) instead!
 
 For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
@@ -156,13 +156,13 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.2.0-alpha04` and Multiplatform Paging is on `0.2.1`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha04-0.2.1`.
+For example, if AndroidX Paging is on `3.2.0-alpha05` and Multiplatform Paging is on `0.2.1`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha05-0.2.1`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.2.0-alpha04-0.2.1")
+implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.1")
 ```
 
 ### `paging-compose-common` for common
@@ -171,19 +171,19 @@ implementation("app.cash.paging:paging-common:3.2.0-alpha04-0.2.1")
 > For a complete multiplatform variant of `paging-compose`, depend on `app.cash.paging.paging-runtime-composeui` instead.
 
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.2.0-alpha04-0.2.1")
+implementation("app.cash.paging:paging-compose-common:3.2.0-alpha05-0.2.1")
 ```
 
 ### `paging-runtime-composeui` for Android, desktop, and iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha04-0.2.1")
+implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha05-0.2.1")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha04-0.2.1")
+implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha05-0.2.1")
 ```
 
 ### Android
@@ -191,9 +191,9 @@ implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha04-0.2.1")
 Use the [official AndroidX Paging dependencies](https://developer.android.com/jetpack/androidx/releases/paging#declaring_dependencies).
 
 ```kotlin
-implementation("androidx.paging:paging-runtime:3.2.0-alpha04")
+implementation("androidx.paging:paging-runtime:3.2.0-alpha05")
 implementation("androidx.paging:paging-compose:1.0.0-alpha17")
-implementation("androidx.paging:paging-rxjava3:3.2.0-alpha04")
+implementation("androidx.paging:paging-rxjava3:3.2.0-alpha05")
 // etc.
 ```
 
