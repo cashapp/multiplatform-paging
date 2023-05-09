@@ -32,7 +32,6 @@ kotlin {
 
     ios()
     iosSimulatorArm64()
-    linuxArm64()
     linuxX64()
     macosArm64()
     macosX64()
@@ -52,8 +51,8 @@ kotlin {
             dependencies {
                 api(libs.kotlinStdlib)
                 api(libs.kotlinCoroutinesCore)
-                implementation("co.touchlab:stately-concurrency:1.2.0")
-                implementation("co.touchlab:stately-iso-collections:1.2.0")
+                implementation("co.touchlab:stately-concurrency:1.2.5")
+                implementation("co.touchlab:stately-iso-collections:1.2.5")
             }
         }
         commonTest {

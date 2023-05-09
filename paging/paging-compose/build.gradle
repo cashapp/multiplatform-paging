@@ -30,12 +30,23 @@ compose {
 }
 
 kotlin {
-    ios()
     js(IR) {
         nodejs()
         binaries.executable()
     }
+
     jvm()
+
+    ios()
+    iosSimulatorArm64()
+    linuxX64()
+    macosArm64()
+    macosX64()
+    mingwX64()
+    tvos()
+    tvosSimulatorArm64()
+    watchos()
+    watchosSimulatorArm64()
 
     sourceSets {
         commonMain {
