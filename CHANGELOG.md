@@ -1,7 +1,7 @@
 # Change Log
 
-> ❗Looking for the `3.2.0-alpha04` change log?
-> Then check out [this CHANGELOG](https://github.com/cashapp/multiplatform-paging/blob/main-3.2.0-alpha04/CHANGELOG.md) instead!
+> ❗Looking for the `3.2.0-alpha05` change log?
+> Then check out [this CHANGELOG](https://github.com/cashapp/multiplatform-paging/blob/main-3.2.0-alpha05/CHANGELOG.md) instead!
 
 ## [Unreleased]
 
