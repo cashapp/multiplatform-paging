@@ -16,6 +16,9 @@
 
 package app.cash.paging.compose
 
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
+
 actual fun <T : Any> LazyPagingItems<T>.itemKey(
   key: ((item: T) -> Any)?,
 ): (index: Int) -> Any = itemKey(key)
