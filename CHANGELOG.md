@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [paging-compose-common] Fix infinite recursion on calling `itemKey` and `itemContentType` (by [Sean Proctor](https://github.com/sproctor)).
+
 ## [3.2.0-alpha05-0.2.1]
 
 ### Added
