@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [3.2.0-alpha05-0.2.2]
+
 ### Fixed
 
 - [paging-compose-common] Fix infinite recursion on calling `itemKey` and `itemContentType` (by [Sean Proctor](https://github.com/sproctor)).
@@ -21,5 +23,6 @@
 - [paging-runtime-composeui] `paging-runtime-composeui` is now functionally equivalent to `paging-compose-common`,
   as the additional functions that `paging-runtime-composeui` provides (i.e., `items` and `itemsIndexed`) have [been deprecated upstream](https://developer.android.com/jetpack/androidx/releases/paging#1.0.0-alpha19).
 
-[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.2.0-alpha05-0.2.1...main-3.2.0-alpha05
+[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.2.0-alpha05-0.2.2...main-3.2.0-alpha05
+[3.2.0-alpha05-0.2.2]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.2.0-alpha05-0.2.2
 [3.2.0-alpha05-0.2.1]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.2.0-alpha05-0.2.1

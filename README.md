@@ -153,13 +153,13 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.2.0-alpha05` and Multiplatform Paging is on `0.2.1`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha05-0.2.1`.
+For example, if AndroidX Paging is on `3.2.0-alpha05` and Multiplatform Paging is on `0.2.2`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha05-0.2.2`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.1")
+implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.2")
 ```
 
 ### `paging-compose-common` for common
@@ -168,19 +168,19 @@ implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.1")
 > with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
 
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.2.0-alpha05-0.2.1")
+implementation("app.cash.paging:paging-compose-common:3.2.0-alpha05-0.2.2")
 ```
 
 ### `paging-runtime-composeui` for Android, desktop, and iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha05-0.2.1")
+implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha05-0.2.2")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha05-0.2.1")
+implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha05-0.2.2")
 ```
 
 ### Android
