@@ -57,11 +57,7 @@ Here's an example in Swift:
 ```swift
 final class FooViewController: UICollectionViewController {
 
-  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Foo>(
-    indexCreator: { row, section in
-      NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath
-    },
-  )
+  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Foo>()
 
   private let presenter = …
 
