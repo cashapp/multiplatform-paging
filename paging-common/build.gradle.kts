@@ -15,6 +15,7 @@ kotlin {
   }
   jvm()
   linuxX64()
+  mingwX64()
 
   sourceSets {
     all {
@@ -58,6 +59,9 @@ kotlin {
       dependsOn(iosMain)
     }
     val linuxX64Main by getting {
+      dependsOn(nativeMain)
+    }
+    val mingwX64Main by getting {
       dependsOn(nativeMain)
     }
     val jsMain by getting {

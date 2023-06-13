@@ -11,13 +11,12 @@ jobs:
   build:
     strategy:
       matrix:
-        name: [ linux, macos ]
+        name: [ macos, windows ]
         include:
-          # always use the oldest still supported LTS version of github actions
-          - name: linux
-            os: ubuntu-20.04
           - name: macos
             os: macos-latest
+          - name: windows
+            os: windows-2019
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
