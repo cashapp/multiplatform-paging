@@ -9,15 +9,7 @@ env:
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g"
 jobs:
   build:
-    strategy:
-      matrix:
-        name: [ macos, windows ]
-        include:
-          - name: macos
-            os: macos-latest
-          - name: windows
-            os: windows-2019
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
         with:

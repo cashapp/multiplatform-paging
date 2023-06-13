@@ -10,15 +10,7 @@ env:
 
 jobs:
   publish:
-    strategy:
-      matrix:
-        name: [ macos, windows ]
-        include:
-          - name: macos
-            os: macos-latest
-          - name: windows
-            os: windows-2019
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
         with:
@@ -29,17 +21,8 @@ jobs:
           distribution: 'zulu'
           java-version: 11
 
-      - name: publish all publications
-        if: matrix.name == 'macos' && ${{ github.repository == 'cashapp/multiplatform-paging' }}
-        run: ./gradlew publishAllPublicationsToMavenCentralRepository
-        env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
-
-      - name: publish mingw publications
-        if: matrix.name == 'windows' && ${{ github.repository == 'cashapp/multiplatform-paging' }}
-        run: ./gradlew publishMingwX64PublicationToMavenCentralRepository
+      - run: ./gradlew publish
+        if: ${{ github.repository == 'cashapp/multiplatform-paging' }}
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
