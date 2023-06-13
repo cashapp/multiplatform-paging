@@ -10,7 +10,16 @@ env:
 
 jobs:
   publish:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        name: [ linux, macos ]
+        include:
+          # always use the oldest still supported LTS version of github actions
+          - name: linux
+            os: ubuntu-20.04
+          - name: macos
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -21,8 +30,17 @@ jobs:
           distribution: 'zulu'
           java-version: 11
 
-      - run: ./gradlew publish
-        if: ${{ github.repository == 'cashapp/multiplatform-paging' }}
+      - name: publish all publications
+        if: matrix.name == 'macos' && ${{ github.repository == 'cashapp/multiplatform-paging' }}
+        run: ./gradlew publishAllPublicationsToMavenCentralRepository
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
+
+      - name: publish linux publications
+        if: matrix.name == 'linux' && ${{ github.repository == 'cashapp/multiplatform-paging' }}
+        run: ./gradlew publishLinuxX64PublicationToMavenCentralRepository
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}

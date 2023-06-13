@@ -14,6 +14,7 @@ kotlin {
     browser()
   }
   jvm()
+  linuxX64()
 
   sourceSets {
     all {
@@ -45,13 +46,19 @@ kotlin {
         implementation(libs.stately.iso.collections)
       }
     }
-    val iosMain by getting {
+    val nativeMain by creating {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain")
       dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
     }
+    val iosMain by getting {
+      dependsOn(nativeMain)
+    }
     val iosSimulatorArm64Main by getting {
       dependsOn(iosMain)
+    }
+    val linuxX64Main by getting {
+      dependsOn(nativeMain)
     }
     val jsMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain")

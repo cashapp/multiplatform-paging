@@ -9,7 +9,16 @@ env:
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g"
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        name: [ linux, macos ]
+        include:
+          # always use the oldest still supported LTS version of github actions
+          - name: linux
+            os: ubuntu-20.04
+          - name: macos
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
