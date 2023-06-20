@@ -11,12 +11,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import platform.Foundation.NSIndexPath
 import platform.UIKit.UICollectionView
+import platform.UIKit.indexPathForRow
 import platform.darwin.NSInteger
 
 // Making abstract causes the compilation error "Non-final Kotlin subclasses of Objective-C classes are not yet supported".
-class PagingCollectionViewController<T : Any>(
-  private val indexCreator: (row: Int, section: Int) -> NSIndexPath,
-) {
+class PagingCollectionViewController<T : Any>() {
+
+  @Deprecated(
+    "The indexCreator constructor parameter is no longer required. It can be safely removed.",
+    ReplaceWith("PagingCollectionViewController()"),
+  )
+  constructor(indexCreator: (row: Int, section: Int) -> NSIndexPath) : this()
 
   private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
   private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default
@@ -38,17 +43,17 @@ class PagingCollectionViewController<T : Any>(
     object : ListUpdateCallback {
       override fun onInserted(position: Int, count: Int) {
         checkNotNull(collectionView)
-        collectionView!!.insertItemsAtIndexPaths(List(count) { indexCreator(it + position, 0) })
+        collectionView!!.insertItemsAtIndexPaths(List(count) { NSIndexPath.indexPathForRow((it + position).toLong(), 0) })
       }
 
       override fun onRemoved(position: Int, count: Int) {
         checkNotNull(collectionView)
-        collectionView!!.deleteItemsAtIndexPaths(List(count) { indexCreator(it + position, 0) })
+        collectionView!!.deleteItemsAtIndexPaths(List(count) { NSIndexPath.indexPathForRow((it + position).toLong(), 0) })
       }
 
       override fun onMoved(fromPosition: Int, toPosition: Int) {
         checkNotNull(collectionView)
-        collectionView!!.moveItemAtIndexPath(indexCreator(fromPosition, 0), indexCreator(toPosition, 0))
+        collectionView!!.moveItemAtIndexPath(NSIndexPath.indexPathForRow(fromPosition.toLong(), 0), NSIndexPath.indexPathForRow(toPosition.toLong(), 0))
       }
 
       override fun onChanged(position: Int, count: Int, payload: Any?) {

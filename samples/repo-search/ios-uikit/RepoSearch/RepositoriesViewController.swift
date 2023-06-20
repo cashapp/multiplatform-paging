@@ -41,7 +41,7 @@ class ViewModelCollector: Kotlinx_coroutines_coreFlowCollector {
 final class RepositoriesViewController: UICollectionViewController {
   private let presenter = RepoSearchPresenter()
   
-  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Repository>(indexCreator: { row, section in NSIndexPath(row: Int(truncating: row), section: Int(truncating: section)) as IndexPath})
+  private let delegate = Paging_runtime_uikitPagingCollectionViewController<Repository>()
   
   private let events = ExposedKt.mutableSharedFlow(extraBufferCapacity: Int32.max)
   
