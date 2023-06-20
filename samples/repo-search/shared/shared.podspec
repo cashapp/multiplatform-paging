@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'shared'
-    spec.version                  = '3.1.1-0.2.0-SNAPSHOT'
+    spec.version                  = '3.1.1-0.4.0-SNAPSHOT'
     spec.homepage                 = 'https://github.com/cashapp/multiplatform-paging/tree/main/samples/repo-search/shared'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
