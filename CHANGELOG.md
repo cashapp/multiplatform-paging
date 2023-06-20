@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [3.1.1-0.3.0]
+
+### Added
+
+- [paging-common] Add Linux and MinGW targets (by [Cedric Hippmann](https://github.com/chippmann))
+
 ### Deprecated
 
 - [paging-runtime-uikit] Instantiating `PagingCollectionViewController` no longer requires an `indexCreator`.
@@ -32,7 +38,8 @@
 
 Initial release.
 
-[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.1.1-0.2.0...main
+[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.1.1-0.3.0...main
+[3.1.1-0.3.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.3.0
 [3.1.1-0.2.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.2.0
 [3.1.1-0.1.1]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.1.1
 [3.1.1-0.1.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.1.1-0.1.0
