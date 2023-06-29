@@ -10,6 +10,8 @@ plugins {
 kotlin {
   ios()
   iosSimulatorArm64()
+  macosArm64()
+  macosX64()
   js(IR) {
     browser()
   }
@@ -57,6 +59,12 @@ kotlin {
     }
     val iosSimulatorArm64Main by getting {
       dependsOn(iosMain)
+    }
+    val macosArm64Main by getting {
+      dependsOn(nativeMain)
+    }
+    val macosX64Main by getting {
+      dependsOn(nativeMain)
     }
     val linuxX64Main by getting {
       dependsOn(nativeMain)
