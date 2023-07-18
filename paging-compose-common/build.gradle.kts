@@ -12,7 +12,9 @@ plugins {
 }
 
 kotlin {
-  android()
+  android {
+    publishLibraryVariants("release")
+  }
 
   js(IR) {
     nodejs()
