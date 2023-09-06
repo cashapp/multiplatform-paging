@@ -44,7 +44,7 @@ though you can continue to use Paging 2 on the JVM.
 
 ### `paging-compose-common`
 
-> [!WARNING]
+> [!NOTE]
 > This artifact is functionally equivalent to `paging-runtime-composeui`,
 > with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
 
@@ -166,7 +166,7 @@ implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.3")
 
 ### `paging-compose-common` for common
 
-> [!WARNING]
+> [!NOTE]
 > This artifact is functionally equivalent to `paging-runtime-composeui`,
 > with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
 
