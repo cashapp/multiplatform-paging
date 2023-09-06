@@ -1,6 +1,7 @@
 # Change Log
 
-> ❗Looking for the `3.1.1` change log?
+> [!IMPORTANT]
+> Looking for the `3.1.1` change log?
 > Then check out [this CHANGELOG](https://github.com/cashapp/multiplatform-paging/blob/main/CHANGELOG.md) instead! 
 
 ## [Unreleased]

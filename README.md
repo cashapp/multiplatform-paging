@@ -16,7 +16,8 @@ and the provided UI components can be used to render the paged items on Android 
 
 ## Usage
 
-> ❗Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha05`?
+> [!IMPORTANT]
+> Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha05`?
 > Then check out [this README](https://github.com/cashapp/multiplatform-paging/tree/main) instead!
 
 For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
@@ -43,7 +44,8 @@ though you can continue to use Paging 2 on the JVM.
 
 ### `paging-compose-common`
 
-> ⚠️ This artifact is functionally equivalent to `paging-runtime-composeui`,
+> [!WARNING]
+> This artifact is functionally equivalent to `paging-runtime-composeui`,
 > with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
 
 The API of `paging-compose-common` in Multiplatform Paging is a subset of that of `paging-compose` in AndroidX Paging
@@ -164,7 +166,8 @@ implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.3")
 
 ### `paging-compose-common` for common
 
-> ⚠️ This artifact is functionally equivalent to `paging-runtime-composeui`,
+> [!WARNING]
+> This artifact is functionally equivalent to `paging-runtime-composeui`,
 > with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
 
 ```kotlin
