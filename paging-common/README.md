@@ -5,7 +5,8 @@
 A core goal of `app.cash.paging:paging-common` is to have an identical API to that of `androidx.paging:paging-common`.
 Unfortunately, there are a few API discrepancies with `androidx.paging:paging-common` due to limitations in the Kotlin compiler.
 
-> 🗳️ Voting on the respective YouTrack issues may improve the likelihood of them being implemented.
+> [!NOTE]
+> Voting on the respective YouTrack issues may improve the likelihood of them being implemented.
 > This could reduce the number of API discrepancies in future releases.
 
 ### Nested classes have been made top-level classes

@@ -16,7 +16,8 @@ and the provided UI components can be used to render the paged items on Android 
 
 ## Usage
 
-> ❗Looking for a multiplatform version of `paging-compose`?
+> [!IMPORTANT]
+> Looking for a multiplatform version of `paging-compose`?
 > Or support for version `3.2.0-alpha05` of AndroidX Paging instead of `3.1.1`?
 > Then check out [this README](https://github.com/cashapp/multiplatform-paging/tree/main-3.2.0-alpha05) instead!
 
