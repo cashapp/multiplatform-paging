@@ -3,7 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 
 plugins {
-  alias(libs.plugins.kotlin.multiplatform)
+  id(libs.plugins.kotlin.multiplatform.get().pluginId)
   alias(libs.plugins.mavenPublish)
 }
 
@@ -23,7 +23,7 @@ kotlin {
         api(projects.pagingCommon)
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
+        implementation(libs.stately.concurrent.collections)
       }
     }
     val iosMain by getting {

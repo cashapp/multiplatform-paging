@@ -1,9 +1,10 @@
 plugins {
-  alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.android)
+  id(libs.plugins.android.application.get().pluginId)
+  id(libs.plugins.kotlin.android.get().pluginId)
 }
 
 android {
+  namespace = "app.cash.paging.samples.reposearch"
   compileSdk = 33
 
   defaultConfig {

@@ -3,7 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 
 plugins {
-  alias(libs.plugins.kotlin.multiplatform)
+  id(libs.plugins.kotlin.multiplatform.get().pluginId)
   alias(libs.plugins.mavenPublish)
 }
 
@@ -17,6 +17,7 @@ kotlin {
   }
   jvm()
   linuxX64()
+  linuxArm64()
   mingwX64()
 
   sourceSets {
@@ -46,7 +47,7 @@ kotlin {
       dependsOn(commonMain)
       dependencies {
         implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
+        implementation(libs.stately.concurrent.collections)
       }
     }
     val nativeMain by creating {
@@ -67,6 +68,9 @@ kotlin {
       dependsOn(nativeMain)
     }
     val linuxX64Main by getting {
+      dependsOn(nativeMain)
+    }
+    val linuxArm64Main by getting {
       dependsOn(nativeMain)
     }
     val mingwX64Main by getting {

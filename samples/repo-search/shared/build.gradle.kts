@@ -1,7 +1,7 @@
 plugins {
-  alias(libs.plugins.kotlin.multiplatform)
-  alias(libs.plugins.kotlin.serialization)
-  alias(libs.plugins.kotlin.native.cocoapods)
+  id(libs.plugins.kotlin.multiplatform.get().pluginId)
+  id(libs.plugins.kotlin.serialization.get().pluginId)
+  id(libs.plugins.kotlin.native.cocoapods.get().pluginId)
 }
 
 kotlin {
