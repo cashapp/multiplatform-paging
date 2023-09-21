@@ -1,13 +1,17 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.mavenPublish)
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+  targetHierarchy.default()
+
   ios()
   iosSimulatorArm64()
   macosArm64()
@@ -49,28 +53,10 @@ kotlin {
         implementation(libs.stately.iso.collections)
       }
     }
-    val nativeMain by creating {
+    val nativeMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain")
       dependsOn(nonJsMain)
       dependsOn(nonJvmMain)
-    }
-    val iosMain by getting {
-      dependsOn(nativeMain)
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
-    }
-    val macosArm64Main by getting {
-      dependsOn(nativeMain)
-    }
-    val macosX64Main by getting {
-      dependsOn(nativeMain)
-    }
-    val linuxX64Main by getting {
-      dependsOn(nativeMain)
-    }
-    val mingwX64Main by getting {
-      dependsOn(nativeMain)
     }
     val jsMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain")
