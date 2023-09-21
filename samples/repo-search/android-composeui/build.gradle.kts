@@ -5,6 +5,7 @@ plugins {
 }
 
 android {
+  namespace = "app.cash.paging.samples.reposearch"
   compileSdk = 34
 
   defaultConfig {
