@@ -7,10 +7,10 @@ plugins {
 
 android {
   namespace = "app.cash.paging.samples.reposearch.shared.composeui"
-  compileSdk = 33
+  compileSdk = 34
   defaultConfig {
     minSdk = 21
-    targetSdk = 33
+    targetSdk = 34
   }
 
   compileOptions {
