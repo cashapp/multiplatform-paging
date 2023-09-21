@@ -1,6 +1,0 @@
-platform :ios, '14.0'
-use_frameworks!
-
-target 'RepoSearch' do
-  pod 'shared', :path => '../shared'
-end
