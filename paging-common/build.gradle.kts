@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
@@ -9,7 +10,10 @@ plugins {
   alias(libs.plugins.mavenPublish)
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+  targetHierarchy.default()
+
   js(IR) {
     nodejs()
     binaries.executable()

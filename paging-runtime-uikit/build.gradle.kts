@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -8,7 +9,10 @@ plugins {
   alias(libs.plugins.mavenPublish)
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+  targetHierarchy.default()
+
   ios()
   iosSimulatorArm64()
 
@@ -28,9 +32,6 @@ kotlin {
     }
     val iosMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-runtime/src/commonMain/kotlin")
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
     }
   }
 }

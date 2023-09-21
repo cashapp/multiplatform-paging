@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -22,7 +23,10 @@ android {
   }
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+  targetHierarchy.default()
+
   ios()
   iosSimulatorArm64()
   jvm()
@@ -49,9 +53,6 @@ kotlin {
     }
     val iosMain by getting {
       dependsOn(nonAndroidMain)
-    }
-    val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
     }
     val jvmMain by getting {
       dependsOn(nonAndroidMain)

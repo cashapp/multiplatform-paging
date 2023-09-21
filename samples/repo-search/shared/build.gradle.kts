@@ -38,7 +38,6 @@ kotlin {
       }
     }
     val iosSimulatorArm64Main by getting {
-      dependsOn(iosMain)
       dependencies {
         api(libs.kotlinx.coroutines.core.iossimulatorarm64)
       }
