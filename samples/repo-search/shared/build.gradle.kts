@@ -1,19 +1,25 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.kotlin.serialization)
-  alias(libs.plugins.kotlin.native.cocoapods)
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
-  ios()
-  iosSimulatorArm64()
-  jvm()
+  targetHierarchy.default()
 
-  cocoapods {
-    summary = "Shared code for Repo Search."
-    homepage = "https://github.com/cashapp/multiplatform-paging/tree/main/samples/repo-search/shared"
+  listOf(
+    iosArm64(),
+    iosSimulatorArm64(),
+    iosX64(),
+  ).forEach { iosTarget ->
+    iosTarget.binaries.framework {
+      baseName = "shared"
+    }
   }
+  jvm()
 
   sourceSets {
     val commonMain by getting {
