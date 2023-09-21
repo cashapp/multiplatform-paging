@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0749739E999FF2C4CA08AE3C /* Pods_RepoSearch.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93898FE06E641B11A0247BB6 /* Pods_RepoSearch.framework */; };
 		AFCDBA33218F8F0000B1C80C /* RepositoriesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCDBA32218F8F0000B1C80C /* RepositoriesViewController.swift */; };
 		AFCDBA3F218F960700B1C80C /* RepositoryCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCDBA3E218F960700B1C80C /* RepositoryCell.swift */; };
 		D2A5F2091F4A9144005CD714 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D2A5F2071F4A9144005CD714 /* Main.storyboard */; };
@@ -16,11 +15,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		133D112BD05CBEF22CFB493F /* Pods-RepoSearch.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RepoSearch.debug.xcconfig"; path = "Target Support Files/Pods-RepoSearch/Pods-RepoSearch.debug.xcconfig"; sourceTree = "<group>"; };
-		216034C0993B6932E6B36DC0 /* Pods-RepoSearch.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RepoSearch.debug.xcconfig"; path = "Target Support Files/Pods-RepoSearch/Pods-RepoSearch.debug.xcconfig"; sourceTree = "<group>"; };
-		39D5E738E98867BDCC6E337D /* Pods-RepoSearch.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RepoSearch.release.xcconfig"; path = "Target Support Files/Pods-RepoSearch/Pods-RepoSearch.release.xcconfig"; sourceTree = "<group>"; };
-		90ACB77BF7B8C3608CFE2238 /* Pods-RepoSearch.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RepoSearch.release.xcconfig"; path = "Target Support Files/Pods-RepoSearch/Pods-RepoSearch.release.xcconfig"; sourceTree = "<group>"; };
-		93898FE06E641B11A0247BB6 /* Pods_RepoSearch.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RepoSearch.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFCDBA32218F8F0000B1C80C /* RepositoriesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoriesViewController.swift; sourceTree = "<group>"; };
 		AFCDBA3E218F960700B1C80C /* RepositoryCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryCell.swift; sourceTree = "<group>"; };
 		D2A5F2001F4A9144005CD714 /* RepoSearch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoSearch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -35,28 +29,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0749739E999FF2C4CA08AE3C /* Pods_RepoSearch.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		BE91D8AE36CAFCDE49AEC7A4 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				93898FE06E641B11A0247BB6 /* Pods_RepoSearch.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		CD7C9817496837E8F43598AF /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				216034C0993B6932E6B36DC0 /* Pods-RepoSearch.debug.xcconfig */,
-				90ACB77BF7B8C3608CFE2238 /* Pods-RepoSearch.release.xcconfig */,
-				133D112BD05CBEF22CFB493F /* Pods-RepoSearch.debug.xcconfig */,
-				39D5E738E98867BDCC6E337D /* Pods-RepoSearch.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -67,7 +48,6 @@
 				D2A5F2021F4A9144005CD714 /* RepoSearch */,
 				D2A5F2011F4A9144005CD714 /* Products */,
 				CD7C9817496837E8F43598AF /* Pods */,
-				BE91D8AE36CAFCDE49AEC7A4 /* Frameworks */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -101,12 +81,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D2A5F2121F4A9144005CD714 /* Build configuration list for PBXNativeTarget "RepoSearch" */;
 			buildPhases = (
-				EB5A28BF24D9DCC098CBDCBE /* [CP] Check Pods Manifest.lock */,
 				C0CC9D2A2575D3B3002DD3E0 /* SwiftLint */,
+				005774DE2ABC8EC0003FF54D /* ShellScript */,
 				D2A5F1FC1F4A9144005CD714 /* Sources */,
 				D2A5F1FD1F4A9144005CD714 /* Frameworks */,
 				D2A5F1FE1F4A9144005CD714 /* Resources */,
-				3B473D9F3BC1F50400612209 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -164,23 +143,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3B473D9F3BC1F50400612209 /* [CP] Embed Pods Frameworks */ = {
+		005774DE2ABC8EC0003FF54D /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-RepoSearch/Pods-RepoSearch-frameworks.sh",
-				"${PODS_ROOT}/../../shared/build/cocoapods/framework/shared.framework",
+			inputFileListPaths = (
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/shared.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-RepoSearch/Pods-RepoSearch-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
+			shellScript = "cd \"$SRCROOT/../../..\"\n./gradlew :samples:repo-search:shared:embedAndSignAppleFrameworkForXcode\n";
 		};
 		C0CC9D2A2575D3B3002DD3E0 /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -199,28 +177,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nif [ -f ~/app.cash.paging.samples.reposearch.swiftlint.yml ]; then\n  if which swiftlint >/dev/null; then\n    swiftlint --no-cache --config ~/app.cash.paging.samples.reposearch.swiftlint.yml\n  fi\nfi\n";
-		};
-		EB5A28BF24D9DCC098CBDCBE /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-RepoSearch-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -364,14 +320,19 @@
 		};
 		D2A5F2131F4A9144005CD714 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 133D112BD05CBEF22CFB493F /* Pods-RepoSearch.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				INFOPLIST_FILE = "$(SRCROOT)/RepoSearch/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					shared,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.cash.paging.samples.reposearch.RepoSearch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -382,14 +343,19 @@
 		};
 		D2A5F2141F4A9144005CD714 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 39D5E738E98867BDCC6E337D /* Pods-RepoSearch.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				INFOPLIST_FILE = "$(SRCROOT)/RepoSearch/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					shared,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.cash.paging.samples.reposearch.RepoSearch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
