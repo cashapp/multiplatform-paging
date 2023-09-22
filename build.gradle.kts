@@ -1,6 +1,9 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -19,6 +22,22 @@ allprojects {
   repositories {
     mavenCentral()
     google()
+  }
+
+  plugins.withId("org.jetbrains.kotlin.multiplatform") {
+    configure<KotlinMultiplatformExtension> {
+      jvmToolchain(11)
+    }
+  }
+  plugins.withId("org.jetbrains.kotlin.jvm") {
+    configure<KotlinJvmProjectExtension> {
+      jvmToolchain(11)
+    }
+  }
+  plugins.withId("org.jetbrains.kotlin.android") {
+    configure<KotlinAndroidProjectExtension> {
+      jvmToolchain(11)
+    }
   }
 
   apply(plugin = rootProject.libs.plugins.spotless.get().pluginId)
