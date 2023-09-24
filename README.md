@@ -16,10 +16,6 @@ and the provided UI components can be used to render the paged items on Android 
 
 ## Usage
 
-> [!IMPORTANT]
-> Looking for support for version `3.1.1` of AndroidX Paging instead of `3.2.0-alpha05`?
-> Then check out [this README](https://github.com/cashapp/multiplatform-paging/tree/main) instead!
-
 For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
 
 ### `paging-common`
@@ -44,11 +40,7 @@ though you can continue to use Paging 2 on the JVM.
 
 ### `paging-compose-common`
 
-> [!NOTE]
-> This artifact is functionally equivalent to `paging-runtime-composeui`,
-> with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
-
-The API of `paging-compose-common` in Multiplatform Paging is a subset of that of `paging-compose` in AndroidX Paging
+The API of `paging-compose-common` in Multiplatform Paging is identical to that of `paging-compose` in AndroidX Paging
 (with the exception that the namespace has changed from `androidx.paging` to `app.cash.paging`).
 
 To see how to use `paging-compose-common`, consult the [official documentation of AndroidX Paging](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(kotlinx.coroutines.flow.Flow).collectAsLazyPagingItems(kotlin.coroutines.CoroutineContext)).
@@ -62,30 +54,9 @@ To understand what this means in practice, see the section [_Interoperability wi
 
 `app.cash.paging:paging-compose-common` on the JVM (but not Android) and iOS delegates to _our fork_ of AndroidX Paging.
 
-The module is behaviorally identical to the Android counterpart,
-apart from the fact a default `Logger` implementation is _not_ provided if `LOGGER` is `null`.
-
 ### `paging-runtime` for Android
 
 See the [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging) section below.
-
-### `paging-runtime-composeui` for Android, desktop, and iOS
-
-The API of `paging-runtime-composeui` in Multiplatform Paging is identical to that of `paging-compose` in AndroidX Paging
-(with the exception that the namespace has changed from `androidx.paging` to `app.cash.paging`).
-Therefore, to see how to use `paging-runtime-composeui`, consult the [official documentation of AndroidX Paging](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary).
-
-#### Android
-
-`paging-runtime-composeui` on Android behaves identically to that of `paging-compose` in AndroidX Paging.
-
-#### Desktop/JVM and iOS
-
-The module is behaviorally identical to the Android counterpart,
-apart from the fact that:
-
-* a default `Logger` implementation is _not_ provided if `LOGGER` is `null`.
-* the key for items that aren't loaded yet are _not_ parcelized.
 
 ### `paging-runtime-uikit` for iOS
 
@@ -151,35 +122,25 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.2.0-alpha05` and Multiplatform Paging is on `0.2.3`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.2.0-alpha05-0.2.3`.
+For example, if AndroidX Paging is on `3.3.0-alpha02` and Multiplatform Paging is on `0.3.0-SNAPSHOT`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.3.0-alpha02-0.3.0-SNAPSHOT`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.2.0-alpha05-0.2.3")
+implementation("app.cash.paging:paging-common:3.3.0-alpha02-0.3.0-SNAPSHOT")
 ```
 
 ### `paging-compose-common` for common
 
-> [!NOTE]
-> This artifact is functionally equivalent to `paging-runtime-composeui`,
-> with the notable exception that the deprecated [`items`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).items(androidx.paging.compose.LazyPagingItems,kotlin.Function1,kotlin.Function1,kotlin.Function2)) and [`itemsIndexed`](https://developer.android.com/reference/kotlin/androidx/paging/compose/package-summary#(androidx.compose.foundation.lazy.LazyListScope).itemsIndexed(androidx.paging.compose.LazyPagingItems,kotlin.Function2,kotlin.Function2,kotlin.Function3)) functions have been removed.
-
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.2.0-alpha05-0.2.3")
-```
-
-### `paging-runtime-composeui` for Android, desktop, and iOS
-
-```kotlin
-implementation("app.cash.paging:paging-runtime-composeui:3.2.0-alpha05-0.2.3")
+implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.3.0-SNAPSHOT")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha05-0.2.3")
+implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.3.0-SNAPSHOT")
 ```
 
 ### Android
@@ -187,9 +148,9 @@ implementation("app.cash.paging:paging-runtime-uikit:3.2.0-alpha05-0.2.3")
 Use the [official AndroidX Paging dependencies](https://developer.android.com/jetpack/androidx/releases/paging#declaring_dependencies).
 
 ```kotlin
-implementation("androidx.paging:paging-runtime:3.2.0-alpha05")
-implementation("androidx.paging:paging-compose:1.0.0-alpha19")
-implementation("androidx.paging:paging-rxjava3:3.2.0-alpha05")
+implementation("androidx.paging:paging-runtime:3.3.0-alpha02")
+implementation("androidx.paging:paging-compose:3.3.0-alpha02")
+implementation("androidx.paging:paging-rxjava3:3.3.0-alpha02")
 // etc.
 ```
 

@@ -100,12 +100,24 @@ https://youtrack.jetbrains.com/issue/KT-54786
 
 Import the `copy` extension functions via `app.cash.paging.copy`.
 
-### Missing default values for `PagingData.Companion.empty(LoadStates, LoadStates? = null)` and `PagingData.Companion.from(List<T>, LoadStates, LoadStates? = null)`
+### Missing default values
 
 #### Issue references
 
-https://youtrack.jetbrains.com/issue/KT-54786
+https://youtrack.jetbrains.com/issue/KT-54786 (closed as not planned).
+Based on https://youtrack.jetbrains.com/issue/KT-57614, this may be fixed when the K2 compiler becomes stable.
 
 #### Workaround
 
-Pass in the default value yourself.
+Consult the following table for guidance based on which APIs are being used.
+
+| androidx.paging                                               | app.cash.paging                         |
+|---------------------------------------------------------------|-----------------------------------------|
+| `CombinedLoadStates`                                          | Use `createCombinedLoadStates`.         |
+| `Pager`                                                       | Use `createPager`.                      |
+| `PagingConfig`                                                | Use `createPagingConfig`.               |
+| `PagingData.Companion.empty(LoadStates, LoadStates?)`         | Pass in the default value yourself.     |
+| `PagingData.Companion.from(List<T>, LoadStates, LoadStates?)` | Pass in the default value yourself.     |
+| `PagingDataDiffer`                                            | Pass in the default value yourself.     |
+| `PagingLogger.log(Int, String, Throwable?)`                   | Pass in the default value yourself.     |
+| `PagingSourceLoadResultPage`                                  | Use `createPagingSourceLoadResultPage`. |

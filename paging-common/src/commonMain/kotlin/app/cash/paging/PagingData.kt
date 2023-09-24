@@ -16,7 +16,7 @@
 
 package app.cash.paging
 
-// import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 expect class PagingData<T : Any> {
@@ -25,11 +25,11 @@ expect class PagingData<T : Any> {
     @JvmStatic
     fun <T : Any> empty(): PagingData<T>
 
-//    @JvmOverloads
+    @JvmOverloads
     @JvmStatic
     fun <T : Any> empty(
       sourceLoadStates: LoadStates,
-      mediatorLoadStates: LoadStates? /* = null */,
+      mediatorLoadStates: LoadStates?, /* = null */
     ): PagingData<T>
 
     @JvmStatic
@@ -37,12 +37,12 @@ expect class PagingData<T : Any> {
       data: List<T>,
     ): PagingData<T>
 
-//    @JvmOverloads
+    @JvmOverloads
     @JvmStatic
     fun <T : Any> from(
       data: List<T>,
       sourceLoadStates: LoadStates,
-      mediatorLoadStates: LoadStates? /* = null */,
+      mediatorLoadStates: LoadStates?, /* = null */
     ): PagingData<T>
   }
 }

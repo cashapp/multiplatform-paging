@@ -16,7 +16,6 @@
 
 package app.cash.paging
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
@@ -24,8 +23,8 @@ import kotlin.coroutines.CoroutineContext
 /** @suppress */
 expect abstract class PagingDataDiffer<T : Any>(
   differCallback: DifferCallback,
-  mainContext: CoroutineContext = Dispatchers.Main,
-  cachedPagingData: PagingData<T>? = null,
+  mainContext: CoroutineContext, /* = Dispatchers.Main */
+  cachedPagingData: PagingData<T>?, /* = null */
 ) {
 
   abstract suspend fun presentNewList(

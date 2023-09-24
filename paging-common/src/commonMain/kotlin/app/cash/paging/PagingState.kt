@@ -16,7 +16,7 @@
 
 package app.cash.paging
 
-expect class PagingState<Key : Any, Value : Any>(
+expect class PagingState<Key : Any, Value : Any> constructor(
   pages: List<PagingSourceLoadResultPage<Key, Value>>,
   anchorPosition: Int?,
   config: PagingConfig,

@@ -96,8 +96,8 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   data: List<Value>,
   prevKey: Key?,
   nextKey: Key?,
-  itemsBefore: Int = COUNT_UNDEFINED,
-  itemsAfter: Int = COUNT_UNDEFINED,
+  itemsBefore: Int, /* = COUNT_UNDEFINED */
+  itemsAfter: Int, /* = COUNT_UNDEFINED */
 ) : Iterable<Value> {
   val data: List<Value>
   val prevKey: Key?
@@ -118,6 +118,22 @@ expect class PagingSourceLoadResultPage<Key : Any, Value : Any> constructor(
   operator fun component5(): Int
 
   companion object
+}
+
+fun <Key : Any, Value : Any> createPagingSourceLoadResultPage(
+  data: List<Value>,
+  prevKey: Key?,
+  nextKey: Key?,
+  itemsBefore: Int = COUNT_UNDEFINED,
+  itemsAfter: Int = COUNT_UNDEFINED,
+): PagingSourceLoadResultPage<Key, Value> {
+  return PagingSourceLoadResultPage(
+    data,
+    prevKey,
+    nextKey,
+    itemsBefore,
+    itemsAfter,
+  )
 }
 
 fun <Key : Any, Value : Any> PagingSourceLoadResultPage<Key, Value>.copy(

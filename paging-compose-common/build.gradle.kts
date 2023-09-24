@@ -12,7 +12,7 @@ plugins {
 }
 
 kotlin {
-  android {
+  androidTarget {
     publishLibraryVariants("release")
   }
 
@@ -65,6 +65,7 @@ kotlin {
         target.compilations.getByName("main").defaultSourceSet.kotlin.srcDirs(
           "src/nonAndroidMain",
           "../upstreams/androidx-main/paging/paging-compose/src/commonMain",
+          "../upstreams/androidx-main/paging/paging-compose/src/nonAndroidMain",
         )
       }
     }

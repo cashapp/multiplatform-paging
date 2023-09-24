@@ -23,15 +23,11 @@ kotlin {
       }
     }
     val commonMain by getting {
-      dependencies {
-        api(projects.pagingCommon)
-        implementation(libs.kotlinx.coroutines.core)
-        implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
-      }
-    }
-    val iosMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-runtime/src/commonMain/kotlin")
+      dependencies {
+        api(libs.androidx.paging.common)
+        implementation(libs.kotlinx.coroutines.core)
+      }
     }
   }
 }

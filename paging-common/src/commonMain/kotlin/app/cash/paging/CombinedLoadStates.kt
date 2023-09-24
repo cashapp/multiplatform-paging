@@ -21,11 +21,27 @@ expect class CombinedLoadStates(
   prepend: LoadState,
   append: LoadState,
   source: LoadStates,
-  mediator: LoadStates? = null,
+  mediator: LoadStates? /* = null */,
 ) {
   val refresh: LoadState
   val prepend: LoadState
   val append: LoadState
   val source: LoadStates
   val mediator: LoadStates?
+}
+
+fun createCombinedLoadStates(
+  refresh: LoadState,
+  prepend: LoadState,
+  append: LoadState,
+  source: LoadStates,
+  mediator: LoadStates? = null,
+): CombinedLoadStates {
+  return CombinedLoadStates(
+    refresh,
+    prepend,
+    append,
+    source,
+    mediator,
+  )
 }

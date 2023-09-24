@@ -17,15 +17,14 @@
 package app.cash.paging
 
 import kotlin.jvm.JvmField
-import kotlin.jvm.JvmOverloads
 
-expect class PagingConfig @JvmOverloads constructor(
+expect class PagingConfig /* @JvmOverloads */ constructor(
   pageSize: Int,
-  prefetchDistance: Int = pageSize,
-  enablePlaceholders: Boolean = true,
-  initialLoadSize: Int = pageSize * 3,
-  maxSize: Int = MAX_SIZE_UNBOUNDED,
-  jumpThreshold: Int = COUNT_UNDEFINED,
+  prefetchDistance: Int, /* = pageSize */
+  enablePlaceholders: Boolean, /* = true */
+  initialLoadSize: Int, /* = pageSize * 3 */
+  maxSize: Int, /* = MAX_SIZE_UNBOUNDED */
+  jumpThreshold: Int, /* = COUNT_UNDEFINED */
 ) {
   @JvmField
   val pageSize: Int
@@ -46,6 +45,24 @@ expect class PagingConfig @JvmOverloads constructor(
   val jumpThreshold: Int
 
   companion object
+}
+
+fun createPagingConfig(
+  pageSize: Int,
+  prefetchDistance: Int = pageSize,
+  enablePlaceholders: Boolean = true,
+  initialLoadSize: Int = pageSize * 3,
+  maxSize: Int = MAX_SIZE_UNBOUNDED,
+  jumpThreshold: Int = COUNT_UNDEFINED,
+): PagingConfig {
+  return PagingConfig(
+    pageSize,
+    prefetchDistance,
+    enablePlaceholders,
+    initialLoadSize,
+    maxSize,
+    jumpThreshold,
+  )
 }
 
 @Suppress("MinMaxConstant")

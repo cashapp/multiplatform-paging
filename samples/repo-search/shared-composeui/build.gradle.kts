@@ -27,7 +27,7 @@ kotlin {
     val commonMain by getting {
       dependencies {
         api(projects.samples.repoSearch.shared)
-        implementation(projects.pagingRuntimeComposeui)
+        implementation(projects.pagingComposeCommon)
         implementation(compose.ui)
         implementation(compose.material)
       }

@@ -12,7 +12,40 @@ plugins {
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
-  targetHierarchy.default()
+  targetHierarchy.custom {
+    common {
+      group("nonJs") {
+        withCompilations { it.target.platformType != KotlinPlatformType.js }
+      }
+      group("commonAndroidX") {
+        withIos()
+        withJvm()
+        withLinuxX64()
+        withMacos()
+      }
+      group("commonNonAndroidX") {
+        group("jsAndNonAndroidX") {
+          withJs()
+        }
+        group("nonJsAndNonAndroidX") {
+          group("nativeAndNonAndroidX") {
+            group("mingwAndNonAndroidX") {
+              withMingw()
+            }
+            group("linuxArm64AndAppleAndNonAndroidX") {
+              group("linuxArm64AndNonAndroidX") {
+                withLinuxArm64()
+              }
+              group("appleAndNonAndroidX") {
+                withTvos()
+                withWatchos()
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   js(IR) {
     nodejs()
@@ -23,6 +56,7 @@ kotlin {
 
   ios()
   iosSimulatorArm64()
+  linuxArm64()
   linuxX64()
   macosArm64()
   macosX64()
@@ -44,40 +78,40 @@ kotlin {
         implementation(libs.kotlinx.coroutines.core)
       }
     }
-    val nonJsMain by creating {
-      dependsOn(commonMain)
-    }
-    val jvmMain by getting {
+    val nonJsMain by getting
+    val commonAndroidXMain by getting {
+      dependsOn(nonJsMain)
       dependencies {
         api(libs.androidx.paging.common)
       }
     }
-    val nonJvmMain by creating {
+    val commonNonAndroidXMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/commonMain")
-      dependsOn(commonMain)
-      dependencies {
-        implementation(libs.stately.concurrency)
-        implementation(libs.stately.iso.collections)
-      }
     }
-    val nonJsAndNonJvmMain by creating {
+    val nonJsAndNonAndroidXMain by getting {
+      dependsOn(nonJsMain)
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nonJsMain")
-      dependsOn(nonJvmMain)
     }
-    val jsMain by getting {
+    val jsAndNonAndroidXMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/jsMain")
     }
-    targets.forEach { target ->
-      if (target.platformType == KotlinPlatformType.common) return@forEach
-      if (target.platformType != KotlinPlatformType.js) {
-        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJsMain)
+    val nativeAndNonAndroidXMain by getting {
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/nativeMain")
+      dependencies {
+        implementation(libs.kotlinx.atomicfu)
       }
-      if (target.platformType != KotlinPlatformType.jvm) {
-        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJvmMain)
-      }
-      if (target.platformType !in arrayOf(KotlinPlatformType.js, KotlinPlatformType.jvm)) {
-        target.compilations.getByName("main").defaultSourceSet.dependsOn(nonJsAndNonJvmMain)
-      }
+    }
+    val linuxArm64AndAppleAndNonAndroidXMain by getting {
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/linuxAndDarwinMain")
+    }
+    val appleAndNonAndroidXMain by getting {
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/darwinMain")
+    }
+    val linuxArm64AndNonAndroidXMain by getting {
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/linuxMain")
+    }
+    val mingwAndNonAndroidXMain by getting {
+      kotlin.srcDir("../upstreams/androidx-main/paging/paging-common/src/mingwX64Main")
     }
   }
 }

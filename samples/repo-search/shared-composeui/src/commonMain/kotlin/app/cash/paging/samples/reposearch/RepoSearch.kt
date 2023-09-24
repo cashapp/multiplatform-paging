@@ -20,7 +20,6 @@ import app.cash.paging.LoadStateLoading
 import app.cash.paging.LoadStateNotLoading
 import app.cash.paging.compose.LazyPagingItems
 import app.cash.paging.compose.collectAsLazyPagingItems
-import app.cash.paging.items
 import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
@@ -97,7 +96,8 @@ private fun SearchResults(repositories: LazyPagingItems<Repository>) {
         }
       }
       is LoadStateNotLoading -> {
-        items(repositories) { repository ->
+        items(repositories.itemCount) { index ->
+          val repository = repositories[index]
           Row(Modifier.fillMaxWidth()) {
             Text(
               repository!!.fullName,

@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
+@file:JvmName("PagingDataTransforms")
+@file:JvmMultifileClass
+
 package app.cash.paging
 
 import app.cash.paging.TerminalSeparatorType.FULLY_COMPLETE
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmSynthetic
 
