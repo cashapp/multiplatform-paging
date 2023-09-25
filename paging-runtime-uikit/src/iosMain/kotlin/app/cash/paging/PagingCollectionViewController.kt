@@ -15,13 +15,7 @@ import platform.UIKit.indexPathForRow
 import platform.darwin.NSInteger
 
 // Making abstract causes the compilation error "Non-final Kotlin subclasses of Objective-C classes are not yet supported".
-class PagingCollectionViewController<T : Any>() {
-
-  @Deprecated(
-    "The indexCreator constructor parameter is no longer required. It can be safely removed.",
-    ReplaceWith("PagingCollectionViewController()"),
-  )
-  constructor(indexCreator: (row: Int, section: Int) -> NSIndexPath) : this()
+class PagingCollectionViewController<T : Any> {
 
   private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
   private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default

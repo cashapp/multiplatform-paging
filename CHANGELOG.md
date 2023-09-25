@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-### Deprecated
+### Removed
 
 - [paging-runtime-uikit] Instantiating `PagingCollectionViewController` no longer requires an `indexCreator`.
   It can be safely removed.
