@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.3.0-alpha02-0.4.0]
+
 ### Added
 
 - [paging-common] Packaged version `3.3.0-alpha02` of AndroidX Paging's `paging-common` for Kotlin/Multiplatform.
@@ -18,3 +20,4 @@
   It can be safely removed.
 
 [Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.3.0-alpha02-0.4.0...main-3.3.0-alpha02
+[3.3.0-alpha02-0.4.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.4.0

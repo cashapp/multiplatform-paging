@@ -122,25 +122,25 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.3.0-alpha02` and Multiplatform Paging is on `0.3.0-SNAPSHOT`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.3.0-alpha02-0.3.0-SNAPSHOT`.
+For example, if AndroidX Paging is on `3.3.0-alpha02` and Multiplatform Paging is on `0.4.0`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.3.0-alpha02-0.4.0`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.3.0-alpha02-0.3.0-SNAPSHOT")
+implementation("app.cash.paging:paging-common:3.3.0-alpha02-0.4.0")
 ```
 
 ### `paging-compose-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.3.0-SNAPSHOT")
+implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.4.0")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.3.0-SNAPSHOT")
+implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.4.0")
 ```
 
 ### Android
