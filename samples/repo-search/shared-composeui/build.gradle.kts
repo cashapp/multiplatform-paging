@@ -21,7 +21,7 @@ android {
 
 kotlin {
   jvm()
-  android()
+  androidTarget()
 
   sourceSets {
     val commonMain by getting {
