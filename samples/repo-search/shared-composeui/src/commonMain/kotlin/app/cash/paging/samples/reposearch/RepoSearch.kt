@@ -1,7 +1,6 @@
 package app.cash.paging.samples.reposearch
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,70 +13,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.paging.PagingData
 import app.cash.paging.LoadStateError
 import app.cash.paging.LoadStateLoading
 import app.cash.paging.LoadStateNotLoading
 import app.cash.paging.compose.LazyPagingItems
 import app.cash.paging.compose.collectAsLazyPagingItems
-import kotlinx.coroutines.flow.emptyFlow
-
-@Composable
-private fun RepoSearchEmpty(
-  events: (Event) -> Unit,
-  onRefreshList: () -> Unit,
-) {
-  Surface(Modifier.fillMaxSize()) {
-    Column {
-      SearchField(
-        searchTerm = "",
-        events = events,
-        onRefreshList = onRefreshList,
-      )
-    }
-  }
-}
-
-@Composable
-private fun RepoSearchResults(
-  searchTerm: String,
-  events: (Event) -> Unit,
-  searchResults: @Composable ColumnScope.() -> Unit,
-  onRefreshList: () -> Unit,
-) {
-  Surface(Modifier.fillMaxSize()) {
-    Column {
-      SearchField(
-        searchTerm = searchTerm,
-        events = events,
-        onRefreshList = onRefreshList,
-      )
-      searchResults()
-    }
-  }
-}
 
 @Composable
 fun RepoSearchContent(
   viewModel: ViewModel,
   events: (Event) -> Unit,
 ) {
-  when (viewModel) {
-    ViewModel.Empty -> {
-      val repositories = emptyFlow<PagingData<Repository>>().collectAsLazyPagingItems()
-      RepoSearchEmpty(
-        events = events,
-        onRefreshList = repositories::refresh,
-      )
-    }
-    is ViewModel.SearchResults -> {
-      val repositories = viewModel.repositories.collectAsLazyPagingItems()
-      RepoSearchResults(
-        searchTerm = viewModel.searchTerm,
-        events = events,
-        searchResults = { SearchResults(repositories) },
-        onRefreshList = repositories::refresh,
-      )
+  Surface(Modifier.fillMaxSize()) {
+    when (viewModel) {
+      ViewModel.Empty -> {
+        Column {
+          SearchField(
+            searchTerm = "",
+            events = events,
+            onRefreshList = {},
+          )
+        }
+      }
+      is ViewModel.SearchResults -> {
+        val repositories = viewModel.repositories.collectAsLazyPagingItems()
+        Column {
+          SearchField(
+            searchTerm = viewModel.searchTerm,
+            events = events,
+            onRefreshList = { repositories.refresh() },
+          )
+          SearchResults(repositories)
+        }
+      }
     }
   }
 }
