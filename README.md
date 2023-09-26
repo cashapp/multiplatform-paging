@@ -1,6 +1,7 @@
 # Multiplatform Paging
 
-A library that packages [AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) for Kotlin/Multiplatform.
+A library that adds additional Kotlin/Multiplatform targets to [AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview),
+and provides UI components to use Paging on iOS.
 
 ## Introduction
 
@@ -9,14 +10,14 @@ As with AndroidX Paging, the primary modules of Multiplatform Paging are:
 * `paging-common` – encompasses the [repository layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#repository) and the [view model layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#viewmodel)
 * `paging-runtime` – encompasses the [UI layer](https://developer.android.com/topic/libraries/architecture/paging/v3-overview#ui)
 
-Unlike AndroidX Paging that makes `paging-common` JVM-specific and `paging-runtime` Android-specific,
-Multiplatform Paging makes `paging-common` multiplatform and provides `paging-runtime-uikit`, a UIKit-specific runtime for iOS.
-Therefore, pagination logic between Android and iOS can be shared,
+Unlike AndroidX Paging that has a limited number of targets for `paging-common` and makes `paging-runtime` Android-specific,
+Multiplatform Paging adds many more targets to `paging-common` and provides `paging-runtime-uikit`, a UIKit-specific runtime for iOS.
+Therefore, pagination logic between many more targets can be shared,
 and the provided UI components can be used to render the paged items on Android and iOS.
 
 ## Usage
 
-For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android and iOS app, along with shared pagination logic.
+For a holistic view of Multiplatform Paging, check out the [GitHub Repository Search sample project](samples/repo-search), where there's an Android, Desktop, and iOS app, along with shared pagination logic.
 
 ### `paging-common`
 
@@ -25,18 +26,17 @@ The API of `paging-common` in Multiplatform Paging is identical to that of `pagi
 there are some minor [API discrepancies](paging-common/README.md) due to limitations in the Kotlin compiler).
 Therefore, to see how to use `paging-common`, consult the [official documentation of AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview).
 
-#### JVM
+Like AndroidX Paging, all targets except for the JVM include the Paging 3 APIs only from AndroidX Paging.
+There are no plans to add support for Paging 2 APIs beyond the JVM.
 
-`app.cash.paging:paging-common` on the JVM delegates to `androidx.paging:paging-common` via type aliases.
+#### JVM, iOS, Linux X64, and macOS
+
+`app.cash.paging:paging-common` on these targets delegate to `androidx.paging:paging-common` via type aliases.
 To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
 
-#### iOS
+#### JS, MinGW, Linux Arm64, tvOS, and watchOS
 
-`app.cash.paging:paging-common` on iOS delegates to _our fork_ of AndroidX Paging.
-
-iOS only includes the Paging 3 APIs from AndroidX Paging.
-We don't plan on offering Paging 2 support for iOS,
-though you can continue to use Paging 2 on the JVM.
+`app.cash.paging:paging-common` on these targets delegate to _our fork_ of AndroidX Paging.
 
 ### `paging-compose-common`
 
@@ -50,9 +50,9 @@ To see how to use `paging-compose-common`, consult the [official documentation o
 `app.cash.paging:paging-compose-common` on Android delegates to `androidx.paging:paging-compose` via type aliases.
 To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
 
-#### Desktop/JVM and iOS
+#### JVM, iOS, JS, JVM, Linux X64, macOS, MinGW, tvOS, and watchOS
 
-`app.cash.paging:paging-compose-common` on the JVM (but not Android) and iOS delegates to _our fork_ of AndroidX Paging.
+`app.cash.paging:paging-compose-common` on the these targets delegate to _our fork_ of AndroidX Paging.
 
 ### `paging-runtime` for Android
 
@@ -105,30 +105,33 @@ final class FooViewController: UICollectionViewController {
 ### `paging-testing`
 
 The API of `paging-testing` in Multiplatform Paging is identical to that of `paging-testing` in AndroidX Paging
-(with the exception that: the namespace has changed from `androidx.paging` to `app.cash.paging`).
+(with the exception that the namespace has changed from `androidx.paging` to `app.cash.paging`).
 Therefore, to see how to use `paging-testing`, consult the [official documentation of AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/test).
 
 #### JVM, iOS, Linux X64, and macOS
 
-`app.cash.paging:paging-testing` on the JVM, iOS, Linux X64, and macOS delegates to `androidx.paging:paging-testing` via type aliases.
+`app.cash.paging:paging-testing` on these targets delegate to `androidx.paging:paging-testing` via type aliases.
 To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
 
 #### JS, MinGW, Linux Arm64, tvOS, and watchOS
 
-`app.cash.paging:paging-common` on JS, MinGW, Linux Arm64, tvOS, and watchOS delegates to _our fork_ of AndroidX Paging.
+`app.cash.paging:paging-common` on these targets delegate to _our fork_ of AndroidX Paging.
 
 ## Interoperability with AndroidX Paging
 
-As `app.cash.paging:paging-common` on the JVM type aliases to `androidx.paging:paging-common`,
+As `app.cash.paging:paging-common` on the JVM, iOS, Linux X64, and macOS type alias to `androidx.paging:paging-common`,
 some useful side effects occur:
 
-* The implementation of `app.cash.paging:paging-common` on the JVM is **identical** to `androidx.paging:paging-common`.
-  This means that it is impossible for there to be a behavioral discrepancy when using `app.cash.paging:paging-common` on the JVM.
-* All libraries that depend on `androidx.paging:paging-common` can continue to be used on the JVM (e.g., `androidx.paging:paging-runtime`, `androidx.paging:paging-compose`, `androidx.paging:paging-rxjava3`).
+* The implementation of `app.cash.paging:paging-common` on the JVM, iOS, Linux X64, and macOS is **identical** to `androidx.paging:paging-common`.
+  This means that it is impossible for there to be a behavioral discrepancy when using `app.cash.paging:paging-common` on the JVM, iOS, Linux X64, or macOS.
+* All libraries that depend on `androidx.paging:paging-common` can continue to be used. 
+  Some JVM-specific examples include `androidx.paging:paging-runtime`, `androidx.paging:paging-compose`, and `androidx.paging:paging-rxjava3`.
   This is why there aren't additional `paging-runtime` artifacts to support Android's UI toolkit,
   as you can instead depend on the official AndroidX artifact.
-* If you're already using AndroidX Paging, you don't need to refactor your Android code to use Multiplatform Paging.
-  The use of Multiplatform Paging is only necessary if you wish to share pagination logic in common code and/or paginate on iOS. 
+* If you're already using AndroidX Paging, you don't need to refactor your existing codebase to begin using Multiplatform Paging.
+  The use of Multiplatform Paging is only necessary if you wish to share pagination logic on targets that AndroidX Paging don't yet support, or you want to use pagination UI bindings on platforms like iOS via `paging-runtime-uikit`. 
+
+A similar argument can be made for `app.cash.paging:paging-compose-common` and `app.cash.paging:paging-testing`.
 
 ## Releases
 
