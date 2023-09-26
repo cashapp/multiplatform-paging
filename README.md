@@ -102,6 +102,21 @@ final class FooViewController: UICollectionViewController {
 }
 ```
 
+### `paging-testing`
+
+The API of `paging-testing` in Multiplatform Paging is identical to that of `paging-testing` in AndroidX Paging
+(with the exception that: the namespace has changed from `androidx.paging` to `app.cash.paging`).
+Therefore, to see how to use `paging-testing`, consult the [official documentation of AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/test).
+
+#### JVM, iOS, Linux X64, and macOS
+
+`app.cash.paging:paging-testing` on the JVM, iOS, Linux X64, and macOS delegates to `androidx.paging:paging-testing` via type aliases.
+To understand what this means in practice, see the section [_Interoperability with AndroidX Paging_](#interoperability-with-androidx-paging).
+
+#### JS, MinGW, Linux Arm64, tvOS, and watchOS
+
+`app.cash.paging:paging-common` on JS, MinGW, Linux Arm64, tvOS, and watchOS delegates to _our fork_ of AndroidX Paging.
+
 ## Interoperability with AndroidX Paging
 
 As `app.cash.paging:paging-common` on the JVM type aliases to `androidx.paging:paging-common`,
@@ -141,6 +156,12 @@ implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.4.0")
 
 ```kotlin
 implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.4.0")
+```
+
+### `paging-testing` for common
+
+```kotlin
+implementation("app.cash.paging:paging-testing:3.3.0-alpha02-0.4.0")
 ```
 
 ### Android
