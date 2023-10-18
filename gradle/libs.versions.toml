@@ -17,7 +17,7 @@ jb-compose-plugin = "1.5.3"
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-compose-material = { module = "androidx.compose.material:material", version = "1.5.3" }
-androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.5.3" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.5.4" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.12.0" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
