@@ -10,8 +10,8 @@ pluginManagement {
   }
 }
 
-include(":paging-common") // This is done
-include(":paging-compose-common") // Copy-paste from
+include(":paging-common")
+include(":paging-compose-common")
 include(":paging-runtime-uikit")
 include(":paging-testing")
 include(":samples:repo-search:shared")
