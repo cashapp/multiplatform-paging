@@ -11,7 +11,7 @@ ktlint = "0.48.2"
 ktor = "2.3.6"
 maven-publish = "0.25.3"
 spotless = "6.22.0"
-jb-compose-plugin = "1.5.10"
+jb-compose-plugin = "1.5.11"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
