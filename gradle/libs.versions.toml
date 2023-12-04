@@ -10,7 +10,7 @@ kotlinx-serialization-json = "1.6.2"
 ktlint = "0.48.2"
 ktor = "2.3.6"
 maven-publish = "0.25.3"
-spotless = "6.23.2"
+spotless = "6.23.3"
 jb-compose-plugin = "1.5.11"
 
 [libraries]
