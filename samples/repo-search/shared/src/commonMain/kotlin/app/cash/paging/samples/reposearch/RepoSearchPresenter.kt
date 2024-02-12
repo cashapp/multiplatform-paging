@@ -17,10 +17,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 class RepoSearchPresenter {
@@ -46,24 +44,17 @@ class RepoSearchPresenter {
     }
   }
 
-  suspend fun produceViewModels(
-    events: Flow<Event>,
-  ): Flow<ViewModel> {
-    return coroutineScope {
-      channelFlow {
-        events
-          .collectLatest { event ->
-            when (event) {
-              is Event.SearchTerm -> {
-                latestSearchTerm = event.searchTerm
-                if (event.searchTerm.isEmpty()) {
-                  send(ViewModel.Empty)
-                } else {
-                  send(ViewModel.SearchResults(latestSearchTerm, pager.flow))
-                }
-              }
-            }
+  fun produceViewModels(events: Flow<Event>): Flow<ViewModel> {
+    return events.map { event ->
+      when (event) {
+        is Event.SearchTerm -> {
+          latestSearchTerm = event.searchTerm
+          if (event.searchTerm.isEmpty()) {
+            ViewModel.Empty
+          } else {
+            ViewModel.SearchResults(latestSearchTerm, pager.flow)
           }
+        }
       }
     }
   }
