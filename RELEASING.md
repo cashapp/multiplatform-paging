@@ -41,5 +41,3 @@
    and automatically promote those artifacts.
 
 10. Create a new GitHub Release.
-
-11. (optional) Link to release on Twitter/Mastodon.
