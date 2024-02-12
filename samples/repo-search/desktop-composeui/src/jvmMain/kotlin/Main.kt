@@ -37,7 +37,7 @@ fun App() {
   RepoSearchTheme {
     RepoSearchContent(
       viewModel = viewModel,
-      events = { event ->
+      onEvent = { event ->
         events.tryEmit(event)
       },
     )

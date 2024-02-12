@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SearchField(
   searchTerm: String,
-  events: (Event) -> Unit,
+  onEvent: (Event) -> Unit,
   onRefreshList: () -> Unit,
 ) {
   var textFieldValue by remember { mutableStateOf(TextFieldValue(searchTerm)) }
@@ -35,7 +35,7 @@ fun SearchField(
     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
     keyboardActions = KeyboardActions(
       onSearch = {
-        events(Event.SearchTerm(textFieldValue.text))
+        onEvent(Event.SearchTerm(textFieldValue.text))
         onRefreshList()
       },
     ),

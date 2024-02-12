@@ -20,7 +20,7 @@ import app.cash.paging.compose.collectAsLazyPagingItems
 @Composable
 fun RepoSearchContent(
   viewModel: ViewModel,
-  events: (Event) -> Unit,
+  onEvent: (Event) -> Unit,
 ) {
   when (viewModel) {
     ViewModel.Empty -> {
@@ -28,7 +28,7 @@ fun RepoSearchContent(
         topBar = {
           SearchField(
             searchTerm = "",
-            events = events,
+            onEvent = onEvent,
             onRefreshList = {},
           )
         },
@@ -41,7 +41,7 @@ fun RepoSearchContent(
         topBar = {
           SearchField(
             searchTerm = viewModel.searchTerm,
-            events = events,
+            onEvent = onEvent,
             onRefreshList = { repositories.refresh() },
           )
         },
