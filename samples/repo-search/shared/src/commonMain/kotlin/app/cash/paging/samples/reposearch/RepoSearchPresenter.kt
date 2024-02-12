@@ -76,7 +76,6 @@ private class RepositoryPagingSource(
 
   override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Repository> {
     val page = params.key ?: FIRST_PAGE_INDEX
-    println("veyndan___ $page")
     val httpResponse = httpClient.get("https://api.github.com/search/repositories") {
       url {
         parameters.append("page", page.toString())
@@ -91,7 +90,6 @@ private class RepositoryPagingSource(
     return when {
       httpResponse.status.isSuccess() -> {
         val repositories = httpResponse.body<Repositories>()
-        println("veyndan___ ${repositories.items}")
         PagingSourceLoadResultPage(
           data = repositories.items,
           prevKey = (page - 1).takeIf { it >= FIRST_PAGE_INDEX },
