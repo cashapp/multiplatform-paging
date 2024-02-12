@@ -14,7 +14,7 @@ sealed interface Event {
 
 sealed interface ViewModel {
 
-  object Empty : ViewModel
+  data object Empty : ViewModel
 
   data class SearchResults(
     val searchTerm: String,
