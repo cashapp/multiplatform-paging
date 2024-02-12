@@ -33,5 +33,3 @@ data class Repository(
   @SerialName("full_name") val fullName: String,
   @SerialName("stargazers_count") val stargazersCount: Int,
 )
-
-object RateLimitExceeded : Exception()
