@@ -157,7 +157,6 @@ public sealed class ScatterSet<E> {
      * Returns the number of elements that can be stored in this set
      * without requiring internal storage reallocation.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public val capacity: Int
         get() = _capacity
 
@@ -169,7 +168,6 @@ public sealed class ScatterSet<E> {
     /**
      * Returns the number of elements in this set.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public val size: Int
         get() = _size
 
@@ -303,7 +301,6 @@ public sealed class ScatterSet<E> {
     /**
      * Returns the number of elements in this set.
      */
-    @androidx.annotation.IntRange(from = 0)
     public fun count(): Int = size
 
     /**
@@ -311,7 +308,6 @@ public sealed class ScatterSet<E> {
      * @param predicate Called for all elements in the set to count the number for which it returns
      * `true`.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun count(predicate: (element: E) -> Boolean): Int {
         contract { callsInPlace(predicate) }
         var count = 0
@@ -945,7 +941,6 @@ public class MutableScatterSet<E>(
      * Returns the number of empty elements removed from this set's storage.
      * Returns 0 if no trimming is necessary or possible.
      */
-    @androidx.annotation.IntRange(from = 0)
     public fun trim(): Int {
         val previousCapacity = _capacity
         val newCapacity = normalizeCapacity(unloadedCapacity(_size))

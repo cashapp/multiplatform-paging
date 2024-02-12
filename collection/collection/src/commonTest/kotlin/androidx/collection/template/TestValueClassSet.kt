@@ -169,14 +169,12 @@ internal value class TestValueClassSet(val set: LongSet) {
      * Returns the number of elements that can be stored in this set
      * without requiring internal storage reallocation.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val capacity: Int
         get() = set.capacity
 
     /**
      * Returns the number of elements in this set.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val size: Int
         get() = set.size
 
@@ -255,7 +253,6 @@ internal value class TestValueClassSet(val set: LongSet) {
     /**
      * Returns the number of elements in this set.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun count(): Int = set.count()
 
     /**
@@ -263,7 +260,6 @@ internal value class TestValueClassSet(val set: LongSet) {
      * @param predicate Called for all elements in the set to count the number for which it returns
      * `true`.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun count(predicate: (element: TestValueClass) -> Boolean): Int {
         contract { callsInPlace(predicate) }
         return set.count { predicate(TestValueClass(it.toULong())) }
@@ -320,14 +316,12 @@ internal value class MutableTestValueClassSet(val set: MutableLongSet) {
      * Returns the number of elements that can be stored in this set
      * without requiring internal storage reallocation.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val capacity: Int
         get() = set.capacity
 
     /**
      * Returns the number of elements in this set.
      */
-    @get:androidx.annotation.IntRange(from = 0)
     public inline val size: Int
         get() = set.size
 
@@ -406,7 +400,6 @@ internal value class MutableTestValueClassSet(val set: MutableLongSet) {
     /**
      * Returns the number of elements in this set.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun count(): Int = set.count()
 
     /**
@@ -414,7 +407,6 @@ internal value class MutableTestValueClassSet(val set: MutableLongSet) {
      * @param predicate Called for all elements in the set to count the number for which it returns
      * `true`.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun count(predicate: (element: TestValueClass) -> Boolean): Int {
         contract { callsInPlace(predicate) }
         return set.count { predicate(TestValueClass(it.toULong())) }
@@ -549,6 +541,5 @@ internal value class MutableTestValueClassSet(val set: MutableLongSet) {
      * Returns the number of empty elements removed from this set's storage.
      * Returns 0 if no trimming is necessary or possible.
      */
-    @androidx.annotation.IntRange(from = 0)
     public inline fun trim(): Int = set.trim()
 }
