@@ -22,12 +22,13 @@ fun SearchField(
   searchTerm: String,
   onEvent: (Event) -> Unit,
   onRefreshList: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
   var textFieldValue by remember { mutableStateOf(TextFieldValue(searchTerm)) }
   TextField(
     textFieldValue,
     onValueChange = { textFieldValue = it },
-    Modifier
+    modifier
       .wrapContentHeight()
       .fillMaxWidth()
       .padding(start = 16.dp, top = 16.dp, end = 16.dp),

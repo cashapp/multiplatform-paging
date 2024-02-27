@@ -45,18 +45,25 @@ allprojects {
     kotlin {
       target("**/*.kt")
       targetExclude("upstreams/**/*.kt")
-      ktlint(libs.versions.ktlint.get())
+      ktlint(libs.ktlint.get().version)
+        .customRuleSets(
+          listOf(
+            libs.ktlintComposeRules.get().toString(),
+          ),
+        )
         .editorConfigOverride(
           mapOf(
             // Disabled because paging-* filenames should be identical to that of AndroidX Paging.
             "ktlint_standard_filename" to "disabled",
+            // Do not impose standard Kotlin function naming onto Compose functions.
+            "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
           ),
         )
     }
     kotlinGradle {
       target("**/*.kts")
       targetExclude("upstreams/**/*.kts")
-      ktlint(libs.versions.ktlint.get())
+      ktlint(libs.ktlint.get().version)
     }
   }
 

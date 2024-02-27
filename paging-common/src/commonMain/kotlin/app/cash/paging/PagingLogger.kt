@@ -20,7 +20,12 @@ const val LOG_TAG: String = "Paging"
 
 expect object PagingLogger {
   fun isLoggable(level: Int): Boolean
-  fun log(level: Int, message: String, tr: Throwable? /* = null */)
+  fun log(
+    level: Int,
+    message: String,
+    /* default = null */
+    tr: Throwable?,
+  )
 }
 
 expect inline fun log(

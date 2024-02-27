@@ -7,7 +7,6 @@ androidx-paging = "3.3.0-alpha02"
 kotlin = "1.9.10"
 kotlinx-coroutines = "1.7.3"
 kotlinx-serialization-json = "1.6.3"
-ktlint = "0.48.2"
 ktor = "2.3.8"
 maven-publish = "0.27.0"
 spotless = "6.25.0"
@@ -36,6 +35,9 @@ ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotia
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# Specify the full coordinate for Renovate to track even though we only use the version.
+ktlint = "com.pinterest.ktlint:ktlint-cli:1.1.1"
+ktlintComposeRules = "io.nlopez.compose.rules:ktlint:0.3.11"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android" }

@@ -23,7 +23,7 @@ fun main() = application {
 
 @Composable
 @Preview
-fun App() {
+private fun App() {
   val events = MutableSharedFlow<Event>(extraBufferCapacity = Int.MAX_VALUE)
   val viewModels = MutableStateFlow<ViewModel>(ViewModel.Empty)
   val viewModel by viewModels.collectAsState()

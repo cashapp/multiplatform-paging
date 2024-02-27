@@ -21,7 +21,8 @@ expect class CombinedLoadStates(
   prepend: LoadState,
   append: LoadState,
   source: LoadStates,
-  mediator: LoadStates? /* = null */,
+  /* default = null */
+  mediator: LoadStates?,
 ) {
   val refresh: LoadState
   val prepend: LoadState

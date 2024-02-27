@@ -18,13 +18,19 @@ package app.cash.paging
 
 import kotlin.jvm.JvmField
 
-expect class PagingConfig /* @JvmOverloads */ constructor(
+/* @JvmOverloads constructor */
+expect class PagingConfig(
   pageSize: Int,
-  prefetchDistance: Int, /* = pageSize */
-  enablePlaceholders: Boolean, /* = true */
-  initialLoadSize: Int, /* = pageSize * 3 */
-  maxSize: Int, /* = MAX_SIZE_UNBOUNDED */
-  jumpThreshold: Int, /* = COUNT_UNDEFINED */
+  /* default = pageSize */
+  prefetchDistance: Int,
+  /* default = true */
+  enablePlaceholders: Boolean,
+  /* default = pageSize * 3 */
+  initialLoadSize: Int,
+  /* default = MAX_SIZE_UNBOUNDED */
+  maxSize: Int,
+  /* default = COUNT_UNDEFINED */
+  jumpThreshold: Int,
 ) {
   @JvmField
   val pageSize: Int
