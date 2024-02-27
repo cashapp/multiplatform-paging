@@ -20,14 +20,16 @@ import kotlinx.coroutines.flow.Flow
 
 expect class Pager<Key : Any, Value : Any> @ExperimentalPagingApi constructor(
   config: PagingConfig,
-  initialKey: Key?, /* = null */
+  /* default = null */
+  initialKey: Key?,
   remoteMediator: RemoteMediator<Key, Value>?,
   pagingSourceFactory: () -> PagingSource<Key, Value>,
 ) {
   // @JvmOverloads
   constructor(
     config: PagingConfig,
-    initialKey: Key?, /* = null */
+    /* default = null */
+    initialKey: Key?,
     pagingSourceFactory: () -> PagingSource<Key, Value>,
   )
 

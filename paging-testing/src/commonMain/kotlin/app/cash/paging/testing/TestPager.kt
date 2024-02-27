@@ -28,7 +28,8 @@ expect class TestPager<Key : Any, Value : Any>(
   pagingSource: PagingSource<Key, Value>,
 ) {
   suspend fun refresh(
-    initialKey: Key? /* = null */,
+    /* default = null */
+    initialKey: Key?,
   ): @JvmSuppressWildcards PagingSourceLoadResult<Key, Value>
 
   suspend fun append(): @JvmSuppressWildcards PagingSourceLoadResult<Key, Value>?

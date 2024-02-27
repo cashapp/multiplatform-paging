@@ -29,7 +29,8 @@ expect class PagingData<T : Any> {
     @JvmStatic
     fun <T : Any> empty(
       sourceLoadStates: LoadStates,
-      mediatorLoadStates: LoadStates?, /* = null */
+      /* default = null */
+      mediatorLoadStates: LoadStates?,
     ): PagingData<T>
 
     @JvmStatic
@@ -42,7 +43,8 @@ expect class PagingData<T : Any> {
     fun <T : Any> from(
       data: List<T>,
       sourceLoadStates: LoadStates,
-      mediatorLoadStates: LoadStates?, /* = null */
+      /* default = null */
+      mediatorLoadStates: LoadStates?,
     ): PagingData<T>
   }
 }

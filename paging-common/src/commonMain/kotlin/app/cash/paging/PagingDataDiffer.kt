@@ -23,8 +23,10 @@ import kotlin.coroutines.CoroutineContext
 /** @suppress */
 expect abstract class PagingDataDiffer<T : Any>(
   differCallback: DifferCallback,
-  mainContext: CoroutineContext, /* = Dispatchers.Main */
-  cachedPagingData: PagingData<T>?, /* = null */
+  /* default = Dispatchers.Main */
+  mainContext: CoroutineContext,
+  /* default = null */
+  cachedPagingData: PagingData<T>?,
 ) {
 
   abstract suspend fun presentNewList(

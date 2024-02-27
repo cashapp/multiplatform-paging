@@ -21,6 +21,7 @@ import app.cash.paging.compose.collectAsLazyPagingItems
 fun RepoSearchContent(
   viewModel: ViewModel,
   onEvent: (Event) -> Unit,
+  modifier: Modifier = Modifier,
 ) {
   when (viewModel) {
     ViewModel.Empty -> {
@@ -33,6 +34,7 @@ fun RepoSearchContent(
           )
         },
         content = {},
+        modifier = modifier,
       )
     }
     is ViewModel.SearchResults -> {
@@ -48,6 +50,7 @@ fun RepoSearchContent(
         content = {
           SearchResults(repositories)
         },
+        modifier = modifier,
       )
     }
   }
