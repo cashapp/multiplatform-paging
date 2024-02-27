@@ -39,5 +39,3 @@
    This will trigger a GitHub Action workflow which will create a GitHub release,
    upload the release artifacts to [Sonatype Nexus](https://oss.sonatype.org/),
    and automatically promote those artifacts.
-
-10. Create a new GitHub Release.
