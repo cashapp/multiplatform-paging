@@ -46,16 +46,19 @@ kotlin {
 
   jvm()
 
-  ios()
+  iosX64()
+  iosArm64()
   iosSimulatorArm64()
   linuxArm64()
   linuxX64()
   macosArm64()
   macosX64()
   mingwX64()
-  tvos()
+  tvosX64()
+  tvosArm64()
   tvosSimulatorArm64()
-  watchos()
+  watchosX64()
+  watchosArm64()
   watchosSimulatorArm64()
 
   sourceSets {
