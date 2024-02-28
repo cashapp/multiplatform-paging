@@ -37,6 +37,7 @@ fun RepoSearchContent(
         modifier = modifier,
       )
     }
+
     is ViewModel.SearchResults -> {
       val repositories = viewModel.repositories.collectAsLazyPagingItems()
       Scaffold(
@@ -69,6 +70,7 @@ private fun SearchResults(repositories: LazyPagingItems<Repository>) {
           CircularProgressIndicator()
         }
       }
+
       is LoadStateNotLoading -> {
         items(repositories.itemCount) { index ->
           val repository = repositories[index]
@@ -81,11 +83,13 @@ private fun SearchResults(repositories: LazyPagingItems<Repository>) {
           }
         }
       }
+
       is LoadStateError -> {
         item {
           Text(loadState.error.message!!)
         }
       }
+
       else -> error("when should be exhaustive")
     }
   }

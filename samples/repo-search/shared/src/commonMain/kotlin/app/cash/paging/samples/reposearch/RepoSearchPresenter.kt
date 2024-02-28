@@ -87,11 +87,13 @@ private class RepositoryPagingSource(
           nextKey = if (repositories.items.isNotEmpty()) page + 1 else null,
         ) as PagingSourceLoadResult<Int, Repository>
       }
+
       httpResponse.status == HttpStatusCode.Forbidden -> {
         PagingSourceLoadResultError<Int, Repository>(
           Exception("Whoops! You just exceeded the GitHub API rate limit."),
         ) as PagingSourceLoadResult<Int, Repository>
       }
+
       else -> {
         PagingSourceLoadResultError<Int, Repository>(
           Exception("Received a ${httpResponse.status}."),
