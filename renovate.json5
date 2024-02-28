@@ -8,6 +8,11 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
     },
+    {
+      "matchPackagePrefixes": [
+        "androidx.compose.compiler",
+        "org.jetbrains.kotlin:kotlin",
+      ],
+    },
   ],
 }
-

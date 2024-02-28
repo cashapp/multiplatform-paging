@@ -16,4 +16,6 @@
 
 package app.cash.paging
 
+// Constructor has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias PagingConfig = androidx.paging.PagingConfig

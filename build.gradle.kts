@@ -27,16 +27,25 @@ allprojects {
   plugins.withId("org.jetbrains.kotlin.multiplatform") {
     configure<KotlinMultiplatformExtension> {
       jvmToolchain(11)
+      compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+      }
     }
   }
   plugins.withId("org.jetbrains.kotlin.jvm") {
     configure<KotlinJvmProjectExtension> {
       jvmToolchain(11)
+      compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+      }
     }
   }
   plugins.withId("org.jetbrains.kotlin.android") {
     configure<KotlinAndroidProjectExtension> {
       jvmToolchain(11)
+      compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+      }
     }
   }
 
