@@ -17,7 +17,7 @@ plugins {
 
 allprojects {
   group = "app.cash.paging"
-  version = "${rootProject.libs.versions.androidx.paging.get()}-0.6.0-SNAPSHOT"
+  version = "${rootProject.libs.versions.androidx.paging.get()}-0.5.1"
 
   repositories {
     mavenCentral()

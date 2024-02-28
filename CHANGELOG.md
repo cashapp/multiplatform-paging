@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 
+## [3.3.0-alpha02-0.5.1]
+
+### Added
+
+- [paging-compose-common] Added `linuxArm64` target.
+
+
 ## [3.3.0-alpha02-0.5.0]
 
 ### Changed
@@ -32,6 +39,7 @@
   It can be safely removed.
 
 
-[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.3.0-alpha02-0.5.0...main-3.3.0-alpha02
+[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.3.0-alpha02-0.5.0...main-3.3.1-alpha02
+[3.3.0-alpha02-0.5.1]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.5.1
 [3.3.0-alpha02-0.5.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.5.0
 [3.3.0-alpha02-0.4.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.4.0

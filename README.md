@@ -140,31 +140,31 @@ The versioning scheme is of the form `X-Y` where:
 - `X` is the AndroidX Paging version that is being tracked.
 - `Y` is the Multiplatform Paging version.
 
-For example, if AndroidX Paging is on `3.3.0-alpha02` and Multiplatform Paging is on `0.5.0`,
-the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.3.0-alpha02-0.5.0`.
+For example, if AndroidX Paging is on `3.3.0-alpha02` and Multiplatform Paging is on `0.5.1`,
+the artifact for a release of `paging-common` will be `app.cash.paging:paging-common:3.3.0-alpha02-0.5.1`.
 
 ### `paging-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-common:3.3.0-alpha02-0.5.0")
+implementation("app.cash.paging:paging-common:3.3.0-alpha02-0.5.1")
 ```
 
 ### `paging-compose-common` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.5.0")
+implementation("app.cash.paging:paging-compose-common:3.3.0-alpha02-0.5.1")
 ```
 
 ### `paging-runtime-uikit` for iOS
 
 ```kotlin
-implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.5.0")
+implementation("app.cash.paging:paging-runtime-uikit:3.3.0-alpha02-0.5.1")
 ```
 
 ### `paging-testing` for common
 
 ```kotlin
-implementation("app.cash.paging:paging-testing:3.3.0-alpha02-0.5.0")
+implementation("app.cash.paging:paging-testing:3.3.0-alpha02-0.5.1")
 ```
 
 ### Android
