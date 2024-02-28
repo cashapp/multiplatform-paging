@@ -29,4 +29,7 @@ actual typealias PagingSourceLoadResult<Key, Value> = androidx.paging.PagingSour
 // Conflicts with the other actual typealias Error so just prefixed the surrounding class
 actual typealias PagingSourceLoadResultError<Key, Value> = androidx.paging.PagingSource.LoadResult.Error<Key, Value>
 actual typealias PagingSourceLoadResultInvalid<Key, Value> = androidx.paging.PagingSource.LoadResult.Invalid<Key, Value>
+
+// Constructor has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias PagingSourceLoadResultPage<Key, Value> = androidx.paging.PagingSource.LoadResult.Page<Key, Value>

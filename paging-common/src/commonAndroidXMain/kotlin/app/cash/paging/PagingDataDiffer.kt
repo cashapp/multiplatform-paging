@@ -17,6 +17,8 @@
 package app.cash.paging
 
 /** @suppress */
+// Constructor has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias PagingDataDiffer<T> = androidx.paging.PagingDataDiffer<T>
 
 /** @suppress */

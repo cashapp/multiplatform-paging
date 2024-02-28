@@ -16,4 +16,6 @@
 
 package app.cash.paging.testing
 
+// Member function has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias TestPager<Key, Value> = androidx.paging.testing.TestPager<Key, Value>

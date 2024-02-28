@@ -16,6 +16,8 @@
 
 package app.cash.paging
 
+// Member function has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias PagingLogger = androidx.paging.PagingLogger
 
 actual inline fun log(

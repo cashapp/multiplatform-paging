@@ -16,4 +16,6 @@
 
 package app.cash.paging
 
+// Companion functions have default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias PagingData<T> = androidx.paging.PagingData<T>

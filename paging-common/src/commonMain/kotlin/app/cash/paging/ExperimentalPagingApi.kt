@@ -18,4 +18,5 @@ package app.cash.paging
 
 @RequiresOptIn
 @Retention(AnnotationRetention.BINARY)
+@Suppress("EXPECT_ACTUAL_OPT_IN_ANNOTATION")
 expect annotation class ExperimentalPagingApi()
