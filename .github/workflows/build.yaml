@@ -20,3 +20,8 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew build
+      - run: ./gradlew publish
+        if: startsWith(github.ref, 'refs/heads/main-')
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
