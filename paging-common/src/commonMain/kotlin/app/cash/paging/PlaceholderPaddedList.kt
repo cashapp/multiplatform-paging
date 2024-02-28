@@ -17,10 +17,10 @@
 package app.cash.paging
 
 /** @suppress */
-expect interface NullPaddedList<T> {
+expect interface PlaceholderPaddedList<T> {
   val placeholdersBefore: Int
-  fun getFromStorage(localIndex: Int): T
   val placeholdersAfter: Int
   val size: Int
-  val storageCount: Int
+  val dataCount: Int
+  fun getItem(index: Int): T
 }

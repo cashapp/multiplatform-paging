@@ -17,9 +17,6 @@
 package app.cash.paging
 
 /** @suppress */
-actual typealias PagingDataDiffer<T> = androidx.paging.PagingDataDiffer<T>
-
-/** @suppress */
-actual typealias DifferCallback = androidx.paging.DifferCallback
+actual typealias PagingDataPresenter<T> = androidx.paging.PagingDataPresenter<T>
 
 actual typealias DiffingChangePayload = androidx.paging.DiffingChangePayload

@@ -17,4 +17,4 @@
 package app.cash.paging
 
 /** @suppress */
-actual typealias NullPaddedList<T> = androidx.paging.NullPaddedList<T>
+actual typealias PlaceholderPaddedList<T> = androidx.paging.PlaceholderPaddedList<T>

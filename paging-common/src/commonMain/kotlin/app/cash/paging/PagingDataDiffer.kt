@@ -19,38 +19,21 @@ package app.cash.paging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
+import kotlin.jvm.JvmSuppressWildcards
 
 /** @suppress */
-expect abstract class PagingDataDiffer<T : Any>(
-  differCallback: DifferCallback,
+expect abstract class PagingDataPresenter<T : Any>(
   /* default = Dispatchers.Main */
   mainContext: CoroutineContext,
   /* default = null */
   cachedPagingData: PagingData<T>?,
 ) {
 
-  abstract suspend fun presentNewList(
-    previousList: NullPaddedList<T>,
-    newList: NullPaddedList<T>,
-    lastAccessedIndex: Int,
-    onListPresentable: () -> Unit,
-  ): Int?
-
-  open fun postEvents(): Boolean
+  abstract suspend fun presentPagingDataEvent(
+    event: PagingDataEvent<T>,
+  ): @JvmSuppressWildcards Unit
 
   suspend fun collectFrom(pagingData: PagingData<T>)
-
-  operator fun get(index: Int): T?
-
-  fun peek(index: Int): T?
-
-  fun snapshot(): ItemSnapshotList<T>
-
-  fun retry()
-
-  fun refresh()
-
-  val size: Int
 
   val loadStateFlow: StateFlow<CombinedLoadStates?>
 
@@ -60,16 +43,9 @@ expect abstract class PagingDataDiffer<T : Any>(
 
   fun removeOnPagesUpdatedListener(listener: () -> Unit)
 
-  fun addLoadStateListener(listener: (CombinedLoadStates) -> Unit)
+  fun addLoadStateListener(listener: (@JvmSuppressWildcards CombinedLoadStates) -> Unit)
 
-  fun removeLoadStateListener(listener: (CombinedLoadStates) -> Unit)
-}
-
-/** @suppress */
-expect interface DifferCallback {
-  fun onChanged(position: Int, count: Int)
-  fun onInserted(position: Int, count: Int)
-  fun onRemoved(position: Int, count: Int)
+  fun removeLoadStateListener(listener: (@JvmSuppressWildcards CombinedLoadStates) -> Unit)
 }
 
 expect enum class DiffingChangePayload {
