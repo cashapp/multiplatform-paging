@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+
+## [3.3.0-alpha02-0.5.0]
+
+### Changed
+
+- Compile with Kotlin 1.9.22.
+
+### Breaking
+
+- [paging-compose-common] Compile with JetBrains Compose 1.6.0 which changes the ABI for JS-based Compose libraries. Downstream usage in JS targets will also need to be recompiled.
+
+
 ## [3.3.0-alpha02-0.4.0]
 
 ### Added
@@ -19,5 +31,7 @@
 - [paging-runtime-uikit] Instantiating `PagingCollectionViewController` no longer requires an `indexCreator`.
   It can be safely removed.
 
-[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.3.0-alpha02-0.4.0...main-3.3.0-alpha02
+
+[Unreleased]: https://github.com/cashapp/multiplatform-paging/compare/3.3.0-alpha02-0.5.0...main-3.3.0-alpha02
+[3.3.0-alpha02-0.5.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.5.0
 [3.3.0-alpha02-0.4.0]: https://github.com/cashapp/multiplatform-paging/releases/tag/3.3.0-alpha02-0.4.0
