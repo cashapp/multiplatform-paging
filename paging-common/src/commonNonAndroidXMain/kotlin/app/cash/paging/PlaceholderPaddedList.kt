@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,4 @@
 
 package app.cash.paging
 
-import androidx.paging.awaitNotLoading
-import kotlinx.coroutines.flow.Flow
-import kotlin.jvm.JvmSuppressWildcards
-
-// Constructor has default argument values.
-@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
-actual typealias CombinedLoadStates = androidx.paging.CombinedLoadStates
-
-actual suspend inline fun Flow<CombinedLoadStates>.awaitNotLoading(): @JvmSuppressWildcards CombinedLoadStates? = awaitNotLoading()
+actual typealias PlaceholderPaddedList<T> = androidx.paging.PlaceholderPaddedList<T>

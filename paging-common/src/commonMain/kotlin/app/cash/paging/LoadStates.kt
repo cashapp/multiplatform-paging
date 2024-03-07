@@ -16,6 +16,8 @@
 
 package app.cash.paging
 
+import kotlin.jvm.JvmName
+
 expect class LoadStates(
   refresh: LoadState,
   prepend: LoadState,
@@ -31,6 +33,11 @@ expect class LoadStates(
 
   /** @suppress */
   inline fun forEach(op: (LoadType, LoadState) -> Unit)
+
+  @get:JvmName("hasError")
+  val hasError: Boolean
+
+  val isIdle: Boolean
 }
 
 fun LoadStates.copy(

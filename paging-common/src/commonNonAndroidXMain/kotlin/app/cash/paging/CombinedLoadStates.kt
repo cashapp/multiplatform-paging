@@ -16,6 +16,12 @@
 
 package app.cash.paging
 
+import androidx.paging.awaitNotLoading
+import kotlinx.coroutines.flow.Flow
+import kotlin.jvm.JvmSuppressWildcards
+
 // Constructor has default argument values.
 @Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
 actual typealias CombinedLoadStates = androidx.paging.CombinedLoadStates
+
+actual suspend inline fun Flow<CombinedLoadStates>.awaitNotLoading(): @JvmSuppressWildcards CombinedLoadStates? = awaitNotLoading()

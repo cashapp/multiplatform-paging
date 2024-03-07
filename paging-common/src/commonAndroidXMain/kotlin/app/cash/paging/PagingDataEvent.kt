@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package app.cash.paging
 
-/** @suppress */
-// Constructor has default argument values.
-@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
-actual typealias PagingDataDiffer<T> = androidx.paging.PagingDataDiffer<T>
+actual typealias PagingDataEvent<T> = androidx.paging.PagingDataEvent<T>
 
-/** @suppress */
-actual typealias DifferCallback = androidx.paging.DifferCallback
-
-actual typealias DiffingChangePayload = androidx.paging.DiffingChangePayload
+actual typealias PagingDataEventPrepend<T> = androidx.paging.PagingDataEvent.Prepend<T>
+actual typealias PagingDataEventAppend<T> = androidx.paging.PagingDataEvent.Append<T>
+actual typealias PagingDataEventRefresh<T> = androidx.paging.PagingDataEvent.Refresh<T>
+actual typealias PagingDataEventDropPrepend<T> = androidx.paging.PagingDataEvent.DropPrepend<T>
+actual typealias PagingDataEventDropAppend<T> = androidx.paging.PagingDataEvent.DropAppend<T>

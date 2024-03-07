@@ -16,5 +16,8 @@
 
 package app.cash.paging
 
-/** @suppress */
-actual typealias NullPaddedList<T> = androidx.paging.NullPaddedList<T>
+// Constructor has default argument values.
+@Suppress("NO_ACTUAL_CLASS_MEMBER_FOR_EXPECTED_CLASS")
+actual typealias PagingDataPresenter<T> = androidx.paging.PagingDataPresenter<T>
+
+actual typealias DiffingChangePayload = androidx.paging.DiffingChangePayload

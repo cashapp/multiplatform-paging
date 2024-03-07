@@ -2,7 +2,7 @@
 android = "8.3.0"
 androidx-activity-compose = "1.8.2"
 androidx-appcompat = "1.6.1"
-androidx-paging = "3.3.0-alpha02"
+androidx-paging = "3.3.0-alpha04"
 kotlin = "1.9.22"
 kotlinx-coroutines = "1.8.0"
 kotlinx-serialization-json = "1.6.3"

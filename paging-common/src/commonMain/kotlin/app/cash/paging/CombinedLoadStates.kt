@@ -16,6 +16,10 @@
 
 package app.cash.paging
 
+import kotlinx.coroutines.flow.Flow
+import kotlin.jvm.JvmName
+import kotlin.jvm.JvmSuppressWildcards
+
 expect class CombinedLoadStates(
   refresh: LoadState,
   prepend: LoadState,
@@ -29,6 +33,11 @@ expect class CombinedLoadStates(
   val append: LoadState
   val source: LoadStates
   val mediator: LoadStates?
+
+  val isIdle: Boolean
+
+  @get:JvmName("hasError")
+  val hasError: Boolean
 }
 
 fun createCombinedLoadStates(
@@ -46,3 +55,5 @@ fun createCombinedLoadStates(
     mediator,
   )
 }
+
+expect suspend fun Flow<CombinedLoadStates>.awaitNotLoading(): @JvmSuppressWildcards CombinedLoadStates?
