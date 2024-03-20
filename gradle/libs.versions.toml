@@ -3,19 +3,19 @@ android = "8.3.1"
 androidx-activity-compose = "1.8.2"
 androidx-appcompat = "1.6.1"
 androidx-paging = "3.3.0-alpha02"
-kotlin = "1.9.22"
+kotlin = "1.9.23"
 kotlinx-coroutines = "1.8.0"
 kotlinx-serialization-json = "1.6.3"
 ktor = "2.3.9"
 maven-publish = "0.28.0"
 spotless = "6.25.0"
-jb-compose-plugin = "1.6.0"
+jb-compose-plugin = "1.6.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 # Specify the full coordinate for Renovate to track even though we only use the version.
-androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.10"
+androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.11"
 androidx-compose-material = { module = "androidx.compose.material:material", version = "1.6.4" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.6.4" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.12.0" }
