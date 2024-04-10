@@ -1,5 +1,5 @@
 [versions]
-android = "8.3.1"
+android = "8.3.2"
 androidx-activity-compose = "1.8.2"
 androidx-appcompat = "1.6.1"
 androidx-paging = "3.3.0-alpha02"
