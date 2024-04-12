@@ -38,7 +38,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 # Specify the full coordinate for Renovate to track even though we only use the version.
 ktlint = "com.pinterest.ktlint:ktlint-cli:1.2.1"
-ktlintComposeRules = "io.nlopez.compose.rules:ktlint:0.3.13"
+ktlintComposeRules = "io.nlopez.compose.rules:ktlint:0.3.14"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android" }
