@@ -1,8 +1,8 @@
 [versions]
-android = "8.3.2"
+android = "8.2.0"
 androidx-activity-compose = "1.9.0"
 androidx-appcompat = "1.6.1"
-androidx-paging = "3.3.0-alpha02"
+androidx-paging = "3.3.0-alpha03"
 kotlin = "1.9.23"
 kotlinx-coroutines = "1.8.0"
 kotlinx-serialization-json = "1.6.3"

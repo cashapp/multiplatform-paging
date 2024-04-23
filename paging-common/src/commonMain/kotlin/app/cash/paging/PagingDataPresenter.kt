@@ -21,8 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
 
 /** @suppress */
-expect abstract class PagingDataDiffer<T : Any>(
-  differCallback: DifferCallback,
+expect abstract class PagingDataPresenter<T : Any>(
   /* default = Dispatchers.Main */
   mainContext: CoroutineContext,
   /* default = null */
@@ -30,8 +29,8 @@ expect abstract class PagingDataDiffer<T : Any>(
 ) {
 
   abstract suspend fun presentNewList(
-    previousList: NullPaddedList<T>,
-    newList: NullPaddedList<T>,
+    previousList: PlaceholderPaddedList<T>,
+    newList: PlaceholderPaddedList<T>,
     lastAccessedIndex: Int,
     onListPresentable: () -> Unit,
   ): Int?
@@ -63,13 +62,6 @@ expect abstract class PagingDataDiffer<T : Any>(
   fun addLoadStateListener(listener: (CombinedLoadStates) -> Unit)
 
   fun removeLoadStateListener(listener: (CombinedLoadStates) -> Unit)
-}
-
-/** @suppress */
-expect interface DifferCallback {
-  fun onChanged(position: Int, count: Int)
-  fun onInserted(position: Int, count: Int)
-  fun onRemoved(position: Int, count: Int)
 }
 
 expect enum class DiffingChangePayload {

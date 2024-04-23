@@ -118,6 +118,6 @@ Consult the following table for guidance based on which APIs are being used.
 | `PagingConfig`                                                | Use `createPagingConfig`.               |
 | `PagingData.Companion.empty(LoadStates, LoadStates?)`         | Pass in the default value yourself.     |
 | `PagingData.Companion.from(List<T>, LoadStates, LoadStates?)` | Pass in the default value yourself.     |
-| `PagingDataDiffer`                                            | Pass in the default value yourself.     |
+| `PagingDataPresenter`                                         | Pass in the default value yourself.     |
 | `PagingLogger.log(Int, String, Throwable?)`                   | Pass in the default value yourself.     |
 | `PagingSourceLoadResultPage`                                  | Use `createPagingSourceLoadResultPage`. |
