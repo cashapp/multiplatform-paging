@@ -1,30 +1,30 @@
 [versions]
-android = "8.2.0"
-androidx-activity-compose = "1.9.0"
-androidx-appcompat = "1.6.1"
+android = "8.5.1"
+androidx-activity-compose = "1.9.1"
+androidx-appcompat = "1.7.0"
 androidx-paging = "3.3.0-alpha03"
-kotlin = "1.9.23"
-kotlinx-coroutines = "1.8.0"
-kotlinx-serialization-json = "1.6.3"
-ktor = "2.3.10"
-maven-publish = "0.28.0"
+kotlin = "1.9.24"
+kotlinx-coroutines = "1.8.1"
+kotlinx-serialization-json = "1.7.1"
+ktor = "2.3.12"
+maven-publish = "0.29.0"
 spotless = "6.25.0"
-jb-compose-plugin = "1.6.2"
+jb-compose-plugin = "1.6.11"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 # Specify the full coordinate for Renovate to track even though we only use the version.
-androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.12"
-androidx-compose-material = { module = "androidx.compose.material:material", version = "1.6.6" }
-androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.6.6" }
-androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.13.0" }
+androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.14"
+androidx-compose-material = { module = "androidx.compose.material:material", version = "1.6.8" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.6.8" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "androidx-paging" }
 androidx-paging-testing = { module = "androidx.paging:paging-testing", version.ref = "androidx-paging" }
 kotlin-stdlib-common = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
-kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.24.0" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.25.0" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
@@ -38,7 +38,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 # Specify the full coordinate for Renovate to track even though we only use the version.
 ktlint = "com.pinterest.ktlint:ktlint-cli:1.2.1"
-ktlintComposeRules = "io.nlopez.compose.rules:ktlint:0.3.19"
+ktlintComposeRules = "io.nlopez.compose.rules:ktlint:0.4.9"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android" }
