@@ -37,12 +37,10 @@ fun createCombinedLoadStates(
   append: LoadState,
   source: LoadStates,
   mediator: LoadStates? = null,
-): CombinedLoadStates {
-  return CombinedLoadStates(
-    refresh,
-    prepend,
-    append,
-    source,
-    mediator,
-  )
-}
+): CombinedLoadStates = CombinedLoadStates(
+  refresh,
+  prepend,
+  append,
+  source,
+  mediator,
+)
