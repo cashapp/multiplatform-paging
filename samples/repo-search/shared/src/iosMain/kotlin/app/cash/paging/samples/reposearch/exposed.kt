@@ -7,9 +7,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 fun exposedTypes(
   pagingCollectionViewController: PagingCollectionViewController<*>,
   mutableSharedFlow: MutableSharedFlow<*>,
-) {
-  throw AssertionError()
-}
+): Unit = throw AssertionError()
 
 @Suppress("unused") // Used to export types to Objective-C / Swift.
 fun <T> mutableSharedFlow(extraBufferCapacity: Int) = MutableSharedFlow<T>(extraBufferCapacity = extraBufferCapacity)

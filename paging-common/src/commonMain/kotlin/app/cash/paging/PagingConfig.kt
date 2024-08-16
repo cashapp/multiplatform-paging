@@ -60,16 +60,14 @@ fun createPagingConfig(
   initialLoadSize: Int = pageSize * 3,
   maxSize: Int = MAX_SIZE_UNBOUNDED,
   jumpThreshold: Int = COUNT_UNDEFINED,
-): PagingConfig {
-  return PagingConfig(
-    pageSize,
-    prefetchDistance,
-    enablePlaceholders,
-    initialLoadSize,
-    maxSize,
-    jumpThreshold,
-  )
-}
+): PagingConfig = PagingConfig(
+  pageSize,
+  prefetchDistance,
+  enablePlaceholders,
+  initialLoadSize,
+  maxSize,
+  jumpThreshold,
+)
 
 @Suppress("MinMaxConstant")
 const val MAX_SIZE_UNBOUNDED: Int = Int.MAX_VALUE

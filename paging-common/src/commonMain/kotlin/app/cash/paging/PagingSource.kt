@@ -86,9 +86,7 @@ expect class PagingSourceLoadResultError<Key : Any, Value : Any>(
 
 fun <Key : Any, Value : Any> PagingSourceLoadResultError<Key, Value>.copy(
   throwable: Throwable = this.throwable,
-): PagingSourceLoadResultError<Key, Value> {
-  return PagingSourceLoadResultError(throwable)
-}
+): PagingSourceLoadResultError<Key, Value> = PagingSourceLoadResultError(throwable)
 
 expect class PagingSourceLoadResultInvalid<Key : Any, Value : Any>()
 
@@ -128,15 +126,13 @@ fun <Key : Any, Value : Any> createPagingSourceLoadResultPage(
   nextKey: Key?,
   itemsBefore: Int = COUNT_UNDEFINED,
   itemsAfter: Int = COUNT_UNDEFINED,
-): PagingSourceLoadResultPage<Key, Value> {
-  return PagingSourceLoadResultPage(
-    data,
-    prevKey,
-    nextKey,
-    itemsBefore,
-    itemsAfter,
-  )
-}
+): PagingSourceLoadResultPage<Key, Value> = PagingSourceLoadResultPage(
+  data,
+  prevKey,
+  nextKey,
+  itemsBefore,
+  itemsAfter,
+)
 
 fun <Key : Any, Value : Any> PagingSourceLoadResultPage<Key, Value>.copy(
   data: List<Value> = this.data,
@@ -144,14 +140,12 @@ fun <Key : Any, Value : Any> PagingSourceLoadResultPage<Key, Value>.copy(
   nextKey: Key? = this.nextKey,
   itemsBefore: Int = this.itemsBefore,
   itemsAfter: Int = this.itemsAfter,
-): PagingSourceLoadResultPage<Key, Value> {
-  return PagingSourceLoadResultPage(
-    data,
-    prevKey,
-    nextKey,
-    itemsBefore,
-    itemsAfter,
-  )
-}
+): PagingSourceLoadResultPage<Key, Value> = PagingSourceLoadResultPage(
+  data,
+  prevKey,
+  nextKey,
+  itemsBefore,
+  itemsAfter,
+)
 
 const val COUNT_UNDEFINED: Int = Int.MIN_VALUE

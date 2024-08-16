@@ -37,10 +37,8 @@ fun LoadStates.copy(
   refresh: LoadState = this.refresh,
   prepend: LoadState = this.prepend,
   append: LoadState = this.append,
-): LoadStates {
-  return LoadStates(
-    refresh,
-    prepend,
-    append,
-  )
-}
+): LoadStates = LoadStates(
+  refresh,
+  prepend,
+  append,
+)

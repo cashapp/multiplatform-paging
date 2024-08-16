@@ -23,13 +23,9 @@ class PagingCollectionViewController<T : Any> {
   private var collectionView: UICollectionView? = null
 
   private val diffCallback = object : DiffUtil.ItemCallback<T>() {
-    override fun areItemsTheSame(oldItem: T, newItem: T): Boolean {
-      return oldItem == newItem
-    }
+    override fun areItemsTheSame(oldItem: T, newItem: T): Boolean = oldItem == newItem
 
-    override fun areContentsTheSame(oldItem: T, newItem: T): Boolean {
-      return oldItem == newItem
-    }
+    override fun areContentsTheSame(oldItem: T, newItem: T): Boolean = oldItem == newItem
   }
 
   private val differ = AsyncPagingDataDiffer(
