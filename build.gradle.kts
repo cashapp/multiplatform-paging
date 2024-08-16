@@ -49,7 +49,12 @@ allprojects {
     }
   }
 
-  apply(plugin = rootProject.libs.plugins.spotless.get().pluginId)
+  apply(
+    plugin =
+      rootProject.libs.plugins.spotless
+        .get()
+        .pluginId,
+  )
   configure<SpotlessExtension> {
     kotlin {
       target("**/*.kt")
@@ -59,8 +64,7 @@ allprojects {
           listOf(
             libs.ktlintComposeRules.get().toString(),
           ),
-        )
-        .editorConfigOverride(
+        ).editorConfigOverride(
           mapOf(
             // Disabled because paging-* filenames should be identical to that of AndroidX Paging.
             "ktlint_standard_filename" to "disabled",

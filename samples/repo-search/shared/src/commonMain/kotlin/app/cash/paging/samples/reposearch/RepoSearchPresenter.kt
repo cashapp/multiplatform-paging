@@ -44,16 +44,14 @@ class RepoSearchPresenter {
     }
   }
 
-  fun produceViewModels(events: Flow<Event>): Flow<ViewModel> {
-    return events.map { event ->
-      when (event) {
-        is Event.SearchTerm -> {
-          latestSearchTerm = event.searchTerm
-          if (event.searchTerm.isEmpty()) {
-            ViewModel.Empty
-          } else {
-            ViewModel.SearchResults(latestSearchTerm, pager.flow)
-          }
+  fun produceViewModels(events: Flow<Event>): Flow<ViewModel> = events.map { event ->
+    when (event) {
+      is Event.SearchTerm -> {
+        latestSearchTerm = event.searchTerm
+        if (event.searchTerm.isEmpty()) {
+          ViewModel.Empty
+        } else {
+          ViewModel.SearchResults(latestSearchTerm, pager.flow)
         }
       }
     }

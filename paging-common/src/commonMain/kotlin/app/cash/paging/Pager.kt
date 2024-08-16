@@ -42,23 +42,19 @@ fun <Key : Any, Value : Any> createPager(
   initialKey: Key? = null,
   remoteMediator: RemoteMediator<Key, Value>?,
   pagingSourceFactory: () -> PagingSource<Key, Value>,
-): Pager<Key, Value> {
-  return Pager(
-    config,
-    initialKey,
-    remoteMediator,
-    pagingSourceFactory,
-  )
-}
+): Pager<Key, Value> = Pager(
+  config,
+  initialKey,
+  remoteMediator,
+  pagingSourceFactory,
+)
 
 fun <Key : Any, Value : Any> createPager(
   config: PagingConfig,
   initialKey: Key? = null,
   pagingSourceFactory: () -> PagingSource<Key, Value>,
-): Pager<Key, Value> {
-  return Pager(
-    config,
-    initialKey,
-    pagingSourceFactory,
-  )
-}
+): Pager<Key, Value> = Pager(
+  config,
+  initialKey,
+  pagingSourceFactory,
+)
