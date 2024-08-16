@@ -15,7 +15,7 @@ jb-compose-plugin = "1.6.11"
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 # Specify the full coordinate for Renovate to track even though we only use the version.
-androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.14"
+androidx-compose-compiler = "androidx.compose.compiler:compiler:1.5.15"
 androidx-compose-material = { module = "androidx.compose.material:material", version = "1.6.8" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui", version = "1.6.8" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
