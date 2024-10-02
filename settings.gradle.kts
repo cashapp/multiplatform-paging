@@ -10,6 +10,14 @@ pluginManagement {
   }
 }
 
+dependencyResolutionManagement {
+  repositories {
+    mavenCentral()
+    google()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev/")
+  }
+}
+
 include(":paging-common")
 include(":paging-compose-common")
 include(":paging-runtime-uikit")
