@@ -19,11 +19,6 @@ allprojects {
   group = "app.cash.paging"
   version = "${rootProject.libs.versions.androidx.paging.get()}-0.6.0-SNAPSHOT"
 
-  repositories {
-    mavenCentral()
-    google()
-  }
-
   plugins.withId("org.jetbrains.kotlin.multiplatform") {
     configure<KotlinMultiplatformExtension> {
       jvmToolchain(11)
