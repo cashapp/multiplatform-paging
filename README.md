@@ -3,6 +3,10 @@
 A library that adds additional Kotlin/Multiplatform targets to [AndroidX Paging](https://developer.android.com/topic/libraries/architecture/paging/v3-overview),
 and provides UI components to use Paging on iOS.
 
+**DEPRECATED!** AndroidX Paging 3.4.0-alpha03 from Google now [supports multiplatform more comprehensively](https://developer.android.com/jetpack/androidx/releases/paging#3.4.0-alpha03).
+At the time of this deprecation there are no additional implementations for UI toolkits (such as this project's UIKit implementation).
+
+
 ## Introduction
 
 As with AndroidX Paging, the primary modules of Multiplatform Paging are:
