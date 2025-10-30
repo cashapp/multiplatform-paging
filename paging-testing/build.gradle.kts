@@ -3,6 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
@@ -15,7 +16,10 @@ kotlin {
   targetHierarchy.custom {
     common {
       group("nonJs") {
-        withCompilations { it.target.platformType != KotlinPlatformType.js }
+        withCompilations {
+          it.target.platformType != KotlinPlatformType.js &&
+            it.target.platformType != KotlinPlatformType.wasm
+        }
       }
       group("commonAndroidX") {
         withIos()
@@ -26,6 +30,7 @@ kotlin {
       group("commonNonAndroidX") {
         group("jsAndNonAndroidX") {
           withJs()
+          withWasm()
         }
         group("nonJsAndNonAndroidX") {
           group("nativeAndNonAndroidX") {
@@ -42,6 +47,11 @@ kotlin {
   js(IR) {
     nodejs()
     binaries.executable()
+  }
+
+  @OptIn(ExperimentalWasmDsl::class)
+  wasmJs {
+    browser()
   }
 
   jvm()
@@ -89,6 +99,9 @@ kotlin {
     }
     val jsAndNonAndroidXMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-testing/src/jsMain")
+      dependencies {
+        implementation(libs.kotlinx.atomicfu)
+      }
     }
     val nativeAndNonAndroidXMain by getting {
       kotlin.srcDir("../upstreams/androidx-main/paging/paging-testing/src/nativeMain")

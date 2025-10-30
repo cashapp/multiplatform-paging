@@ -17,11 +17,11 @@ plugins {
 
 allprojects {
   group = "app.cash.paging"
-  version = "${rootProject.libs.versions.androidx.paging.get()}-0.6.0-SNAPSHOT"
+  version = "${rootProject.libs.versions.androidx.paging.get()}-0.6.0-wasm.1"
 
   plugins.withId("org.jetbrains.kotlin.multiplatform") {
     configure<KotlinMultiplatformExtension> {
-      jvmToolchain(11)
+      jvmToolchain(17)
       compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
       }
@@ -29,7 +29,7 @@ allprojects {
   }
   plugins.withId("org.jetbrains.kotlin.jvm") {
     configure<KotlinJvmProjectExtension> {
-      jvmToolchain(11)
+      jvmToolchain(17)
       compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
       }
@@ -37,7 +37,7 @@ allprojects {
   }
   plugins.withId("org.jetbrains.kotlin.android") {
     configure<KotlinAndroidProjectExtension> {
-      jvmToolchain(11)
+      jvmToolchain(17)
       compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
       }
